@@ -1,20 +1,18 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SITESNAP | AI Website Automation</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>SITESNAP | אוטומציית אתרים ב-AI</title>
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0a0b1e;
-            --accent-primary: #6366f1; /* Indigo */
-            --accent-secondary: #a855f7; /* Purple */
-            --text-color: #f8fafc;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
         }
 
         * {
@@ -26,89 +24,88 @@
 
         body {
             background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.15) 0%, transparent 40%);
-            color: var(--text-color);
-            height: 100vh;
+            color: var(--text-main);
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            overflow: hidden;
+            justify-content: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at top right, rgba(139, 92, 246, 0.15), transparent 400px),
+                radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.15), transparent 400px);
+        }
+
+        /* רקע זז עדין */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
         }
 
         .container {
-            text-align: center;
-            padding: 3rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            max-width: 500px;
+            max-width: 800px;
             width: 90%;
-            animation: fadeIn 1s ease-out;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            font-size: 3.5rem;
+        .logo {
+            font-size: 1rem;
             font-weight: 800;
-            letter-spacing: -2px;
-            margin-bottom: 1rem;
-            background: linear-gradient(to right, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: 4px;
+            color: var(--accent-secondary);
+            margin-bottom: 1.5rem;
+            display: block;
             text-transform: uppercase;
         }
 
+        h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
         p {
-            font-size: 1.2rem;
-            color: #94a3b8;
-            margin-bottom: 2.5rem;
-            font-weight: 300;
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            margin-bottom: 3rem;
+            line-height: 1.6;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
         }
 
         .pay-button {
-            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #6d28d9 100%);
             color: white;
             border: none;
-            padding: 1.2rem 3rem;
-            font-size: 1.2rem;
+            padding: 1.25rem 3.5rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            border-radius: 12px;
+            border-radius: 16px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .pay-button:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.5);
-        }
-
-        .pay-button:active {
-            transform: translateY(0) scale(0.98);
-        }
-
-        .status-msg {
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
-            color: #4ade80;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        /* עיגולים דקורטיביים ברקע */
-        .blob {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: linear-gradient(1
+            box-shadow: 0 10px 2
