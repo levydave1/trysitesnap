@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Your Domain | SiteSnap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; }
+        .electric-blue { color: #0070f3; }
+        .bg-electric-blue { background-color: #0070f3; }
+        .copy-box { background-color: #f8faff; border: 2px dashed #0070f3; border-radius: 16px; cursor: pointer; transition: all 0.2s; }
+        .copy-box:hover { background-color: #eff6ff; transform: scale(1.01); }
+        
+        .guide-card { display: none; }
+        .guide-card.active { display: block; animation: fadeIn 0.4s ease-out; }
+        
+        .more-details { display: none; margin-top: 24px; padding: 24px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .more-details.show { display: block; animation: slideDown 0.3s ease-out; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 1200px; } }
+
+        .registrar-btn { background-color: #f8faff; border: 2px solid #eff6ff; transition: all 0.3s; color: #000; font-weight: 900; }
+        .registrar-btn:hover { background-color: #0070f3; color: white !important; transform: translateY(-2px); }
+        .registrar-btn.active-tab { background-color: #0070f3; color: white !important; border-color: #0070f3; box-shadow: 0 10px 20px rgba(0, 112, 243, 0.15); }
+    </style>
+</head>
+<body class="antialiased text-black">
+
+    <header class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center border-b border-slate-50">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-24 w-auto object-contain mb-4">
+        <div class="text-sm font-black uppercase tracking-[0.25em] text-slate-800 text-center">Premium Websites • Pure Simplicity</div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-6 pb-24 pt-12">
+        <div class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-black italic mb-6">Final Step: Go <span class="electric-blue">Live</span>.</h1>
+            <p class="text-lg text-slate-500 font-bold uppercase tracking-wide">Connect your domain to our high-performance network.</p>
+        </div>
+
+        <div class="bg-slate-50 p-8 rounded-[40px] border border-slate-100 shadow-sm mb-16 text-center">
+            <h2 class="text-xl font-black mb-8 uppercase italic underline decoration-blue-500">1. Required DNS Values</h2>
+            <div class="space-y-4 text-left">
+                <div class="p-6 copy-box" onclick="copyValue('76.76.21.21')">
+                    <div class="flex justify-between items-center">
+                        <div><span class="text-[10px] font-black uppercase text-blue-600 tracking-widest block mb-1">Type: A Record (Host: @)</span><span class="text-2xl font-black">76.76.21.21</span></div>
+                        <div class="flex items-center gap-2 text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                            <span class="text-xs font-black uppercase">Copy</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6 copy-box" onclick="copyValue('cname.vercel-dns.com')">
+                    <div class="flex justify-between items-center">
+                        <div><span class="text-[10px] font-black uppercase text-blue-600 tracking-widest block mb-1">Type: CNAME (Host: www)</span><span class="text-2xl font-black text-sm md:text-xl lg:text-2xl">cname.vercel-dns.com</span></div>
+                        <div class="flex items-center gap-2 text-slate-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                            <span class="text-xs font-black uppercase">Copy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-12">
+            <h2 class="text-xl font-black mb-8 uppercase italic text-center text-slate-400">2. Select Your Domain Provider</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <button onclick="showGuide('godaddy', this)" class="registrar-btn py-6 px-4 rounded-2xl text-sm uppercase tracking-tight">GoDaddy</button>
+                <button onclick="showGuide('namecheap', this)" class="registrar-btn py-6 px-4 rounded-2xl text-sm uppercase tracking-tight">Namecheap</button>
+                <button onclick="showGuide('google', this)" class="registrar-btn py-6 px-4 rounded-2xl text-sm uppercase tracking-tight">Google / Squarespace</button>
+                <button onclick="showGuide('other', this)" class="registrar-btn py-6 px-4 rounded-2xl text-sm uppercase tracking-tight">Other Providers</button>
+            </div>
+        </div>
+
+        <div id="guides-container" class="bg-black text-white p-10 md:p-14 rounded-[40px] shadow-2xl relative overflow-hidden">
+            <div id="guide-placeholder" class="text-center py-10 opacity-40 italic font-bold">Select your provider above for the full walkthrough.</div>
+
+            <div id="guide-godaddy" class="guide-card relative z-10">
+                <h3 class="text-2xl font-black uppercase italic electric-blue mb-8">GoDaddy Walkthrough</h3>
+                <ol class="space-y-5 text-slate-200 font-bold list-decimal pl-6 mb-10 leading-relaxed">
+                    <li>Log in to your <span class="text-white font-black">GoDaddy Portfolio</span>.</li>
+                    <li>Find your domain and click the <span class="text-white">DNS</span> button.</li>
+                    <li>Update the <span class="text-white">A Record (@)</span> to <span class="text-white">76.76.21.21</span>.</li>
+                    <li>Point the <span class="text-white">CNAME (www)</span> to <span class="text-white">cname.vercel-dns.com</span>.</li>
+                </ol>
+                <button onclick="toggleDetails('godaddy-more')" class="text-blue-400 text-xs font-black uppercase tracking-[0.2em] border-b-2 border-blue-400 pb-1 hover:text-white transition-all">Detailed Walkthrough & Expert Tips</button>
+                
+                <div id="godaddy-more" class="more-details">
+                    <div class="mb-6">
+                        <p class="text-white font-black mb-2 uppercase text-xs">The Detailed Path:</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">After logging in, look for the "Domain" sidebar. In your list of domains, there is a small "DNS" link next to each name. Once inside, you'll see a table of records. Look specifically for Type "A" where the Name is "@". Click the pencil icon to modify it.</p>
+                    </div>
+                    <div>
+                        <p class="text-white font-black mb-2 uppercase text-xs">Expert Tips:</p>
+                        <ul class="space-y-3 text-slate-400 text-sm">
+                            <li>• Delete any existing "Parked" records that might conflict.</li>
+                            <li>• If you have an existing "A" record for "@", edit it instead of adding a new one.</li>
+                            <li>• Standard TTL should be 1 hour.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="guide-namecheap" class="guide-card relative z-10">
+                <h3 class="text-2xl font-black uppercase italic electric-blue mb-8">Namecheap Walkthrough</h3>
+                <ol class="space-y-5 text-slate-200 font-bold list-decimal pl-6 mb-10 leading-relaxed">
+                    <li>Log in and select <span class="text-white">Domain List</span>.</li>
+                    <li>Click <span class="text-white">Manage</span> next to your domain.</li>
+                    <li>Select the <span class="text-white">Advanced DNS</span> tab.</li>
+                    <li>Create an <span class="text-white font-black">A Record</span> (@) ⮕ <span class="text-white">76.76.21.21</span>.</li>
+                </ol>
+                <button onclick="toggleDetails('namecheap-more')" class="text-blue-400 text-xs font-black uppercase tracking-[0.2em] border-b-2 border-blue-400 pb-1 hover:text-white transition-all">Detailed Walkthrough & Expert Tips</button>
+                
+                <div id="namecheap-more" class="more-details">
+                    <div class="mb-6">
+                        <p class="text-white font-black mb-2 uppercase text-xs">The Detailed Path:</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Once in the Advanced DNS tab, you will see a red button labeled "Add New Record". Click it, select "A Record" from the dropdown, and enter "@" as the Host. Paste the IP address and make sure to click the small green checkmark to save.</p>
+                    </div>
+                    <div>
+                        <p class="text-white font-black mb-2 uppercase text-xs">Expert Tips:</p>
+                        <ul class="space-y-3 text-slate-400 text-sm font-medium">
+                            <li>• Ensure "TTL" is set to <span class="text-white italic">Automatic</span>.</li>
+                            <li>• Remove any "URL Redirect" records as they will block SiteSnap from loading.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="guide-google" class="guide-card relative z-10">
+                <h3 class="text-2xl font-black uppercase italic electric-blue mb-8">Google / Squarespace Walkthrough</h3>
+                <ol class="space-y-5 text-slate-200 font-bold list-decimal pl-6 mb-10 leading-relaxed">
+                    <li>Open your <span class="text-white">DNS Settings</span>.</li>
+                    <li>Find <span class="text-white">Custom Records</span> and click <span class="text-white">Add</span>.</li>
+                    <li>A Record (@) ⮕ <span class="text-white">76.76.21.21</span>.</li>
+                    <li>CNAME (www) ⮕ <span class="text-white">cname.vercel-dns.com</span>.</li>
+                </ol>
+                <button onclick="toggleDetails('google-more')" class="text-blue-400 text-xs font-black uppercase tracking-[0.2em] border-b-2 border-blue-400 pb-1 hover:text-white transition-all">Detailed Walkthrough & Expert Tips</button>
+                
+                <div id="google-more" class="more-details">
+                    <div class="mb-6">
+                        <p class="text-white font-black mb-2 uppercase text-xs">The Detailed Path:</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">If you were migrated from Google Domains to Squarespace, look for the "Domain Settings" icon. Click "DNS" and then "DNS Settings". You'll likely see a list of "Google Workspace" records—leave those alone and only add your custom records at the bottom.</p>
+                    </div>
+                    <div>
+                        <p class="text-white font-black mb-2 uppercase text-xs">Expert Tips:</p>
+                        <ul class="space-y-3 text-slate-400 text-sm font-medium">
+                            <li>• <span class="text-white">Squarespace Defaults:</span> You must toggle off "Default Records" before adding SiteSnap records.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="guide-other" class="guide-card relative z-10">
+                <h3 class="text-2xl font-black uppercase italic electric-blue mb-8">Universal Walkthrough</h3>
+                <ol class="space-y-5 text-slate-200 font-bold list-decimal pl-6 mb-10 leading-relaxed">
+                    <li>Find your provider's <span class="text-white">DNS Zone Editor</span>.</li>
+                    <li>Point the <span class="text-white">A Record</span> (@) to <span class="text-white">76.76.21.21</span>.</li>
+                    <li>Point the <span class="text-white">CNAME</span> (www) to <span class="text-white">cname.vercel-dns.com</span>.</li>
+                </ol>
+                <button onclick="toggleDetails('other-more')" class="text-blue-400 text-xs font-black uppercase tracking-[0.2em] border-b-2 border-blue-400 pb-1 hover:text-white transition-all">Detailed Walkthrough & Expert Tips</button>
+                
+                <div id="other-more" class="more-details">
+                    <p class="text-white font-black mb-4 uppercase text-xs tracking-widest">Global CDN Logic:</p>
+                    <p class="text-slate-400 text-sm font-medium mb-4 italic">By connecting to these records, you are utilizing our global Edge Network. This ensures your site loads from the server closest to your visitor, reducing latency to near-zero.</p>
+                    <p class="text-slate-400 text-sm font-medium leading-relaxed">Propagation (the time it takes for the world to see the change) varies by provider but usually completes within minutes.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-12 text-center bg-white border-t border-slate-100">
+        <p class="text-slate-800 text-xs font-black uppercase tracking-[0.4em]">© 2026 SiteSnap • Pure Simplicity.</p>
+    </footer>
+
+    <script>
+        function copyValue(val) {
+            navigator.clipboard.writeText(val);
+            alert("Copied to clipboard: " + val);
+        }
+
+        function showGuide(id, element) {
+            document.getElementById('guide-placeholder').style.display = 'none';
+            document.querySelectorAll('.guide-card').forEach(g => g.classList.remove('active'));
+            document.querySelectorAll('.registrar-btn').forEach(b => b.classList.remove('active-tab'));
+            document.querySelectorAll('.more-details').forEach(d => d.classList.remove('show'));
+            
+            element.classList.add('active-tab');
+            document.getElementById('guide-' + id).classList.add('active');
+            document.getElementById('guides-container').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function toggleDetails(id) {
+            const details = document.getElementById(id);
+            details.classList.toggle('show');
+        }
+    </script>
+</body>
+</html>
