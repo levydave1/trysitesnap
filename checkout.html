@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout | SiteSnap AI</title>
+    <title>Finalize Your Site | SiteSnap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -11,150 +11,137 @@
         .electric-blue { color: #0070f3; }
         .bg-electric-blue { background-color: #0070f3; }
         .plan-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 2px solid transparent; }
-        .plan-card:hover { border-color: #e5e7eb; transform: translateY(-4px); }
         .plan-card.selected { border-color: #0070f3; background-color: #ffffff; box-shadow: 0 20px 25px -5px rgba(0, 112, 243, 0.1); }
         .label-power-black { color: #000000; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; font-size: 12px; }
+        .coming-soon { opacity: 0.4; cursor: not-allowed !important; filter: grayscale(1); }
     </style>
 </head>
 <body class="text-slate-900 antialiased">
 
-    <header class="max-w-4xl mx-auto px-6 pt-12 pb-8 text-center">
-        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-24 w-auto mx-auto mb-">
-        <h1 class="text-3xl font-black tracking-tight text-black uppercase">Final Step: Choose Your Launch Path</h1>
-        <p class="text-slate-500 font-medium mt-2">Your AI-generated site is ready for deployment.</p>
+    <header class="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center">
+        <div class="flex justify-center mb-8">
+            <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
+                 alt="SiteSnap" 
+                 class="h-24 w-auto object-contain">
+        </div>
+        <h1 class="text-4xl font-black tracking-tighter text-black uppercase leading-tight">
+            Final Step: <span class="electric-blue">Activate</span> Your Assets
+        </h1>
+        <p class="text-slate-500 font-bold mt-3 text-lg uppercase tracking-wide">
+            Choose how you want to launch.
+        </p>
     </header>
 
-    <main class="max-w-3xl mx-auto px-6 pb-24">
+    <main class="max-w-2xl mx-auto px-6 pb-24">
         
         <div class="space-y-4" id="plans-container">
             
-            <div class="plan-card bg-white p-6 rounded-3xl border border-slate-200 flex items-center gap-6" onclick="selectPlan(1, this)">
-                <div class="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center shrink-0 circle">
-                    <div class="w-4 h-4 rounded-full bg-electric-blue hidden inner-dot"></div>
-                </div>
+            <div class="plan-card coming-soon bg-white p-6 rounded-3xl border border-slate-200 flex items-center gap-6">
+                <div class="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center shrink-0"></div>
                 <div class="flex-grow">
-                    <h3 class="font-extrabold text-lg text-black">I already have a domain</h3>
-                    <p class="text-slate-500 text-sm">We'll provide the DNS settings to point to our servers.</p>
-                </div>
-                <div class="text-right">
-                    <span class="text-slate-400 font-bold">$99<span class="text-xs">/yr</span></span>
+                    <h3 class="font-extrabold text-lg text-black uppercase tracking-tighter italic">Connect my existing domain</h3>
+                    <p class="text-slate-400 text-sm font-bold uppercase tracking-widest italic">Option locked</p>
                 </div>
             </div>
 
-            <div class="plan-card bg-white p-6 rounded-3xl border border-slate-200 flex items-center gap-6" onclick="selectPlan(2, this)">
-                <div class="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center shrink-0 circle">
-                    <div class="w-4 h-4 rounded-full bg-electric-blue hidden inner-dot"></div>
-                </div>
+            <div class="plan-card coming-soon bg-white p-6 rounded-3xl border border-slate-200 flex items-center gap-6">
+                <div class="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center shrink-0"></div>
                 <div class="flex-grow">
-                    <h3 class="font-extrabold text-lg text-black">I want to purchase a new domain</h3>
-                    <p class="text-slate-500 text-sm">Search and register a .com or .net instantly.</p>
-                </div>
-                <div class="text-right">
-                    <span class="text-slate-400 font-bold">$129<span class="text-xs">/yr</span></span>
+                    <h3 class="font-extrabold text-lg text-black uppercase tracking-tighter italic">Register a new custom domain</h3>
+                    <p class="text-slate-400 text-sm font-bold uppercase tracking-widest italic">Option locked</p>
                 </div>
             </div>
 
-            <div class="plan-card bg-white p-6 rounded-3xl border border-slate-200 flex items-center gap-6" onclick="selectPlan(3, this)">
+            <div class="plan-card bg-white p-7 rounded-[35px] border-2 border-slate-200 flex items-center gap-6 shadow-sm relative overflow-hidden" onclick="selectPlan(3, this)">
+                
+                <div class="absolute top-0 right-0 bg-blue-600 text-white text-[10px] px-4 py-1 font-black uppercase tracking-widest rounded-bl-xl">
+                    Customer Favorite
+                </div>
+
                 <div class="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center shrink-0 circle">
                     <div class="w-4 h-4 rounded-full bg-electric-blue hidden inner-dot"></div>
                 </div>
+                
                 <div class="flex-grow">
-                    <h3 class="font-extrabold text-lg text-black">Use SiteSnap subdomain <span class="electric-blue text-sm ml-2 font-black italic">FASTEST</span></h3>
-                    <p class="text-slate-500 text-sm">Your business name under .trysitesnap.com</p>
+                    <div class="flex items-center gap-2 mb-1">
+                        <h3 class="font-black text-xl text-black uppercase tracking-tighter">SiteSnap Subdomain</h3>
+                    </div>
+                    <p class="text-slate-500 text-sm font-medium italic">business-name.trysitesnap.com</p>
                 </div>
+
                 <div class="text-right">
-                    <span class="text-black font-black text-xl">$49<span class="text-xs">/yr</span></span>
+                    <span class="text-slate-400 line-through text-sm block font-bold">$49/yr</span>
+                    <span class="text-black font-black text-2xl">$199</span>
+                    <span class="block text-[10px] font-black text-blue-600 uppercase tracking-tighter">Lifetime Access</span>
                 </div>
             </div>
 
         </div>
 
         <div id="action-area" class="mt-12 hidden opacity-0 transition-all duration-500 transform translate-y-4">
-            <div class="bg-blue-50 border border-blue-100 p-8 rounded-[40px] text-center">
-                <p class="label-power-black mb-4">Launch Preview Instantly</p>
-                <button id="activate-btn" onclick="triggerActivation()" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-2xl hover:bg-blue-700 transition-all text-2xl uppercase tracking-tighter">
-                    Activate My Site Now →
+            <div class="bg-blue-50 border border-blue-100 p-8 rounded-[40px] text-center shadow-xl">
+                <p class="label-power-black mb-4 italic text-blue-600">Exclusive One-Time Offer</p>
+                <button id="activate-btn" onclick="triggerActivation()" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-2xl hover:scale-[1.02] transition-all text-2xl uppercase tracking-tighter">
+                    Activate Lifetime Access →
                 </button>
-                <p class="text-slate-400 text-xs mt-6 font-bold uppercase tracking-widest">Instant deployment to Global CDN</p>
+                <p class="text-slate-400 text-[10px] mt-4 font-bold uppercase tracking-widest">Secure Activation via SiteSnap AI Engine</p>
             </div>
         </div>
 
         <div id="loading-state" class="hidden mt-12 text-center py-12">
-            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-electric-blue mx-auto mb-6"></div>
-            <h2 class="text-2xl font-black text-black">PREPARING SERVERS...</h2>
-            <p class="text-slate-500">Connecting to Vercel & AI Architect</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-electric-blue mx-auto mb-6"></div>
+            <h2 class="text-xl font-black text-black uppercase italic">Securing your lifetime license...</h2>
         </div>
 
         <div id="success-state" class="hidden mt-12 bg-black text-white p-10 rounded-[40px] text-center shadow-2xl">
-            <div class="text-5xl mb-6">🚀</div>
-            <h2 class="text-3xl font-black tracking-tighter mb-4 uppercase">Success! Site is Live.</h2>
-            <p class="text-slate-400 font-medium mb-8">We have triggered the AI Build process. Check your email in 5 minutes for your access link.</p>
-            <button onclick="window.location.reload()" class="text-sm font-bold text-blue-400 underline uppercase tracking-widest">Back to Start</button>
+            <div class="text-5xl mb-6">💎</div>
+            <h2 class="text-3xl font-black tracking-tighter mb-4 uppercase leading-none">Welcome to the Club</h2>
+            <p class="text-slate-400 font-medium">Your lifetime activation request has been received. Our AI is deploying your site now. Watch your inbox.</p>
         </div>
 
     </main>
 
     <script>
-        let selectedOption = null;
-
         function selectPlan(id, element) {
-            // Reset styles
             document.querySelectorAll('.plan-card').forEach(card => {
-                card.classList.remove('selected');
-                card.querySelector('.inner-dot').classList.add('hidden');
-                card.querySelector('.circle').classList.remove('border-blue-500');
+                card.classList.remove('selected', 'border-blue-600');
+                const dot = card.querySelector('.inner-dot');
+                if(dot) dot.classList.add('hidden');
             });
 
-            // Set current selection
-            selectedOption = id;
-            element.classList.add('selected');
+            element.classList.add('selected', 'border-blue-600');
             element.querySelector('.inner-dot').classList.remove('hidden');
-            element.querySelector('.circle').classList.add('border-blue-500');
 
-            // Show action area only for option 3
             const actionArea = document.getElementById('action-area');
-            if (id === 3) {
-                actionArea.classList.remove('hidden');
-                setTimeout(() => {
-                    actionArea.classList.add('opacity-100', 'translate-y-0');
-                }, 10);
-            } else {
-                actionArea.classList.add('hidden', 'opacity-0', 'translate-y-4');
-            }
+            actionArea.classList.remove('hidden');
+            setTimeout(() => actionArea.classList.add('opacity-100', 'translate-y-0'), 10);
         }
 
         async function triggerActivation() {
-            const btn = document.getElementById('activate-btn');
             const actionArea = document.getElementById('action-area');
             const loading = document.getElementById('loading-state');
             const success = document.getElementById('success-state');
 
-            // UI Changes
             actionArea.classList.add('hidden');
             loading.classList.remove('hidden');
-
-            // Send to Webhook (Using the data from the previous step context)
-            const payload = {
-                action: "ACTIVATE_SITESNAP_SUBDOMAIN",
-                selected_plan: "Subdomain",
-                timestamp: new Date().toISOString()
-            };
 
             try {
                 const response = await fetch('https://hook.eu2.make.com/6j8jjwylhhh539rqyb9yaxyp2mcpsm1a', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ 
+                        action: "LIFETIME_ACTIVATION", 
+                        price_point: "199_LIFETIME",
+                        plan_id: "subdomain_v1" 
+                    })
                 });
 
                 if (response.ok) {
                     loading.classList.add('hidden');
                     success.classList.remove('hidden');
-                } else {
-                    throw new Error('Deployment failed');
                 }
             } catch (err) {
-                alert('Connection Error. Check your Webhook.');
+                alert('Connection Error');
                 loading.classList.add('hidden');
                 actionArea.classList.remove('hidden');
             }
