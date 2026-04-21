@@ -3,109 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SiteSnap | AI Web Architect</title>
+    <title>Create Your Sketch | SiteSnap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #ffffff; }
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; }
         .electric-blue { color: #0070f3; }
         .bg-electric-blue { background-color: #0070f3; }
-        .form-shadow { box-shadow: 0 30px 60px -12px rgba(50, 50, 93, 0.12), 0 18px 36px -18px rgba(0, 0, 0, 0.15); }
+        .form-shadow { box-shadow: 0 30px 60px -12px rgba(0, 112, 243, 0.12); }
         
+        .headline-spaced { letter-spacing: -0.01em; line-height: 1.1; word-spacing: 0.05em; }
+        .btn-spaced { letter-spacing: 0.02em; word-spacing: 0.12em; }
+
         .label-power-black { 
             color: #000000 !important; 
             font-weight: 900 !important; 
             letter-spacing: 0.08em; 
             text-transform: uppercase; 
-            font-size: 12px; 
+            font-size: 11px; 
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
     </style>
 </head>
-<body class="text-slate-900 antialiased">
+<body class="text-slate-900 antialiased bg-slate-50/30">
 
-    <header class="max-w-6xl mx-auto px-6 pt-4 pb-2 flex justify-between items-center">
-        <div class="flex-shrink-0 flex items-center">
-            <svg width="220" height="80" viewBox="0 0 240 80" fill="none" xmlns="http://www.w3.org/2000/svg" class="overflow-visible">
-                <rect x="10" y="20" width="50" height="38" rx="5" stroke="#0070f3" stroke-width="3"/>
-                <line x1="10" y1="30" x2="60" y2="30" stroke="#0070f3" stroke-width="3"/>
-                <circle cx="18" cy="25" r="2" fill="#0070f3"/>
-                <circle cx="25" cy="25" r="2" fill="#0070f3"/>
-                <circle cx="32" cy="25" r="2" fill="#0070f3"/>
-                <path d="M25 55L32 72L38 70L30 53L42 52L25 38V55Z" fill="#0070f3" stroke="white" stroke-width="1.5"/>
-                <text x="75" y="58" font-family="Inter, sans-serif" font-size="42" font-weight="900" fill="#001439">SnapSite<tspan fill="#0070f3">.</tspan></text>
-            </svg>
+    <header class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
+             alt="SiteSnap" class="h-28 w-auto object-contain mb-4">
+        <div class="text-sm font-black uppercase tracking-[0.25em] text-slate-800 text-center">
+            Premium Websites • Pure Simplicity
         </div>
-        <nav>
-            <a href="#" class="text-sm font-bold text-black border-b-2 border-blue-600 pb-1 hover:text-blue-600 transition-all">How it works</a>
-        </nav>
     </header>
 
-    <section class="max-w-5xl mx-auto px-6 pt-4 pb-20 text-center">
-        <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-3 leading-[1.1] text-black">
-            Get a <span class="electric-blue">High-Converting</span> Website in 2 minutes.
-        </h1>
-        <p class="text-lg md:text-xl text-slate-500 mb-8 max-w-2xl mx-auto font-medium leading-relaxed">
-            Stop wasting weeks on designers. Our AI syncs with your Google data to build a live, professional preview instantly.
-        </p>
+    <main class="max-w-4xl mx-auto px-6 pb-20">
+        
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-black headline-spaced mb-4">
+                Let's build your <span class="electric-blue italic">Vision.</span>
+            </h1>
+            <p class="text-lg text-slate-600 font-bold uppercase tracking-wide italic">
+                Rapid deployment. Your brand preview is arriving now.
+            </p>
+        </div>
 
-        <div class="max-w-lg mx-auto bg-white rounded-[40px] p-10 border border-slate-100 form-shadow relative">
+        <div class="max-w-xl mx-auto bg-white rounded-[45px] p-8 md:p-12 border border-slate-100 form-shadow relative">
             <form id="site-form" class="space-y-6 text-left">
                 <div>
                     <label class="label-power-black">Business Name</label>
-                    <input type="text" id="business_name" required placeholder="e.g. Blue Bottle Coffee" 
-                    class="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-black">
+                    <input type="text" id="business_name" required placeholder="e.g. Aslan Cleaning" 
+                    class="w-full px-6 py-5 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-lg text-black">
                 </div>
+                
                 <div>
-                    <label class="label-power-black">Business Address</label>
-                    <input type="text" id="business_address" required placeholder="City, Street and Number"
-                    class="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-black">
+                    <label class="label-power-black">Business Address / City</label>
+                    <input type="text" id="business_address" required placeholder="Where are you located?"
+                    class="w-full px-6 py-5 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-lg text-black">
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                        <label class="label-power-black">Full Name</label>
-                        <input type="text" id="full_name" required placeholder="John Doe"
-                        class="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-black">
-                    </div>
-                    <div>
-                        <label class="label-power-black">Email Address</label>
-                        <input type="email" id="email" required placeholder="john@example.com"
-                        class="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-semibold text-black">
-                    </div>
+
+                <div>
+                    <label class="label-power-black">Your Email Address</label>
+                    <input type="email" id="email" required placeholder="name@company.com"
+                    class="w-full px-6 py-5 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-lg text-black">
                 </div>
-                <button type="submit" id="submit-btn" class="w-full bg-electric-blue text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transform hover:-translate-y-1 transition-all text-xl mt-4 uppercase tracking-tighter">
-                    Build My Preview Now →
+
+                <button type="submit" id="submit-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-2xl hover:bg-blue-700 transform hover:-translate-y-1 transition-all text-xl mt-4 uppercase btn-spaced">
+                    Generate My Preview Now →
                 </button>
             </form>
             
-            <div id="success-msg" class="hidden py-12 text-center">
+            <div id="success-msg" class="hidden py-16 text-center">
                 <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-50 rounded-full mb-6">
-                    <span class="text-4xl">⚡</span>
+                    <span class="text-4xl animate-pulse">⚡</span>
                 </div>
                 <h3 class="text-3xl font-black mb-3 text-black uppercase tracking-tighter">Engines Started!</h3>
-                <p class="text-slate-500 font-bold">Your new web site will be in your e-mail in minutes!</p>
+                <p class="text-slate-600 font-bold text-lg leading-relaxed">
+                    We are analyzing your brand with super-fast AI. <br>
+                    Check your email for the live preview link.
+                </p>
             </div>
         </div>
 
-        <div class="mt-20 max-w-3xl mx-auto">
+        <div class="mt-16 max-w-2xl mx-auto">
             <div class="flex flex-col md:flex-row items-center gap-8 text-left bg-black p-10 rounded-[40px] shadow-2xl relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-64 h-64 bg-blue-600 opacity-10 blur-[100px]"></div>
-                <div class="flex-shrink-0 w-20 h-20 bg-blue-600 rounded-[24px] flex items-center justify-center shadow-lg transform -rotate-3">
-                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04m17.236 0a11.955 11.955 0 01-8.618 3.04 11.955 11.955 0 01-8.618-3.04m17.236 0A11.955 11.955 0 0012 19.771a11.955 11.955 0 00-8.618-3.04"></path></svg>
+                
+                <div class="flex-shrink-0 w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                        <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-2.047 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946 2.047 3.42 3.42 0 013.138 3.138 3.42 3.42 0 002.047 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-2.047 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946 2.047 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-2.047 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-2.047-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 002.047-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
                 </div>
+
                 <div class="relative z-10">
-                    <h4 class="font-black text-white text-3xl mb-3 tracking-tighter uppercase">Instant Authority.</h4>
-                    <p class="text-slate-400 leading-relaxed text-lg font-medium">
-                        SiteSnap automatically injects your <strong>verified Google reviews</strong>. You don't just get a website; you get an automated sales machine that builds trust instantly.
+                    <h4 class="font-black text-white text-2xl mb-2 tracking-tighter uppercase italic">Instant Authority.</h4>
+                    <p class="text-slate-400 leading-relaxed text-base font-bold">
+                        We handle the research for you. SiteSnap automatically injects your <span class="text-white font-black">verified reputation</span> to build trust with your customers instantly.
                     </p>
                 </div>
             </div>
         </div>
-    </section>
 
-    <footer class="py-16 text-center text-slate-400 text-[11px] tracking-[0.4em] uppercase font-black">
-        © 2026 SiteSnap AI Architect.
+    </main>
+
+    <footer class="py-12 text-center bg-white border-t border-slate-100">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
+             alt="SiteSnap" class="h-10 w-auto mx-auto mb-6 opacity-60 grayscale">
+        <p class="text-slate-800 text-xs font-black uppercase tracking-[0.4em]">
+            &copy; 2026 SiteSnap • Pure Simplicity.
+        </p>
     </footer>
 
     <script>
@@ -115,13 +120,12 @@
 
         form.onsubmit = async (e) => {
             e.preventDefault();
-            submitBtn.innerText = "Syncing with Google Data...";
+            submitBtn.innerText = "Initiating Rapid Build...";
             submitBtn.disabled = true;
 
             const data = {
                 business_name: document.getElementById('business_name').value,
                 address: document.getElementById('business_address').value,
-                full_name: document.getElementById('full_name').value,
                 email: document.getElementById('email').value,
                 submitted_at: new Date().toISOString()
             };
@@ -137,8 +141,8 @@
                     successMsg.classList.remove('hidden');
                 } else { throw new Error(); }
             } catch (error) {
-                alert('Error connecting. Please try again.');
-                submitBtn.innerText = "Build My Preview Now →";
+                alert('Connection Error. Please try again.');
+                submitBtn.innerText = "Generate My Preview Now →";
                 submitBtn.disabled = false;
             }
         };
