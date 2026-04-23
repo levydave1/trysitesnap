@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Final Polish | SiteSnap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f9fafb; 
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .electric-blue { color: #0070f3; }
+        .bg-electric-blue { background-color: #0070f3; }
+        
+        #tally-iframe-container { 
+            flex-grow: 1; 
+            width: 100%;
+        }
+        
+        iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="bg-white border-b border-slate-100 shadow-sm z-50 pt-12 pb-10">
+        <div class="max-w-3xl mx-auto px-6">
+            <div class="mb-10 text-center md:text-left">
+                <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
+                     alt="SiteSnap" 
+                     class="h-16 w-auto object-contain mx-auto md:mx-0">
+            </div>
+
+            <div class="w-full bg-white border border-slate-200 p-8 rounded-[32px] shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 z-0"></div>
+                
+                <div class="relative z-10">
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 mb-3 tracking-tight">
+                        The <span class="electric-blue">Final Polish</span> ✨
+                    </h1>
+                    <p class="text-lg text-slate-600 leading-relaxed font-medium">
+                        You’ve seen the vision. Now, tell us exactly how to make it perfect. <br class="hidden md:block">
+                        <span class="text-slate-500 text-base mt-2 block italic">
+                            Just type what you want to fix. Examples: "Change the red to a dark luxury blue", "Make the headline more aggressive", "Add a section for my 5-star Google reviews", or "Use more professional interior photos".
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="tally-iframe-container">
+        </main>
+
+    <script>
+        // שליפת נתונים מה-URL לצורך שיוך התיקונים לעסק הנכון
+        const urlParams = new URLSearchParams(window.location.search);
+        const recordId = urlParams.get('record_id') || 'preview_user';
+        const businessName = urlParams.get('business_name') || 'Your Business';
+
+        // שימוש ב-ID החדש שסיפקת: VL15GN
+        const revisionFormUrl = `https://tally.so/embed/VL15GN?record_id=${recordId}&business_name=${encodeURIComponent(businessName)}&hideTitle=1&transparentBackground=1&dynamicHeight=1`;
+
+        const iframe = document.createElement('iframe');
+        iframe.src = revisionFormUrl;
+        iframe.setAttribute('data-tally-src', revisionFormUrl);
+        iframe.style.width = "100%";
+        iframe.style.height = "600px"; 
+        
+        document.getElementById('tally-iframe-container').appendChild(iframe);
+    </script>
+    
+    <script async src="https://tally.so/widgets/embed.js"></script>
+</body>
+</html>
