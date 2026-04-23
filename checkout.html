@@ -54,13 +54,20 @@
             <h1 class="text-4xl md:text-6xl font-black italic tracking-tighter mb-4 leading-none uppercase">
                 Activate Your <span class="electric-blue">License</span>
             </h1>
-            <p class="text-slate-500 font-bold uppercase text-xs tracking-widest">Lifetime Access • No Monthly Fees • Instant Deployment</p>
+            <div class="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-2 mb-4">
+                <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                <p class="text-blue-600 font-black uppercase text-[10px] tracking-widest">AI Efficiency Discount Applied (70% Off)</p>
+            </div>
+            <p class="text-slate-500 font-bold uppercase text-xs tracking-widest block mt-2">Lifetime Access • No Monthly Fees • Instant Deployment</p>
         </div>
 
         <div class="grid md:grid-cols-3 gap-6 mb-12">
             
-            <div onclick="selectPlan('subdomain', this, 199)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col">
-                <div class="text-2xl font-black italic mb-4">$199</div>
+            <div onclick="selectPlan('subdomain', this, 199)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col relative">
+                <div class="mb-4">
+                    <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$665 Value</span>
+                    <div class="text-3xl font-black italic leading-none">$199</div>
+                </div>
                 <h3 class="text-lg font-black uppercase mb-2 leading-tight">SiteSnap Subdomain</h3>
                 <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">Use our free subdomain: name.trysitesnap.com</p>
                 <div class="mt-auto flex items-center gap-2">
@@ -71,8 +78,11 @@
                 </div>
             </div>
 
-            <div onclick="selectPlan('existing', this, 199)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col">
-                <div class="text-2xl font-black italic mb-4">$199</div>
+            <div onclick="selectPlan('existing', this, 199)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col relative">
+                <div class="mb-4">
+                    <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$665 Value</span>
+                    <div class="text-3xl font-black italic leading-none">$199</div>
+                </div>
                 <h3 class="text-lg font-black uppercase mb-2 leading-tight">Own Domain</h3>
                 <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">Connect a domain you already own (GoDaddy, etc.)</p>
                 <div class="mt-auto flex items-center gap-2">
@@ -85,7 +95,10 @@
 
             <div onclick="selectPlan('new', this, 229)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col relative overflow-hidden">
                 <div class="absolute top-0 right-0 bg-blue-600 text-white text-[8px] px-3 py-1 font-black uppercase tracking-widest rounded-bl-lg">Popular</div>
-                <div class="text-2xl font-black italic mb-4">$229</div>
+                <div class="mb-4">
+                    <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
+                    <div class="text-3xl font-black italic leading-none">$229</div>
+                </div>
                 <h3 class="text-lg font-black uppercase mb-2 leading-tight">Custom Domain</h3>
                 <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year.</p>
                 <div class="mt-auto flex items-center gap-2">
@@ -162,7 +175,6 @@
             selectedPlan = type;
             selectedPrice = price;
 
-            // UI Update
             document.querySelectorAll('.plan-card').forEach(card => {
                 card.classList.remove('selected');
                 card.querySelector('.inner-dot').classList.add('hidden');
@@ -170,28 +182,19 @@
             element.classList.add('selected');
             element.querySelector('.inner-dot').classList.remove('hidden');
 
-            // Show Confirm Button
             const actionArea = document.getElementById('action-area');
             actionArea.classList.remove('hidden');
             setTimeout(() => { actionArea.classList.add('opacity-100', 'translate-y-0'); }, 10);
 
-            // Update Modal Price
             document.getElementById('modal-price').innerText = price;
         }
 
-        function openModal() {
-            document.getElementById('agreement-modal').style.display = 'flex';
-        }
-
-        function closeModal() {
-            document.getElementById('agreement-modal').style.display = 'none';
-        }
+        function openModal() { document.getElementById('agreement-modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('agreement-modal').style.display = 'none'; }
 
         function toggleAgree() {
             const check = document.getElementById('agree-check');
             const btn = document.getElementById('final-pay-btn');
-            
-            // Toggle the check state if clicked on the text
             if (event.target.tagName !== 'INPUT') check.checked = !check.checked;
 
             if (check.checked) {
@@ -209,7 +212,7 @@
             const stripeLinks = {
                 'subdomain': 'https://buy.stripe.com/test_7sYfZg3Xj0WC9qX5BT0gw00',
                 'existing': 'https://buy.stripe.com/test_7sYfZg3Xj0WC9qX5BT0gw00',
-                'new': 'https://buy.stripe.com/test_YOUR_LINK_FOR_229' // תחליף בלינק של ה-229$
+                'new': 'https://buy.stripe.com/test_YOUR_LINK_FOR_229'
             };
             window.location.href = stripeLinks[selectedPlan];
         }
