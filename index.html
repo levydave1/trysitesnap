@@ -11,34 +11,15 @@
         .electric-blue { color: #0070f3; }
         .bg-electric-blue { background-color: #0070f3; }
         .hero-gradient { background: radial-gradient(circle at top, #f8faff 0%, #ffffff 100%); }
-        
         .headline-spaced { letter-spacing: -0.01em; line-height: 1.1; word-spacing: 0.05em; }
         .btn-spaced { letter-spacing: 0.02em; word-spacing: 0.12em; }
-        
         .premium-border { border: 6px solid #000; }
-        
-        .cta-button-final {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background-color: rgba(0, 112, 243, 0.02);
-        }
-        .cta-button-final:hover {
-            background-color: #0070f3;
-            color: white !important;
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 20px 40px rgba(0, 112, 243, 0.2);
-        }
-
-        /* Cookie Banner Style */
-        #cookie-banner {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            width: calc(100% - 40px);
-            max-width: 500px;
-        }
+        .cta-button-final { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background-color: rgba(0, 112, 243, 0.02); }
+        .cta-button-final:hover { background-color: #0070f3; color: white !important; transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(0, 112, 243, 0.2); }
+        #cookie-banner { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: calc(100% - 40px); max-width: 500px; }
+        #legal-modal { display: none; position: fixed; inset: 0; z-index: 10000; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); }
+        .legal-box::-webkit-scrollbar { width: 6px; }
+        .legal-box::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
 </head>
 <body class="antialiased text-black">
@@ -61,11 +42,9 @@
                     <span class="text-black font-black underline decoration-blue-500 decoration-4 underline-offset-8">No commitment. No deposit.</span> 
                     Experience your new brand today.
                 </p>
-                
                 <a href="/NewSketch" class="inline-block bg-electric-blue text-white font-black px-12 py-6 rounded-full text-2xl shadow-2xl hover:scale-105 transition-all transform uppercase btn-spaced">
                     Generate My Preview Now →
                 </a>
-                
                 <div class="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm font-black text-slate-900 uppercase tracking-widest">
                     <span>Instant Generation</span>
                     <span class="hidden md:block opacity-30">•</span>
@@ -78,7 +57,7 @@
             <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
                 <div class="relative">
                     <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop" 
-                         alt="Business team collaborating on a professional website design project" class="rounded-[40px] shadow-2xl grayscale hover:grayscale-0 transition-all duration-700">
+                         alt="Business team collaborating on a high-fidelity AI website sketch" class="rounded-[40px] shadow-2xl grayscale hover:grayscale-0 transition-all duration-700">
                     <div class="absolute -bottom-4 -right-4 bg-white p-6 rounded-[30px] shadow-xl border-2 border-slate-100">
                         <p class="text-4xl font-black electric-blue italic leading-none">$0</p>
                         <p class="text-xs font-black uppercase text-slate-500 tracking-widest mt-1 text-center">To Start</p>
@@ -86,7 +65,6 @@
                 </div>
                 <div class="space-y-12">
                     <h2 class="text-5xl font-black uppercase italic tracking-tighter leading-none">The Power of Simple.</h2>
-                    
                     <div class="space-y-10">
                         <div class="flex gap-6">
                             <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl" aria-hidden="true">✨</div>
@@ -95,7 +73,6 @@
                                 <p class="text-slate-600 font-bold text-lg leading-snug">Why pay for a promise? We build your entire vision first. You only pay once you're ready to launch.</p>
                             </div>
                         </div>
-                        
                         <div class="flex gap-6">
                             <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl" aria-hidden="true">🧠</div>
                             <div>
@@ -103,7 +80,6 @@
                                 <p class="text-slate-600 font-bold text-lg leading-snug">We handle the research and analysis, formulating a perfect brand narrative that captures your business identity instantly.</p>
                             </div>
                         </div>
-
                         <div class="flex gap-6">
                             <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl" aria-hidden="true">🚀</div>
                             <div>
@@ -121,16 +97,13 @@
                 <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">
                     Limited Lifetime Access
                 </div>
-                
                 <h2 class="text-4xl md:text-5xl font-black mb-8 uppercase italic leading-tight headline-spaced">
                     Ready to see your business in a new <span class="electric-blue">light</span>?
                 </h2>
-                
                 <p class="text-xl text-slate-700 font-bold mb-10 max-w-xl mx-auto uppercase tracking-wide">
                     Get your personalized professional sketch today. <br>
                     <span class="text-slate-400 opacity-60" aria-hidden="true">•</span> 100% Free <span class="text-slate-400 opacity-60" aria-hidden="true">•</span> No commitment <span class="text-slate-400 opacity-60" aria-hidden="true">•</span>
                 </p>
-                
                 <a href="/NewSketch" class="cta-button-final inline-block border-4 border-blue-500 electric-blue px-10 py-5 rounded-2xl text-2xl md:text-3xl font-black uppercase italic btn-spaced">
                     Generate My Preview Now →
                 </a>
@@ -140,35 +113,83 @@
 
     <footer class="pb-16 pt-10 text-center bg-white border-t border-slate-50">
         <div class="flex flex-wrap gap-4 justify-center text-[10px] uppercase font-black tracking-widest text-slate-400 mb-8">
-            <a href="/privacy" class="hover:text-black transition-colors">Privacy Policy</a>
+            <button onclick="openLegal('privacy')" class="hover:text-black transition-colors uppercase">Privacy Policy</button>
             <span class="opacity-30">|</span>
-            <a href="/terms" class="hover:text-black transition-colors">Terms of Service</a>
+            <button onclick="openLegal('terms')" class="hover:text-black transition-colors uppercase">Terms of Service</button>
             <span class="opacity-30">|</span>
-            <a href="/accessibility" class="hover:text-black transition-colors">Accessibility Statement</a>
+            <button onclick="openLegal('accessibility')" class="hover:text-black transition-colors uppercase">Accessibility Statement</button>
         </div>
-
-        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
-             alt="SiteSnap Footer Logo" class="h-10 w-auto mx-auto mb-6 opacity-80 grayscale hover:opacity-100 transition-opacity cursor-pointer">
-        
-        <p class="text-slate-800 text-[10px] font-black uppercase tracking-[0.4em] mb-2">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap Footer Logo" class="h-10 w-auto mx-auto mb-6 opacity-80 grayscale hover:opacity-100 transition-opacity cursor-pointer">
+        <p class="text-slate-800 text-[10px] font-black uppercase tracking-[0.4em] mb-4">
             &copy; 2026 SiteSnap • Pure Simplicity.
         </p>
-        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-widest max-w-md mx-auto px-6">
-            Disclaimer: SiteSnap uses AI to generate initial website sketches. Final content accuracy and legal compliance are the responsibility of the client.
+        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-widest max-w-md mx-auto px-6 leading-relaxed">
+            Disclaimer: SiteSnap utilizes advanced AI to generate initial website concepts. Accuracy, legal compliance, and final content verification are the sole responsibility of the client.
         </p>
     </footer>
 
     <div id="cookie-banner" class="bg-black text-white p-6 rounded-[30px] shadow-2xl flex flex-col md:flex-row items-center gap-4 border border-white/10">
         <p class="text-[11px] font-bold uppercase tracking-wider text-center md:text-left flex-grow">
-            We use cookies to analyze site traffic and optimize your experience. By continuing, you agree to our <a href="/privacy" class="underline hover:text-blue-400">Privacy Policy</a>.
+            We use cookies to analyze site traffic and optimize your experience. By continuing, you agree to our <button onclick="openLegal('privacy')" class="underline hover:text-blue-400">Privacy Policy</button>.
         </p>
         <button onclick="acceptCookies()" class="bg-white text-black text-[10px] font-black uppercase px-6 py-2 rounded-full hover:bg-blue-500 hover:text-white transition-all whitespace-nowrap">
             Accept
         </button>
     </div>
 
+    <div id="legal-modal" onclick="handleOutsideClick(event)">
+        <div class="bg-white rounded-[40px] max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl border-4 border-black overflow-hidden" onclick="event.stopPropagation()">
+            <div class="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h2 id="legal-title" class="text-2xl font-black uppercase italic electric-blue">Legal</h2>
+                <button onclick="closeLegal()" class="text-slate-400 hover:text-black font-black uppercase text-xs tracking-widest">Close [x]</button>
+            </div>
+            <div id="legal-content" class="p-8 overflow-y-auto text-slate-600 text-sm leading-relaxed space-y-4 font-medium text-left legal-box"></div>
+        </div>
+    </div>
+
     <script>
-        // לוגיקה פשוטה להצגת/הסתרת באנר עוגיות
+        const legalDocs = {
+            privacy: {
+                title: "Privacy Policy",
+                content: `
+                    <p><strong>Effective Date: April 23, 2026</strong></p>
+                    <p>This Privacy Policy describes how SiteSnap ("we", "us", "our") collects and uses information through our AI web architecture platform.</p>
+                    <p><strong>1. Information Collection:</strong> We collect business data provided during the sketch generation process, including business names, locations, and descriptions. We utilize cookies and behavioral tracking tools (e.g., Hotjar, Google Analytics) to improve our conversion funnel and user experience.</p>
+                    <p><strong>2. AI & Third-Party Processing:</strong> Your data is processed via third-party AI interfaces (OpenAI, Anthropic, Google) to generate code and content. By using our service, you acknowledge and consent to this automated processing.</p>
+                    <p><strong>3. Data Security:</strong> We employ industry-standard encryption to protect your project data. We do not sell personal data to third-party marketing firms.</p>`
+            },
+            terms: {
+                title: "Terms of Service",
+                content: `
+                    <p><strong>1. AI-Generated Prototypes:</strong> SiteSnap provides automated website sketches. These are starting points and require client verification before official launch.</p>
+                    <p><strong>2. Final Sale Policy:</strong> Due to the instant delivery of digital assets and AI compute costs, all licensing fees are non-refundable once activated.</p>
+                    <p><strong>3. Intellectual Property:</strong> Clients assume full responsibility for ensuring they have the rights to use all business names, logos, and uploaded images. SiteSnap does not verify copyright for AI-sourced stock imagery.</p>
+                    <p><strong>4. Limitation of Liability:</strong> SiteSnap is not liable for business interruptions, data inaccuracies, or legal disputes arising from the use of AI-generated content or code.</p>`
+            },
+            accessibility: {
+                title: "Accessibility",
+                content: `
+                    <p>SiteSnap is committed to digital inclusivity and conforming to WCAG 2.1 Level AA standards.</p>
+                    <p><strong>Design Standards:</strong> Our AI architecture is programmed to prioritize semantic HTML, keyboard navigation, and high-contrast color ratios.</p>
+                    <p><strong>Ongoing Improvement:</strong> We regularly audit our generation engine to minimize accessibility barriers for users with disabilities. Please contact us for support with any accessibility issues.</p>`
+            }
+        };
+
+        function openLegal(key) {
+            const doc = legalDocs[key];
+            document.getElementById('legal-title').innerText = doc.title;
+            document.getElementById('legal-content').innerHTML = doc.content;
+            document.getElementById('legal-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLegal() {
+            document.getElementById('legal-modal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function handleOutsideClick(e) { closeLegal(); }
+
         window.onload = function() {
             if (!localStorage.getItem('cookiesAccepted')) {
                 document.getElementById('cookie-banner').style.display = 'flex';
@@ -180,6 +201,5 @@
             document.getElementById('cookie-banner').style.display = 'none';
         }
     </script>
-
 </body>
 </html>
