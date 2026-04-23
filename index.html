@@ -27,111 +27,159 @@
             transform: translateY(-4px) scale(1.02);
             box-shadow: 0 20px 40px rgba(0, 112, 243, 0.2);
         }
+
+        /* Cookie Banner Style */
+        #cookie-banner {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: calc(100% - 40px);
+            max-width: 500px;
+        }
     </style>
 </head>
 <body class="antialiased text-black">
 
     <nav class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center">
         <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
-             alt="SiteSnap" class="h-28 w-auto object-contain mb-4">
+             alt="SiteSnap - Professional AI Web Architect Logo" class="h-28 w-auto object-contain mb-4">
         <div class="text-sm font-black uppercase tracking-[0.25em] text-slate-800">Premium Websites • Pure Simplicity</div>
     </nav>
 
-    <section class="hero-gradient py-16 px-6">
-        <div class="max-w-5xl mx-auto text-center">
-            <h1 class="text-5xl md:text-7xl font-black headline-spaced mb-8">
-                Your website is ready.<br>
-                <span class="electric-blue italic">You just haven't seen it yet.</span>
-            </h1>
-            <p class="text-xl md:text-2xl text-slate-600 font-semibold mb-10 max-w-2xl mx-auto leading-relaxed">
-                A professional website sketch built for your business in seconds. 
-                <span class="text-black font-black underline decoration-blue-500 decoration-4 underline-offset-8">No commitment. No deposit.</span> 
-                Experience your new brand today.
-            </p>
-            
-            <a href="/NewSketch" class="inline-block bg-electric-blue text-white font-black px-12 py-6 rounded-full text-2xl shadow-2xl hover:scale-105 transition-all transform uppercase btn-spaced">
-                Generate My Preview Now →
-            </a>
-            
-            <div class="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm font-black text-slate-900 uppercase tracking-widest">
-                <span>Instant Generation</span>
-                <span class="hidden md:block opacity 0">•</span>
-                <span>Private Preview</span>
-            </div>
-        </div>
-    </section>
-
-    <section class="py-20 bg-slate-50">
-        <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
-            <div class="relative">
-                <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop" 
-                     alt="Success" class="rounded-[40px] shadow-2xl grayscale hover:grayscale-0 transition-all duration-700">
-                <div class="absolute -bottom-4 -right-4 bg-white p-6 rounded-[30px] shadow-xl border-2 border-slate-100">
-                    <p class="text-4xl font-black electric-blue italic leading-none">$0</p>
-                    <p class="text-xs font-black uppercase text-slate-500 tracking-widest mt-1 text-center">To Start</p>
-                </div>
-            </div>
-            <div class="space-y-12">
-                <h2 class="text-5xl font-black uppercase italic tracking-tighter leading-none">The Power of Simple.</h2>
+    <main>
+        <section class="hero-gradient py-16 px-6">
+            <div class="max-w-5xl mx-auto text-center">
+                <h1 class="text-5xl md:text-7xl font-black headline-spaced mb-8">
+                    Your website is ready.<br>
+                    <span class="electric-blue italic">You just haven't seen it yet.</span>
+                </h1>
+                <p class="text-xl md:text-2xl text-slate-600 font-semibold mb-10 max-w-2xl mx-auto leading-relaxed">
+                    A professional website sketch built for your business in seconds. 
+                    <span class="text-black font-black underline decoration-blue-500 decoration-4 underline-offset-8">No commitment. No deposit.</span> 
+                    Experience your new brand today.
+                </p>
                 
-                <div class="space-y-10">
-                    <div class="flex gap-6">
-                        <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl">✨</div>
-                        <div>
-                            <h3 class="font-black text-xl mb-1 uppercase italic">Zero Risk</h3>
-                            <p class="text-slate-600 font-bold text-lg leading-snug">Why pay for a promise? We build your entire vision first. You only pay once you're ready to launch.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-6">
-                        <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl">🧠</div>
-                        <div>
-                            <h3 class="font-black text-xl mb-1 uppercase italic">Total Strategy</h3>
-                            <p class="text-slate-600 font-bold text-lg leading-snug">We handle the research and analysis, formulating a perfect brand narrative that captures your business identity instantly.</p>
-                        </div>
-                    </div>
+                <a href="/NewSketch" class="inline-block bg-electric-blue text-white font-black px-12 py-6 rounded-full text-2xl shadow-2xl hover:scale-105 transition-all transform uppercase btn-spaced">
+                    Generate My Preview Now →
+                </a>
+                
+                <div class="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm font-black text-slate-900 uppercase tracking-widest">
+                    <span>Instant Generation</span>
+                    <span class="hidden md:block opacity-30">•</span>
+                    <span>Private Preview</span>
+                </div>
+            </div>
+        </section>
 
-                    <div class="flex gap-6">
-                        <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl">🚀</div>
-                        <div>
-                            <h3 class="font-black text-xl mb-1 uppercase italic">Ready to Launch</h3>
-                            <p class="text-slate-600 font-bold text-lg leading-snug">No back-and-forth emails. Just a high-converting, professional digital asset ready for the world.</p>
+        <section class="py-20 bg-slate-50">
+            <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+                <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop" 
+                         alt="Business team collaborating on a professional website design project" class="rounded-[40px] shadow-2xl grayscale hover:grayscale-0 transition-all duration-700">
+                    <div class="absolute -bottom-4 -right-4 bg-white p-6 rounded-[30px] shadow-xl border-2 border-slate-100">
+                        <p class="text-4xl font-black electric-blue italic leading-none">$0</p>
+                        <p class="text-xs font-black uppercase text-slate-500 tracking-widest mt-1 text-center">To Start</p>
+                    </div>
+                </div>
+                <div class="space-y-12">
+                    <h2 class="text-5xl font-black uppercase italic tracking-tighter leading-none">The Power of Simple.</h2>
+                    
+                    <div class="space-y-10">
+                        <div class="flex gap-6">
+                            <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl" aria-hidden="true">✨</div>
+                            <div>
+                                <h3 class="font-black text-xl mb-1 uppercase italic">Zero Risk</h3>
+                                <p class="text-slate-600 font-bold text-lg leading-snug">Why pay for a promise? We build your entire vision first. You only pay once you're ready to launch.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-6">
+                            <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl" aria-hidden="true">🧠</div>
+                            <div>
+                                <h3 class="font-black text-xl mb-1 uppercase italic">Total Strategy</h3>
+                                <p class="text-slate-600 font-bold text-lg leading-snug">We handle the research and analysis, formulating a perfect brand narrative that captures your business identity instantly.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-6">
+                            <div class="bg-white h-14 w-14 shrink-0 rounded-2xl shadow-sm flex items-center justify-center text-3xl" aria-hidden="true">🚀</div>
+                            <div>
+                                <h3 class="font-black text-xl mb-1 uppercase italic">Ready to Launch</h3>
+                                <p class="text-slate-600 font-bold text-lg leading-snug">No back-and-forth emails. Just a high-converting, professional digital asset ready for the world.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section class="py-20 bg-white px-6">
-        <div class="max-w-4xl mx-auto text-center premium-border p-12 md:p-20 rounded-[60px] relative bg-white shadow-2xl">
-            
-            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">
-                Limited Lifetime Access
+        <section class="py-20 bg-white px-6">
+            <div class="max-w-4xl mx-auto text-center premium-border p-12 md:p-20 rounded-[60px] relative bg-white shadow-2xl">
+                <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">
+                    Limited Lifetime Access
+                </div>
+                
+                <h2 class="text-4xl md:text-5xl font-black mb-8 uppercase italic leading-tight headline-spaced">
+                    Ready to see your business in a new <span class="electric-blue">light</span>?
+                </h2>
+                
+                <p class="text-xl text-slate-700 font-bold mb-10 max-w-xl mx-auto uppercase tracking-wide">
+                    Get your personalized professional sketch today. <br>
+                    <span class="text-slate-400 opacity-60" aria-hidden="true">•</span> 100% Free <span class="text-slate-400 opacity-60" aria-hidden="true">•</span> No commitment <span class="text-slate-400 opacity-60" aria-hidden="true">•</span>
+                </p>
+                
+                <a href="/NewSketch" class="cta-button-final inline-block border-4 border-blue-500 electric-blue px-10 py-5 rounded-2xl text-2xl md:text-3xl font-black uppercase italic btn-spaced">
+                    Generate My Preview Now →
+                </a>
             </div>
-            
-            <h2 class="text-4xl md:text-5xl font-black mb-8 uppercase italic leading-tight headline-spaced">
-                Ready to see your business in a new <span class="electric-blue">light</span>?
-            </h2>
-            
-            <p class="text-xl text-slate-700 font-bold mb-10 max-w-xl mx-auto uppercase tracking-wide">
-                Get your personalized professional sketch today. <br>
-                <span class="text-slate-400 opacity-60">•</span> 100% Free <span class="text-slate-400 opacity-60">•</span> No commitment <span class="text-slate-400 opacity-60">•</span>
-            </p>
-            
-            <a href="/NewSketch" class="cta-button-final inline-block border-4 border-blue-500 electric-blue px-10 py-5 rounded-2xl text-2xl md:text-3xl font-black uppercase italic btn-spaced">
-                Generate My Preview Now →
-            </a>
-        </div>
-    </section>
+        </section>
+    </main>
 
-    <footer class="pb-16 pt-10 text-center bg-white">
+    <footer class="pb-16 pt-10 text-center bg-white border-t border-slate-50">
+        <div class="flex flex-wrap gap-4 justify-center text-[10px] uppercase font-black tracking-widest text-slate-400 mb-8">
+            <a href="/privacy" class="hover:text-black transition-colors">Privacy Policy</a>
+            <span class="opacity-30">|</span>
+            <a href="/terms" class="hover:text-black transition-colors">Terms of Service</a>
+            <span class="opacity-30">|</span>
+            <a href="/accessibility" class="hover:text-black transition-colors">Accessibility Statement</a>
+        </div>
+
         <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
-             alt="SiteSnap" class="h-10 w-auto mx-auto mb-6 opacity-80 grayscale hover:opacity-100 transition-opacity cursor-pointer">
-        <p class="text-slate-800 text-xs font-black uppercase tracking-[0.4em]">
+             alt="SiteSnap Footer Logo" class="h-10 w-auto mx-auto mb-6 opacity-80 grayscale hover:opacity-100 transition-opacity cursor-pointer">
+        
+        <p class="text-slate-800 text-[10px] font-black uppercase tracking-[0.4em] mb-2">
             &copy; 2026 SiteSnap • Pure Simplicity.
         </p>
+        <p class="text-slate-400 text-[9px] font-bold uppercase tracking-widest max-w-md mx-auto px-6">
+            Disclaimer: SiteSnap uses AI to generate initial website sketches. Final content accuracy and legal compliance are the responsibility of the client.
+        </p>
     </footer>
+
+    <div id="cookie-banner" class="bg-black text-white p-6 rounded-[30px] shadow-2xl flex flex-col md:flex-row items-center gap-4 border border-white/10">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-center md:text-left flex-grow">
+            We use cookies to analyze site traffic and optimize your experience. By continuing, you agree to our <a href="/privacy" class="underline hover:text-blue-400">Privacy Policy</a>.
+        </p>
+        <button onclick="acceptCookies()" class="bg-white text-black text-[10px] font-black uppercase px-6 py-2 rounded-full hover:bg-blue-500 hover:text-white transition-all whitespace-nowrap">
+            Accept
+        </button>
+    </div>
+
+    <script>
+        // לוגיקה פשוטה להצגת/הסתרת באנר עוגיות
+        window.onload = function() {
+            if (!localStorage.getItem('cookiesAccepted')) {
+                document.getElementById('cookie-banner').style.display = 'flex';
+            }
+        };
+
+        function acceptCookies() {
+            localStorage.setItem('cookiesAccepted', 'true');
+            document.getElementById('cookie-banner').style.display = 'none';
+        }
+    </script>
 
 </body>
 </html>
