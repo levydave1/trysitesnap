@@ -93,19 +93,16 @@
                 </div>
             </div>
 
-            <div onclick="selectPlan('new', this, 229)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col relative overflow-hidden">
-                <div class="absolute top-0 right-0 bg-blue-600 text-white text-[8px] px-3 py-1 font-black uppercase tracking-widest rounded-bl-lg">Popular</div>
+            <div class="plan-card bg-slate-50 opacity-60 p-8 rounded-[40px] flex flex-col relative overflow-hidden cursor-not-allowed border-dashed border-2 border-slate-200">
+                <div class="absolute top-0 right-0 bg-slate-400 text-white text-[8px] px-3 py-1 font-black uppercase tracking-widest rounded-bl-lg">Coming Soon</div>
                 <div class="mb-4">
-                    <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
-                    <div class="text-3xl font-black italic leading-none">$229</div>
+                    <span class="text-slate-300 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
+                    <div class="text-3xl font-black italic leading-none text-slate-300">$229</div>
                 </div>
-                <h3 class="text-lg font-black uppercase mb-2 leading-tight">Custom Domain</h3>
-                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year.</p>
+                <h3 class="text-lg font-black uppercase mb-2 leading-tight text-slate-400">Custom Domain</h3>
+                <p class="text-slate-400 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year.</p>
                 <div class="mt-auto flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center circle">
-                        <div class="w-3 h-3 rounded-full bg-electric-blue hidden inner-dot"></div>
-                    </div>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Select</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-300">Unavailable</span>
                 </div>
             </div>
 
@@ -171,13 +168,20 @@
         let selectedPlan = '';
         let selectedPrice = 199;
 
+        // שליפת ה-ID של MAKE מה-URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const recordId = urlParams.get('record_id');
+
         function selectPlan(type, element, price) {
+            if (type === 'new') return; // מונע בחירה של התוכנית שאינה זמינה
+
             selectedPlan = type;
             selectedPrice = price;
 
             document.querySelectorAll('.plan-card').forEach(card => {
                 card.classList.remove('selected');
-                card.querySelector('.inner-dot').classList.add('hidden');
+                const dot = card.querySelector('.inner-dot');
+                if (dot) dot.classList.add('hidden');
             });
             element.classList.add('selected');
             element.querySelector('.inner-dot').classList.remove('hidden');
@@ -209,11 +213,16 @@
         }
 
         function redirectToStripe() {
+            if (!recordId) {
+                alert("Missing Record ID. Please access this page from the link provided in your email.");
+                return;
+            }
+
             const stripeLinks = {
-                'subdomain': 'https://buy.stripe.com/test_7sYfZg3Xj0WC9qX5BT0gw00',
-                'existing': 'https://buy.stripe.com/test_7sYfZg3Xj0WC9qX5BT0gw00',
-                'new': 'https://buy.stripe.com/test_YOUR_LINK_FOR_229'
+                'existing': `https://buy.stripe.com/test_7sYfZg3Xj0WC9qX5BT0gw00?client_reference_id=${recordId}`,
+                'subdomain': `https://buy.stripe.com/test_14AdR8bpLaxc32z3tL0gw01?client_reference_id=${recordId}`
             };
+            
             window.location.href = stripeLinks[selectedPlan];
         }
     </script>
