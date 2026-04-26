@@ -25,7 +25,6 @@
         }
         .inner-dot { transition: all 0.2s; }
         
-        /* Modal Styles */
         #agreement-modal {
             display: none;
             position: fixed;
@@ -37,8 +36,11 @@
             justify-content: center;
             padding: 20px;
         }
+        .agreement-box { max-height: 300px; overflow-y: auto; }
         .agreement-box::-webkit-scrollbar { width: 6px; }
         .agreement-box::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        .disabled-btn { opacity: 0.3; cursor: not-allowed !important; pointer-events: none; }
     </style>
 </head>
 <body class="antialiased">
@@ -95,9 +97,9 @@
 
             <div class="plan-card bg-slate-50 opacity-60 p-8 rounded-[40px] flex flex-col relative overflow-hidden cursor-not-allowed border-dashed border-2 border-slate-200">
                 <div class="absolute top-0 right-0 bg-slate-400 text-white text-[8px] px-3 py-1 font-black uppercase tracking-widest rounded-bl-lg">Coming Soon</div>
-                <div class="mb-4">
-                    <span class="text-slate-300 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
-                    <div class="text-3xl font-black italic leading-none text-slate-300">$229</div>
+                <div class="mb-4 text-slate-300">
+                    <span class="text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
+                    <div class="text-3xl font-black italic leading-none">$229</div>
                 </div>
                 <h3 class="text-lg font-black uppercase mb-2 leading-tight text-slate-400">Custom Domain</h3>
                 <p class="text-slate-400 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year.</p>
@@ -105,11 +107,19 @@
                     <span class="text-[10px] font-black uppercase tracking-widest text-slate-300">Unavailable</span>
                 </div>
             </div>
+        </div>
 
+        <div id="domain-input-wrapper" class="hidden max-w-md mx-auto mb-12">
+            <div class="bg-blue-50 border-2 border-blue-100 rounded-3xl p-6 text-center">
+                <label class="block text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3 italic">Enter Your Domain Name</label>
+                <input type="text" id="customer-domain" placeholder="example.com" 
+                       class="w-full p-4 rounded-2xl border-2 border-white focus:border-blue-500 outline-none text-center font-bold text-lg shadow-sm">
+                <p id="domain-error" class="text-[9px] text-red-500 mt-2 font-black uppercase hidden tracking-widest">Please enter a valid domain (e.g. site.com)</p>
+            </div>
         </div>
 
         <div id="action-area" class="hidden text-center transform transition-all duration-500 translate-y-4 opacity-0">
-            <button onclick="openModal()" class="bg-black text-white font-black py-6 px-16 rounded-full text-2xl uppercase tracking-tighter shadow-2xl hover:bg-electric-blue hover:scale-105 transition-all">
+            <button id="confirm-btn" onclick="openModal()" class="bg-black text-white font-black py-6 px-16 rounded-full text-2xl uppercase tracking-tighter shadow-2xl hover:bg-electric-blue hover:scale-105 transition-all">
                 Confirm Selection →
             </button>
             <p class="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Final step before payment</p>
@@ -123,30 +133,18 @@
             
             <h2 class="text-3xl font-black uppercase italic mb-6">Service <span class="electric-blue">Agreement</span></h2>
             
-            <div class="agreement-box h-64 overflow-y-auto pr-4 mb-8 text-slate-600 text-sm font-medium leading-relaxed space-y-6 text-left">
+            <div class="agreement-box pr-4 mb-8 text-slate-600 text-sm font-medium leading-relaxed space-y-6 text-left">
                 <div>
                     <h4 class="text-black font-black uppercase text-xs mb-1">1. Lifetime License</h4>
-                    <p>SiteSnap grants a Lifetime License for the generated website. This is a one-time payment with no recurring platform fees.</p>
+                    <p>SiteSnap grants a Lifetime License for the generated website. One-time payment, no recurring fees.</p>
                 </div>
                 <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">2. Approval & No-Refunds</h4>
-                    <p>By proceeding, you approve the initial draft. Due to the digital nature of the service, all sales are final.</p>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">2. Approval & Final Sale</h4>
+                    <p>By proceeding, you approve the draft. All sales are final due to the nature of digital AI delivery.</p>
                 </div>
                 <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">3. Content & Copyright</h4>
-                    <p>Client assumes full responsibility for all content and images. SiteSnap is not liable for copyright issues; Client must verify rights for all displayed assets.</p>
-                </div>
-                <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">4. Domain Registration</h4>
-                    <p>New domain purchases ($30) cover the first year only. Future renewals are the Client's responsibility via the registrar.</p>
-                </div>
-                <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">5. Design Signature</h4>
-                    <p>A "Designed by SiteSnap" link will remain in the footer. Removal requires express written consent.</p>
-                </div>
-                <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">6. Liability</h4>
-                    <p>Services are provided "As-Is". SiteSnap is not liable for business interruption or data loss.</p>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">3. Ownership & Credits</h4>
+                    <p>Client owns the content. A small "Designed by SiteSnap" link remains in the footer.</p>
                 </div>
             </div>
 
@@ -167,33 +165,62 @@
     <script>
         let selectedPlan = '';
         let selectedPrice = 199;
-
-        // שליפת ה-ID של MAKE מה-URL
         const urlParams = new URLSearchParams(window.location.search);
         const recordId = urlParams.get('record_id');
+        const webhookUrl = "https://hook.eu2.make.com/qxlsjiy1kzakh6qgujtdu2igyxk9h5lk";
+
+        function validateDomain(val) {
+            const regex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
+            return regex.test(val.replace(/^(https?:\/\/)?(www\.)?/, ''));
+        }
+
+        function checkFormValidity() {
+            const btn = document.getElementById('confirm-btn');
+            const errorHint = document.getElementById('domain-error');
+            
+            if (selectedPlan === 'subdomain') {
+                btn.classList.remove('disabled-btn');
+                return true;
+            } else if (selectedPlan === 'existing') {
+                const domainVal = document.getElementById('customer-domain').value;
+                if (validateDomain(domainVal)) {
+                    btn.classList.remove('disabled-btn');
+                    errorHint.classList.add('hidden');
+                    return true;
+                } else {
+                    btn.classList.add('disabled-btn');
+                    if(domainVal.length > 3) errorHint.classList.remove('hidden');
+                    return false;
+                }
+            }
+            return false;
+        }
 
         function selectPlan(type, element, price) {
-            if (type === 'new') return; // מונע בחירה של התוכנית שאינה זמינה
-
             selectedPlan = type;
             selectedPrice = price;
 
-            document.querySelectorAll('.plan-card').forEach(card => {
-                card.classList.remove('selected');
-                const dot = card.querySelector('.inner-dot');
-                if (dot) dot.classList.add('hidden');
-            });
+            document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('selected', 'premium-border'));
             element.classList.add('selected');
-            element.querySelector('.inner-dot').classList.remove('hidden');
+            
+            const domainWrapper = document.getElementById('domain-input-wrapper');
+            if (type === 'existing') {
+                domainWrapper.classList.remove('hidden');
+            } else {
+                domainWrapper.classList.add('hidden');
+            }
 
             const actionArea = document.getElementById('action-area');
             actionArea.classList.remove('hidden');
             setTimeout(() => { actionArea.classList.add('opacity-100', 'translate-y-0'); }, 10);
-
+            
             document.getElementById('modal-price').innerText = price;
+            checkFormValidity();
         }
 
-        function openModal() { document.getElementById('agreement-modal').style.display = 'flex'; }
+        document.getElementById('customer-domain').addEventListener('input', checkFormValidity);
+
+        function openModal() { if(checkFormValidity()) document.getElementById('agreement-modal').style.display = 'flex'; }
         function closeModal() { document.getElementById('agreement-modal').style.display = 'none'; }
 
         function toggleAgree() {
@@ -212,10 +239,15 @@
             }
         }
 
-        function redirectToStripe() {
-            if (!recordId) {
-                alert("Missing Record ID. Please access this page from the link provided in your email.");
-                return;
+        async function redirectToStripe() {
+            if (!recordId) return alert("Missing Record ID. Please use the link from your email.");
+
+            if (selectedPlan === 'existing') {
+                const domain = document.getElementById('customer-domain').value;
+                try {
+                    // שליחה לוובהוק לעדכון איירטיבל לפני התשלום
+                    await fetch(`${webhookUrl}?record_id=${recordId}&domain=${domain}`, { mode: 'no-cors' });
+                } catch (e) { console.log("Domain sync initiated"); }
             }
 
             const stripeLinks = {
