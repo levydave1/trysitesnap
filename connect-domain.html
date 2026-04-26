@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy DNS Guide | SiteSnap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; scroll-behavior: smooth; }
+        .electric-blue { color: #0070f3; }
+        .bg-electric-blue { background-color: #0070f3; }
+        .copy-card { border: 2px solid #f1f5f9; transition: all 0.2s; cursor: pointer; }
+        .copy-card:hover { border-color: #0070f3; background-color: #f8faff; }
+        .faq-item { border-bottom: 1px solid #f1f5f9; }
+    </style>
+</head>
+<body class="antialiased text-black">
+
+    <header class="max-w-4xl mx-auto px-6 py-12 flex flex-col items-center">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-16 w-auto mb-4">
+        <div class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Launch Guide</div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-6 pb-24">
+        
+        <div class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-black italic tracking-tighter mb-4 uppercase">
+                Connect Your <span class="electric-blue">Domain</span>
+            </h1>
+            <p class="text-slate-500 font-bold text-sm uppercase tracking-widest">Follow these simple steps to bring your site live.</p>
+        </div>
+
+        <section class="mb-16">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm">1</span>
+                <h2 class="text-xl font-black uppercase italic">Copy these values</h2>
+            </div>
+            
+            <div class="grid gap-4">
+                <div class="copy-card p-6 rounded-3xl flex justify-between items-center" onclick="copyText('76.76.21.21')">
+                    <div>
+                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-1">A Record (Host: @)</span>
+                        <code class="text-2xl font-black">76.76.21.21</code>
+                    </div>
+                    <span class="text-[10px] font-black uppercase text-slate-300">Click to Copy</span>
+                </div>
+
+                <div class="copy-card p-6 rounded-3xl flex justify-between items-center" onclick="copyText('cname.vercel-dns.com')">
+                    <div>
+                        <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-1">CNAME Record (Host: www)</span>
+                        <code class="text-xl font-black">cname.vercel-dns.com</code>
+                    </div>
+                    <span class="text-[10px] font-black uppercase text-slate-300">Click to Copy</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-16">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm">2</span>
+                <h2 class="text-xl font-black uppercase italic">Where to paste them?</h2>
+            </div>
+
+            <div class="space-y-4">
+                <details class="group bg-slate-50 rounded-3xl p-6">
+                    <summary class="list-none flex justify-between items-center cursor-pointer font-black uppercase text-sm">
+                        GoDaddy Instructions
+                        <span class="group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 text-sm font-medium text-slate-600 leading-relaxed">
+                        1. Log in to GoDaddy Portfolio. <br>
+                        2. Click <strong>DNS</strong> next to your domain. <br>
+                        3. Find the <strong>A Record</strong> with name <strong>@</strong> and change its value to <strong>76.76.21.21</strong>. <br>
+                        4. Find <strong>CNAME</strong> with name <strong>www</strong> and set it to <strong>cname.vercel-dns.com</strong>.
+                    </div>
+                </details>
+
+                <details class="group bg-slate-50 rounded-3xl p-6">
+                    <summary class="list-none flex justify-between items-center cursor-pointer font-black uppercase text-sm">
+                        Namecheap Instructions
+                        <span class="group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 text-sm font-medium text-slate-600 leading-relaxed">
+                        1. Log in and go to <strong>Domain List</strong>. <br>
+                        2. Click <strong>Manage</strong> -> <strong>Advanced DNS</strong>. <br>
+                        3. Add/Edit <strong>A Record</strong>: Host <strong>@</strong>, Value <strong>76.76.21.21</strong>. <br>
+                        4. Add/Edit <strong>CNAME</strong>: Host <strong>www</strong>, Value <strong>cname.vercel-dns.com</strong>.
+                    </div>
+                </details>
+
+                <details class="group bg-slate-50 rounded-3xl p-6">
+                    <summary class="list-none flex justify-between items-center cursor-pointer font-black uppercase text-sm">
+                        Any Other Provider
+                        <span class="group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div class="mt-4 text-sm font-medium text-slate-600 leading-relaxed">
+                        Look for "DNS Settings", "Zone Editor" or "Manage DNS". You just need to update the <strong>A Record</strong> and <strong>CNAME</strong> using the values from Step 1.
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section class="mb-16">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm">3</span>
+                <h2 class="text-xl font-black uppercase italic">Common Questions</h2>
+            </div>
+
+            <div class="space-y-6">
+                <div class="faq-item pb-6">
+                    <h4 class="font-black uppercase text-xs mb-2 italic">How long does it take?</h4>
+                    <p class="text-slate-500 text-sm font-medium">DNS changes usually take 10-30 minutes, but can take up to 24 hours to reach everyone worldwide. Be patient!</p>
+                </div>
+                <div class="faq-item pb-6">
+                    <h4 class="font-black uppercase text-xs mb-2 italic">Will my email stop working?</h4>
+                    <p class="text-slate-500 text-sm font-medium">No. As long as you only touch the "A" and "CNAME" records and leave the "MX" records alone, your email (Outlook/Gmail) will work perfectly.</p>
+                </div>
+                <div class="faq-item pb-6">
+                    <h4 class="font-black uppercase text-xs mb-2 italic">How do I know it's working?</h4>
+                    <p class="text-slate-500 text-sm font-medium">You can check your status live at <a href="https://dnschecker.org" target="_blank" class="text-blue-600 underline">DNSChecker.org</a>. Enter your domain and look for the IP 76.76.21.21.</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="bg-black rounded-[40px] p-10 text-center text-white">
+            <h3 class="text-xl font-black uppercase italic mb-4">Still Stuck?</h3>
+            <p class="text-slate-400 text-sm mb-6 font-medium">We're here to help. Send us a message and we'll walk you through it.</p>
+            <a href="mailto:David@arlz-group.com" class="inline-block bg-white text-black font-black px-8 py-4 rounded-full uppercase text-xs tracking-widest hover:bg-electric-blue hover:text-white transition-all">Contact Support</a>
+        </div>
+
+    </main>
+
+    <script>
+        function copyText(text) {
+            navigator.clipboard.writeText(text);
+            alert("Copied: " + text);
+        }
+    </script>
+</body>
+</html>
