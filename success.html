@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful | SiteSnap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; }
+        .electric-blue { color: #0070f3; }
+        .bg-electric-blue { background-color: #0070f3; }
+        .premium-border { border: 6px solid #000; }
+        
+        .success-check {
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center border-b border-slate-50">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-20 w-auto mb-4">
+        <div class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Transaction Confirmed</div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-6 pb-24 pt-16 text-center">
+        
+        <div class="mb-10 inline-block success-check">
+            <div class="w-24 h-24 bg-electric-blue rounded-full flex items-center justify-center shadow-2xl shadow-blue-200">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+        </div>
+
+        <h1 class="text-5xl md:text-7xl font-black italic tracking-tighter mb-6 leading-none uppercase">
+    WELCOME TO THE <br>
+    <span class="text-6xl md:text-8xl">
+        <span class="electric-blue">FAMILY</span>.
+    </span>
+</h1>
+
+        <div class="premium-border rounded-[50px] p-10 md:p-14 bg-white shadow-2xl mb-12 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10"></div>
+            
+            <div id="plan-content" class="space-y-6 text-center">
+                <p class="text-xl font-bold text-slate-400 animate-pulse">VERIFYING YOUR ORDER...</p>
+            </div>
+
+            <hr class="my-8 border-slate-100">
+
+            <div class="flex flex-col items-center gap-4">
+                <div class="bg-blue-50 px-6 py-3 rounded-full flex items-center gap-3">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                    </span>
+                    <p class="text-sm font-black uppercase tracking-widest text-blue-600">Next Step: Summary Email</p>
+                </div>
+                <p class="text-slate-500 font-bold max-w-sm leading-relaxed">
+                    Check your inbox! In a few minutes, you will receive a summary email with all the details!
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-4 justify-center">
+            <a href="/" class="bg-black text-white px-10 py-5 rounded-full font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-800 transition-all">Back to Home</a>
+            <button onclick="window.print()" class="border-2 border-slate-100 text-slate-400 px-10 py-5 rounded-full font-black uppercase text-[10px] tracking-[0.2em] hover:text-black hover:border-black transition-all">Print Receipt</button>
+        </div>
+
+    </main>
+
+    <footer class="py-12 text-center bg-white border-t border-slate-100">
+        <p class="text-slate-800 text-xs font-black uppercase tracking-[0.4em]">© 2026 SiteSnap • Pure Simplicity.</p>
+    </footer>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const plan = urlParams.get('plan') || 'subdomain';
+        const contentArea = document.getElementById('plan-content');
+
+        const messages = {
+            'subdomain': {
+                title: 'SITESNAP SUBDOMAIN ACTIVE',
+                desc: 'Our system has begun deploying your site under our dedicated address. Your site will be live within minutes.'
+            },
+            'existing': {
+                title: 'CONNECTION IN PROGRESS',
+                desc: 'We have started the process of linking your owned domain. Once DNS propagation is detected, your site will go live automatically.'
+            },
+            'new': {
+                title: 'DOMAIN SECURED',
+                desc: 'Your new domain purchase was successful! Our concierge team is now configuring the settings for you.'
+            }
+        };
+
+        const activeMsg = messages[plan] || messages['subdomain'];
+
+        contentArea.innerHTML = `
+            <h3 class="text-2xl font-black uppercase italic mb-2 tracking-tight">${activeMsg.title}</h3>
+            <p class="text-slate-600 font-bold text-lg leading-relaxed max-w-xl mx-auto">
+                ${activeMsg.desc}
+            </p>
+        `;
+    </script>
+</body>
+</html>
