@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalizing Your Sketch | SiteSnap</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f9fafb; 
+            /* הסרנו את ה-overflow: hidden שחסם את הגלילה */
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .electric-blue { color: #0070f3; }
+        
+        #tally-iframe-container { 
+            flex-grow: 1; 
+            width: 100%;
+            /* הסרנו את ה-overflow: hidden כאן */
+        }
+        
+        /* הגדרה שמאפשרת ל-Tally לשלוט בגובה בצורה דינמית */
+        iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="bg-white border-b border-slate-100 shadow-sm z-50 pt-10 pb-8">
+        <div class="max-w-3xl mx-auto px-6 flex flex-col items-start">
+            <div class="mb-8">
+                <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
+                     alt="SiteSnap" 
+                     class="h-24 w-auto object-contain">
+            </div>
+
+            <div class="w-full max-w-xl bg-blue-50 border border-blue-100 px-8 py-4 rounded-[24px] text-center shadow-sm">
+                <p class="text-base font-semibold text-slate-700 leading-relaxed">
+                    <span class="electric-blue uppercase tracking-tighter font-black">Finalizing your vision:</span><br>
+                    Answer a few short questions, and we'll generate your upgraded high-fidelity sketch.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <main id="tally-iframe-container">
+        </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const recordId = urlParams.get('record_id') || 'user_preview';
+        const businessName = urlParams.get('business_name') || 'Your Business';
+
+        // הוספנו את הפרמטרים ל-URL ושינינו ל-Embed
+        const tallyUrl = `https://tally.so/embed/VL15GN?record_id=${recordId}&business_name=${encodeURIComponent(businessName)}&hideTitle=1&transparentBackground=1&dynamicHeight=1`;
+
+        const iframe = document.createElement('iframe');
+        iframe.src = tallyUrl;
+        iframe.title = "SiteSnap Personalization Wizard";
+        
+        // הגדרות חשובות ש-Tally צריך כדי שהסקריפט שלהם יעבוד
+        iframe.setAttribute('data-tally-src', tallyUrl);
+        iframe.style.width = "100%";
+        iframe.style.height = "500px"; // גובה התחלתי, הסקריפט יגדיל אותו
+        
+        document.getElementById('tally-iframe-container').appendChild(iframe);
+    </script>
+    
+    <script async src="https://tally.so/widgets/embed.js"></script>
+</body>
+</html>
