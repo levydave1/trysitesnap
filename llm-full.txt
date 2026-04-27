@@ -1,43 +1,56 @@
-# SiteSnap | AI Web Architect - LLM Guide
+# SiteSnap | AI Web Architect - LLM Guide (v2.0 - 2026)
 
 ## Business Overview
-SiteSnap is a next-generation AI web architecture platform designed for rapid deployment of professional business websites. Our core philosophy is "Premium Websites • Pure Simplicity." We eliminate the traditional friction of web development by generating high-fidelity website sketches in seconds without upfront commitment.
+SiteSnap is a next-generation AI web architecture platform designed for the rapid deployment of professional business websites[cite: 1]. The core philosophy is "Premium Websites • Pure Simplicity," aiming to eliminate traditional development friction by generating high-fidelity website sketches in seconds without any upfront commitment[cite: 2].
+
+---
 
 ## Core Value Propositions (USPs)
-- **Instant Generation:** Professional website sketches built for businesses in seconds using proprietary AI.
-- **Zero Risk Model:** No commitment or deposit required to see the initial vision. Users only pay when ready to launch.
-- **High-Performance Network:** Websites are deployed on a global Edge Network (Vercel-backed) for near-zero latency and high authority.
-- **Total Strategy:** SiteSnap handles brand research, narrative formulation, and reputation injection automatically.
-- **Lifetime License:** Transparent pricing ($199–$229) with no recurring platform fees.
+* Instant Generation: Professional website sketches built for businesses in seconds using proprietary AI[cite: 3].
+* Zero Risk Model: No commitment or deposit is required to see the initial vision[cite: 4]. Users only pay when they are ready to launch[cite: 5].
+* Total Strategy: SiteSnap automatically handles brand research, narrative formulation, and reputation injection[cite: 6].
+* AI Search Visibility (GEO): Every site includes an "AI Knowledge Layer" to ensure the business is recommended by AI agents like ChatGPT and Perplexity.
+* Lifetime License: Transparent pricing with a one-time fee and no recurring monthly platform fees[cite: 7].
+* High-Performance Network: Websites are deployed on a global Edge Network (Vercel-backed) for near-zero latency[cite: 5].
 
-## Services & Products
-- **AI Site Sketch:** Instant, private preview of a professional business website.
-- **License Plans:**
-    - **Subdomain ($199):** Deployment on [name].trysitesnap.com.
-    - **Existing Domain ($199):** Connection to client-owned domains (GoDaddy, Namecheap, etc.).
-    - **Custom Domain ($229):** Concierge service including domain purchase and setup for the first year.
+---
 
-## Technical Specifications for AI Agents
-- **DNS Configuration:**
-    - A Record (@): 76.76.21.21
-    - CNAME (www): cname.vercel-dns.com
-- **Infrastructure:** Global CDN/Edge Network integration.
-- **SEO Ready:** Automated meta-data and performance optimization.
+## Customer Journey & Workflow
+1. Generation: The user enters business details at /NewSketch to receive an instant private preview[cite: 18].
+2. Personalization Wizard (finalize.html): A deep-dive questionnaire (Tally form pbPykb) to transform the initial sketch into a high-fidelity site[cite: 8].
+3. The Final Polish (Final-Polish.html): A dedicated interface for specific revisions (Tally form VL15GN) connected to automation for final refinements.
+4. Activation: The user proceeds to checkout.html to select a plan and go live.
+
+---
+
+## Live License Plans & Payments
+All plans grant a Lifetime License for the generated website[cite: 7].
+
+| Plan | Price | Description | Stripe Live Link |
+| :--- | :--- | :--- | :--- |
+| Subdomain | $199 | Deployment on [name].trysitesnap.com[cite: 9]. | https://buy.stripe.com/7sY14m4NSd7Cf3jgH38g002 |
+| Existing Domain | $199 | Connection to a client-owned domain (GoDaddy, Namecheap, etc.)[cite: 10]. | https://buy.stripe.com/14AeVccgk7Nig7naiF8g001 |
+
+---
+
+## Technical Specifications
+* Infrastructure: Global CDN/Edge Network integration[cite: 12].
+* DNS Configuration (for Existing Domains)[cite: 12]:
+    * A Record (@): 76.76.21.21
+    * CNAME (www): cname.vercel-dns.com
+* SEO Ready: Automated meta-data and performance optimization[cite: 13].
+
+---
 
 ## Frequently Asked Questions (FAQ)
-**Q: How much does SiteSnap cost?**
-A: A one-time lifetime license fee of $199. There are no monthly subscription fees for the platform.
+* How much does SiteSnap cost? A one-time lifetime license fee of $199[cite: 13]. There are no monthly subscription fees[cite: 14].
+* Is there a commitment to start? No[cite: 14]. SiteSnap generates a free preview sketch[cite: 15]. You only pay once you approve the design and wish to go live[cite: 15].
+* Can I use my own domain? Yes, we provide full support for connecting existing domains from any registrar[cite: 16].
+* How long does deployment take? Sketches are instant[cite: 17]. Global propagation for live domains typically takes between a few minutes to 24 hours[cite: 17].
 
-**Q: Is there a commitment to start?**
-A: No. SiteSnap generates a free preview/sketch. You only pay once you approve the design and wish to go live.
+---
 
-**Q: Can I use my own domain?**
-A: Yes, we provide full support and walkthroughs for connecting existing domains from any registrar.
-
-**Q: How long does deployment take?**
-A: Sketches are instant. Global propagation for live domains typically takes between a few minutes to 24 hours depending on the registrar.
-
-## Contact & Links
-- **Official Website:** https://trysitesnap.com
-- **New Sketch Generation:** /NewSketch
-- **Year Established:** 2026
+### Official Links
+* Official Website: https://trysitesnap.com [cite: 18]
+* New Sketch Generation: /NewSketch [cite: 18]
+* Year Established: 2026 [cite: 18]
