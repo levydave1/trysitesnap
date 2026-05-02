@@ -41,6 +41,22 @@
         .agreement-box::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 
         .disabled-btn { opacity: 0.3; cursor: not-allowed !important; pointer-events: none; }
+        
+        .popular-badge {
+            position: absolute;
+            top: -14px;
+            right: 24px;
+            background-color: #0070f3;
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 6px 14px;
+            border-radius: 99px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 0 4px 12px rgba(0, 112, 243, 0.3);
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -74,7 +90,7 @@
                 <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">Use our free subdomain: name.trysitesnap.com</p>
                 <div class="mt-auto flex items-center gap-2">
                     <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center circle">
-                        <div class="w-3 h-3 rounded-full bg-electric-blue hidden inner-dot"></div>
+                        <div class="w-3 h-3 rounded-full bg-black hidden inner-dot"></div>
                     </div>
                     <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Select</span>
                 </div>
@@ -89,27 +105,28 @@
                 <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">Connect a domain you already own (GoDaddy, etc.)</p>
                 <div class="mt-auto flex items-center gap-2">
                     <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center circle">
-                        <div class="w-3 h-3 rounded-full bg-electric-blue hidden inner-dot"></div>
+                        <div class="w-3 h-3 rounded-full bg-black hidden inner-dot"></div>
                     </div>
                     <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Select</span>
                 </div>
             </div>
 
             <div onclick="selectPlan('new', this, 229)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col relative">
-    <div class="absolute top-0 right-0 bg-electric-blue text-white text-[8px] px-3 py-1 font-black uppercase tracking-widest rounded-bl-lg">Most Popular</div>
-    <div class="mb-4">
-        <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
-        <div class="text-3xl font-black italic leading-none">$229</div>
-    </div>
-    <h3 class="text-lg font-black uppercase mb-2 leading-tight">Custom Domain</h3>
-    <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year. Professional & seamless.</p>
-    <div class="mt-auto flex items-center gap-2">
-        <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center circle">
-            <div class="w-3 h-3 rounded-full bg-electric-blue hidden inner-dot"></div>
+                <div class="popular-badge">Most Popular</div>
+                <div class="mb-4">
+                    <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
+                    <div class="text-3xl font-black italic leading-none">$229</div>
+                </div>
+                <h3 class="text-lg font-black uppercase mb-2 leading-tight">Custom Domain</h3>
+                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year. Professional & seamless.</p>
+                <div class="mt-auto flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center circle">
+                        <div class="w-3 h-3 rounded-full bg-black hidden inner-dot"></div>
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Select</span>
+                </div>
+            </div>
         </div>
-        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Select</span>
-    </div>
-</div>
 
         <div id="domain-input-wrapper" class="hidden max-w-md mx-auto mb-12">
             <div class="bg-blue-50 border-2 border-blue-100 rounded-3xl p-6 text-center">
@@ -169,6 +186,7 @@
         let selectedPrice = 199;
         const urlParams = new URLSearchParams(window.location.search);
         const recordId = urlParams.get('record_id');
+        const businessName = urlParams.get('business_name') || '';
         const webhookUrl = "https://hook.eu2.make.com/qxlsjiy1kzakh6qgujtdu2igyxk9h5lk";
 
         function validateDomain(val) {
@@ -180,17 +198,22 @@
             const btn = document.getElementById('confirm-btn');
             const errorHint = document.getElementById('domain-error');
             
-            if (selectedPlan === 'subdomain') {
+            // איפוס ראשוני - מכבים את הכפתור
+            btn.classList.add('disabled-btn');
+
+            if (selectedPlan === 'subdomain' || selectedPlan === 'new') {
                 btn.classList.remove('disabled-btn');
+                errorHint.classList.add('hidden');
                 return true;
-            } else if (selectedPlan === 'existing') {
+            } 
+            
+            if (selectedPlan === 'existing') {
                 const domainVal = document.getElementById('customer-domain').value;
                 if (validateDomain(domainVal)) {
                     btn.classList.remove('disabled-btn');
                     errorHint.classList.add('hidden');
                     return true;
                 } else {
-                    btn.classList.add('disabled-btn');
                     if(domainVal.length > 3) errorHint.classList.remove('hidden');
                     return false;
                 }
@@ -202,8 +225,11 @@
             selectedPlan = type;
             selectedPrice = price;
 
-            document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('selected', 'premium-border'));
+            document.querySelectorAll('.plan-card').forEach(card => card.classList.remove('selected'));
             element.classList.add('selected');
+            
+            document.querySelectorAll('.inner-dot').forEach(dot => dot.classList.add('hidden'));
+            element.querySelector('.inner-dot').classList.remove('hidden');
             
             const domainWrapper = document.getElementById('domain-input-wrapper');
             if (type === 'existing') {
@@ -216,7 +242,16 @@
             actionArea.classList.remove('hidden');
             setTimeout(() => { actionArea.classList.add('opacity-100', 'translate-y-0'); }, 10);
             
+            const finalBtn = document.getElementById('final-pay-btn');
+            if (type === 'new') {
+                finalBtn.innerText = "Find My Domain →";
+            } else {
+                finalBtn.innerHTML = `Agree & Pay $<span id="modal-price">${price}</span> →`;
+            }
+            
             document.getElementById('modal-price').innerText = price;
+            
+            // קריאה ישירה לבדיקת תקינות כדי להדליק את הכפתור מיד
             checkFormValidity();
         }
 
@@ -242,12 +277,16 @@
         }
 
         async function redirectToStripe() {
-            if (!recordId) return alert("Missing Record ID. Please use the link from your email.");
+            if (!recordId) return alert("Missing Record ID.");
+
+            if (selectedPlan === 'new') {
+                window.location.href = `purchase-domain.html?record_id=${recordId}&business_name=${encodeURIComponent(businessName)}`;
+                return;
+            }
 
             if (selectedPlan === 'existing') {
                 const domain = document.getElementById('customer-domain').value;
                 try {
-                    // שליחה לוובהוק לעדכון איירטיבל לפני התשלום
                     await fetch(`${webhookUrl}?record_id=${recordId}&domain=${domain}`, { mode: 'no-cors' });
                 } catch (e) { console.log("Domain sync initiated"); }
             }
