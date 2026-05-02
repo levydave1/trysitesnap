@@ -11,28 +11,20 @@
         .electric-blue { color: #0070f3; }
         .bg-electric-blue { background-color: #0070f3; }
         .premium-border { border: 6px solid #000; }
+        .label-power-black { color: #000; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; font-size: 14px; display: block; margin-bottom: 10px; }
+        
         .status-area { display: none; animation: fadeIn 0.4s ease-out; }
         .status-area.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Modal - Dynamic & No Wrap */
-        #confirm-modal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
-            z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 20px; 
-        }
-        #confirm-modal.active { display: flex; }
-        
-        .modal-content { 
-            max-width: 90vw; min-width: 320px; width: fit-content; 
-            transition: all 0.3s ease; 
-        }
 
-        #modal-domain {
-            white-space: nowrap; /* מונע ירידת שורה */
-            display: block;
-            margin: 15px auto;
-            transition: font-size 0.2s ease;
-        }
+        .alt-btn { border: 2px solid #f1f5f9; transition: all 0.2s; }
+        .alt-btn:hover { border-color: #0070f3; background-color: #f8faff; }
+
+        /* Modal - Dynamic Font */
+        #confirm-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 20px; }
+        #confirm-modal.active { display: flex; }
+        .modal-content { max-width: 90vw; width: fit-content; min-width: 320px; }
+        #modal-domain { white-space: nowrap; display: block; transition: font-size 0.2s; }
     </style>
 </head>
 <body class="antialiased text-black">
@@ -43,37 +35,44 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-6 pb-24 pt-8">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-black italic mb-6">Final Step: Go <span class="electric-blue">Live</span>.</h1>
+            <p class="text-lg text-slate-600 font-bold uppercase tracking-wide">Secure your unique digital address.</p>
+        </div>
+
         <div class="max-w-xl mx-auto premium-border p-10 md:p-16 rounded-[60px] relative bg-white shadow-2xl">
+            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">Concierge Domain Setup</div>
+
             <div id="search-box">
+                <label class="label-power-black text-center">Enter Desired Domain</label>
                 <input type="text" id="target_domain" placeholder="mybusiness.com" class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center mb-4">
-                <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest">Check Availability -></button>
+                <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest mt-2">Check Availability -></button>
             </div>
 
-            <div id="results-area" class="status-area mt-4 text-center">
-                <div id="primary-status" class="p-6 rounded-3xl mb-4">
-                    <h3 id="primary-name" class="text-xl font-black mb-2 italic"></h3>
+            <div id="results-area" class="status-area">
+                <div id="primary-status" class="mb-8 text-center">
+                    <h3 id="primary-name" class="text-2xl font-black mb-4 italic"></h3>
                     <div id="primary-action"></div>
                 </div>
-                <div class="border-t border-slate-100 pt-6">
-                    <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Alternatives</h4>
+
+                <div class="border-t-4 border-black pt-8 mt-8">
+                    <label class="label-power-black text-center mb-6">Alternative Suggestions</label>
                     <div id="alt-list" class="space-y-3"></div>
                 </div>
-                <button onclick="resetSearch()" class="w-full mt-8 text-xs font-black uppercase tracking-widest text-slate-400">← Back</button>
+
+                <button onclick="resetSearch()" class="w-full mt-10 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-black transition-all">← Search another name</button>
             </div>
         </div>
     </main>
 
-    <!-- פופ-אפ דינמי -->
     <div id="confirm-modal">
-        <div class="bg-white p-10 md:p-14 rounded-[50px] modal-content premium-border shadow-2xl">
-            <h3 class="text-2xl font-black italic mb-2 uppercase">Confirm Selection</h3>
-            <p class="text-slate-400 font-bold uppercase text-[9px] tracking-widest">You are about to secure:</p>
+        <div class="bg-white p-12 rounded-[60px] modal-content text-center premium-border shadow-2xl">
+            <h3 class="text-3xl font-black italic mb-4">Confirm Selection</h3>
+            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest mb-2">You are about to secure:</p>
+            <span id="modal-domain" class="electric-blue font-black tracking-tight mb-8"></span>
             
-            <!-- השם שישנה גודל פונט אוטומטית -->
-            <span id="modal-domain" class="electric-blue font-black tracking-tight"></span>
-            
-            <div class="space-y-3 mt-8">
-                <button onclick="proceedToStripe()" class="w-full bg-black text-white font-black py-5 rounded-2xl uppercase tracking-widest hover:bg-electric-blue transition-all">Confirm & Pay →</button>
+            <div class="space-y-4 mt-8">
+                <button onclick="proceedToStripe()" class="w-full bg-black text-white font-black py-6 rounded-2xl uppercase tracking-widest hover:bg-electric-blue transition-all shadow-xl text-lg">Confirm & Pay →</button>
                 <button onclick="closeModal()" class="text-slate-400 font-black py-2 uppercase text-[10px] tracking-widest block mx-auto">Go Back</button>
             </div>
         </div>
@@ -104,17 +103,16 @@
                 const primaryAction = document.getElementById('primary-action');
                 primaryName.innerText = domainInput.toUpperCase();
 
-                // בדיקת זמינות קפדנית
                 if (result.available === true || result.available === "true") {
-                    primaryName.className = "text-xl font-black mb-2 italic electric-blue";
-                    primaryAction.innerHTML = `<button onclick="openModal('${domainInput}')" class="w-full bg-electric-blue text-white font-black py-4 rounded-xl uppercase text-sm tracking-widest">Select Primary →</button>`;
+                    primaryName.className = "text-3xl font-black mb-4 italic electric-blue";
+                    primaryAction.innerHTML = `<button onclick="openModal('${domainInput}')" class="w-full bg-electric-blue text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">Select Primary →</button>`;
                 } else {
-                    primaryName.className = "text-xl font-black mb-2 italic text-slate-300 line-through";
-                    primaryAction.innerHTML = `<p class="text-[10px] font-bold text-red-500 uppercase tracking-widest">Already Taken</p>`;
+                    primaryName.className = "text-3xl font-black mb-4 italic text-slate-200 line-through";
+                    primaryAction.innerHTML = `<p class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Already Taken</p>`;
                 }
 
                 showAlternatives(domainInput, result.alternatives);
-            } catch (e) { alert("Check Connection"); }
+            } catch (e) { alert("Error connecting to server."); }
             finally { btn.innerText = "Check Availability ->"; btn.disabled = false; }
         }
 
@@ -123,10 +121,11 @@
             list.innerHTML = '';
             const altsArray = Array.isArray(alts) ? alts : [];
             altsArray.forEach(alt => {
+                const cleanAlt = alt.trim();
                 const row = document.createElement('div');
-                row.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-blue-500 transition-all";
-                row.innerHTML = `<span class="font-bold text-xs uppercase">${alt}</span>
-                                <button onclick="openModal('${alt}')" class="bg-black text-white text-[9px] font-black px-4 py-2 rounded-lg uppercase tracking-widest">Select</button>`;
+                row.className = "flex items-center justify-between p-5 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-black transition-all";
+                row.innerHTML = `<span class="font-black text-sm uppercase">${cleanAlt}</span>
+                                <button onclick="openModal('${cleanAlt}')" class="bg-black text-white text-[10px] font-black px-5 py-2 rounded-xl uppercase tracking-widest">Select</button>`;
                 list.appendChild(row);
             });
         }
@@ -136,11 +135,11 @@
             const display = document.getElementById('modal-domain');
             display.innerText = domain.toUpperCase();
             
-            // לוגיקת פונט דינמי
-            let fontSize = 2.5; // התחלה מ-text-4xl בערך
-            if (domain.length > 15) fontSize = 1.8;
-            if (domain.length > 25) fontSize = 1.4;
-            if (domain.length > 35) fontSize = 1.1;
+            // פונט דינמי למניעת ירידת שורה
+            let fontSize = 3; 
+            if (domain.length > 15) fontSize = 2.2;
+            if (domain.length > 25) fontSize = 1.6;
+            if (domain.length > 35) fontSize = 1.2;
             
             display.style.fontSize = fontSize + 'rem';
             document.getElementById('confirm-modal').classList.add('active');
