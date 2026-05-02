@@ -11,104 +11,65 @@
         .electric-blue { color: #0070f3; }
         .bg-electric-blue { background-color: #0070f3; }
         .premium-border { border: 6px solid #000; }
-
-        .label-power-black { 
-            color: #000; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; font-size: 14px; display: block; margin-bottom: 10px; 
-        }
-
+        .label-power-black { color: #000; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; font-size: 14px; display: block; margin-bottom: 10px; }
         .status-area { display: none; animation: fadeIn 0.4s ease-out; }
         .status-area.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .alt-btn {
-            border: 2px solid #f1f5f9;
-            transition: all 0.2s;
-        }
-        .alt-btn:hover {
-            border-color: #0070f3;
-            background-color: #f8faff;
-        }
-
+        .alt-btn { border: 2px solid #f1f5f9; transition: all 0.2s; }
+        .alt-btn:hover { border-color: #0070f3; background-color: #f8faff; }
         .input-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
     </style>
 </head>
 <body class="antialiased text-black">
 
     <header class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center">
-        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" 
-             alt="SiteSnap" class="h-28 w-auto object-contain mb-4">
-        <div class="text-sm font-black uppercase tracking-[0.25em] text-slate-800 text-center">
-            Premium Websites • Pure Simplicity
-        </div>
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-28 w-auto object-contain mb-4">
+        <div class="text-sm font-black uppercase tracking-[0.25em] text-slate-800 text-center">Premium Websites • Pure Simplicity</div>
     </header>
 
     <main class="max-w-4xl mx-auto px-6 pb-24 pt-8">
-        
         <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-black italic mb-6">
-                Final Step: Go <span class="electric-blue">Live</span>.
-            </h1>
-            <p class="text-lg text-slate-600 font-bold uppercase tracking-wide">
-                Secure your unique digital address.
-            </p>
+            <h1 class="text-4xl md:text-5xl font-black italic mb-6">Final Step: Go <span class="electric-blue">Live</span>.</h1>
+            <p class="text-lg text-slate-600 font-bold uppercase tracking-wide">Secure your unique digital address.</p>
         </div>
 
         <div class="max-w-xl mx-auto premium-border p-10 md:p-16 rounded-[60px] relative bg-white shadow-2xl">
-            
-            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">
-                Concierge Domain Setup
-            </div>
+            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">Concierge Domain Setup</div>
 
             <div id="search-box">
                 <label class="label-power-black text-center">Enter Desired Domain</label>
-                <input type="text" id="target_domain" placeholder="mybusiness.com" 
-                class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center">
-                
-                <p id="validation-error" class="text-red-500 text-[10px] font-black uppercase tracking-widest mt-3 hidden text-center">
-                    Please enter a valid domain (e.g. name.com)
-                </p>
-
-                <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest mt-6">
-                    Check Availability ->
-                </button>
+                <input type="text" id="target_domain" placeholder="mybusiness.com" class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center">
+                <p id="validation-error" class="text-red-500 text-[10px] font-black uppercase tracking-widest mt-3 hidden text-center">Please enter a valid domain (e.g. name.com)</p>
+                <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest mt-6">Check Availability -></button>
             </div>
 
             <div id="status-available" class="status-area text-center mt-4">
                 <h3 class="text-2xl font-black electric-blue mb-4 uppercase italic" id="success-name">DOMAIN IS AVAILABLE</h3>
                 <p class="text-slate-500 font-bold mb-10 uppercase text-sm tracking-wide">Perfect choice. Secured for your brand.</p>
-                
-                <button onclick="confirmDomain()" class="w-full bg-electric-blue text-white font-black py-6 rounded-full shadow-2xl text-2xl uppercase tracking-widest">
-                    Claim My Domain →
-                </button>
+                <button onclick="confirmDomain()" class="w-full bg-electric-blue text-white font-black py-6 rounded-full shadow-2xl text-2xl uppercase tracking-widest">Claim My Domain →</button>
             </div>
 
             <div id="status-taken" class="status-area mt-4">
                 <h3 class="text-xl font-black text-black mb-6 uppercase italic text-center">That domain is taken.</h3>
                 <div class="space-y-3" id="alt-list"></div>
-                <button onclick="resetSearch()" class="w-full mt-8 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-black transition-all">
-                    ← Try another name
-                </button>
+                <button onclick="resetSearch()" class="w-full mt-8 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-black transition-all">← Try another name</button>
             </div>
 
             <div id="final-success" class="status-area text-center py-6">
                 <div class="text-6xl mb-6">🚀</div>
                 <h3 class="text-3xl font-black mb-3 uppercase italic">Engines Fired.</h3>
-                <p class="text-slate-500 font-bold text-lg leading-relaxed uppercase tracking-tight">
-                    Redirecting to secure your domain...
-                </p>
+                <p class="text-slate-500 font-bold text-lg leading-relaxed uppercase tracking-tight">Redirecting to secure your domain...</p>
             </div>
-
         </div>
+
+        <p class="text-center mt-6 text-slate-700 font-bold uppercase text-[10px] tracking-[0.1em] max-w-sm mx-auto">
+            Your $229 license is Lifetime. First year domain included. Annual domain renewals apply thereafter.
+        </p>
     </main>
 
     <script>
-        const searchBox = document.getElementById('search-box');
-        const checkBtn = document.getElementById('check-btn');
-        const availableBox = document.getElementById('status-available');
-        const takenBox = document.getElementById('status-taken');
         const searchInput = document.getElementById('target_domain');
-        const validationError = document.getElementById('validation-error');
-
+        const checkBtn = document.getElementById('check-btn');
         const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
 
         async function checkAvailability() {
@@ -116,12 +77,12 @@
             const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
 
             if (!domainRegex.test(domain)) {
-                validationError.classList.remove('hidden');
+                document.getElementById('validation-error').classList.remove('hidden');
                 searchInput.classList.add('input-error');
                 return;
             }
 
-            validationError.classList.add('hidden');
+            document.getElementById('validation-error').classList.add('hidden');
             searchInput.classList.remove('input-error');
             checkBtn.innerText = "Searching...";
             checkBtn.disabled = true;
@@ -133,27 +94,22 @@
                     body: JSON.stringify({ domain: domain })
                 });
 
-                const result = await response.json(); 
-
+                const result = await response.json();
+                
                 checkBtn.innerText = "Check Availability ->";
                 checkBtn.disabled = false;
-                searchBox.style.display = 'none';
+                document.getElementById('search-box').style.display = 'none';
 
-                // תיקון חכם לבדיקת הסטטוס שחוזר מה-Body ב-Make
-                const isDomainAvailable = (result.available === true || result.available === "true" || result.available === "available");
-
-                if (isDomainAvailable) {
+                if (result.available === true || result.available === "true") {
                     document.getElementById('success-name').innerText = domain.toUpperCase() + " IS AVAILABLE";
-                    availableBox.classList.add('active');
+                    document.getElementById('status-available').classList.add('active');
                 } else {
-                    // הפיכת ה-Alternatives למערך אם הגיע כטקסט, וסינון הדומיין המקורי
-                    const altsRaw = Array.isArray(result.alternatives) ? result.alternatives : (result.alternatives ? result.alternatives.split(',') : []);
-                    showAlternatives(domain, altsRaw);
-                    takenBox.classList.add('active');
+                    showAlternatives(domain, result.alternatives);
+                    document.getElementById('status-taken').classList.add('active');
                 }
             } catch (error) {
-                console.error(error);
-                alert('Connection error. Please try again.');
+                console.error("Fetch Error:", error);
+                alert("Make Scenario is likely OFF or JSON is malformed. Check Make.com");
                 checkBtn.innerText = "Check Availability ->";
                 checkBtn.disabled = false;
             }
@@ -162,49 +118,37 @@
         function showAlternatives(domain, alts) {
             const list = document.getElementById('alt-list');
             list.innerHTML = '';
-            
-            // סינון של הדומיין שהלקוח הקליד (כי הוא הרי תפוס)
-            const filteredAlts = alts.filter(a => a.trim().toLowerCase() !== domain.toLowerCase());
+            const altsArray = Array.isArray(alts) ? alts : (alts ? alts.split(',') : []);
+            const filtered = altsArray.filter(a => a.trim().toLowerCase() !== domain.toLowerCase());
 
-            if (filteredAlts.length === 0) {
-                list.innerHTML = '<p class="text-slate-400 text-xs font-bold text-center uppercase tracking-widest">No similar domains available. Try a different name.</p>';
+            if (filtered.length === 0) {
+                list.innerHTML = '<p class="text-slate-400 text-xs font-bold text-center uppercase tracking-widest">No suggestions available. Try another name.</p>';
                 return;
             }
 
-            filteredAlts.forEach(alt => {
+            filtered.forEach(alt => {
                 const btn = document.createElement('button');
                 btn.className = "w-full p-5 alt-btn rounded-2xl font-black text-left flex justify-between items-center uppercase text-sm";
                 btn.innerHTML = `<span>${alt.trim()}</span> <span class="electric-blue">Select →</span>`;
-                btn.onclick = () => {
-                    searchInput.value = alt.trim();
-                    resetSearch();
-                    checkAvailability();
-                };
+                btn.onclick = () => { searchInput.value = alt.trim(); resetSearch(); checkAvailability(); };
                 list.appendChild(btn);
             });
         }
 
         function resetSearch() {
-            searchBox.style.display = 'block';
-            availableBox.classList.remove('active');
-            takenBox.classList.remove('active');
-            validationError.classList.add('hidden');
-            searchInput.classList.remove('input-error');
+            document.getElementById('search-box').style.display = 'block';
+            document.getElementById('status-available').classList.remove('active');
+            document.getElementById('status-taken').classList.remove('active');
         }
 
-        async function confirmDomain() {
+        function confirmDomain() {
             const domain = searchInput.value;
-            const urlParams = new URLSearchParams(window.location.search);
-            const recordId = urlParams.get('record_id');
-
-            availableBox.style.display = 'none';
+            const recordId = new URLSearchParams(window.location.search).get('record_id');
+            document.getElementById('status-available').style.display = 'none';
             document.getElementById('final-success').classList.add('active');
             
             const stripeUrl = `https://buy.stripe.com/14A9BC3HId7Cf3j4gn?client_reference_id=${recordId}&prefilled_email=${encodeURIComponent(domain)}`;
-            
-            setTimeout(() => {
-                window.location.href = stripeUrl;
-            }, 1500);
+            setTimeout(() => { window.location.href = stripeUrl; }, 1500);
         }
     </script>
 </body>
