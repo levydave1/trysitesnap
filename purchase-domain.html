@@ -114,11 +114,14 @@
     </footer>
 
     <script>
-        const searchBox = document.getElementById('search-box');
+     const searchBox = document.getElementById('search-box');
         const checkBtn = document.getElementById('check-btn');
         const availableBox = document.getElementById('status-available');
         const takenBox = document.getElementById('status-taken');
         const searchInput = document.getElementById('target_domain');
+
+        // הוובהוק שלך ב-Make
+        const searchWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r"; 
 
         async function checkAvailability() {
             const domain = searchInput.value;
@@ -127,32 +130,43 @@
             checkBtn.innerText = "Searching...";
             checkBtn.disabled = true;
 
-            // Simulate API logic
-            setTimeout(() => {
-                const isAvailable = domain.toLowerCase().includes('snap'); 
-                
-                checkBtn.innerText = "Check Availability";
-                checkBtn.disabled = false;
+            try {
+                // שליחת הבקשה ל-Make
+                const response = await fetch(searchWebhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: domain })
+                });
 
+                const result = await response.json(); 
+
+                checkBtn.innerText = "Check Availability ->";
+                checkBtn.disabled = false;
                 searchBox.style.display = 'none';
 
-                if(isAvailable) {
+                // בדיקה אם הדומיין פנוי (Make צריך להחזיר {"available": true})
+                if(result.available === true || result.available === "true") {
                     document.getElementById('success-name').innerText = domain.toUpperCase() + " IS AVAILABLE";
                     availableBox.classList.add('active');
                 } else {
-                    showAlternatives(domain);
+                    showAlternatives(domain, result.alternatives);
                     takenBox.classList.add('active');
                 }
-            }, 1200);
+            } catch (error) {
+                alert('Connection error. Please try again.');
+                checkBtn.innerText = "Check Availability ->";
+                checkBtn.disabled = false;
+            }
         }
 
-        function showAlternatives(domain) {
+        function showAlternatives(domain, alts) {
             const name = domain.split('.')[0];
-            const alts = [`get${name}.com`, `${name}site.com`, `${name}.net`];
+            // הצעות אוטומטיות אם לא חזרו חלופות מה-API
+            const suggestions = alts || [`get${name}.com`, `${name}site.com`, `${name}.net`];
             const list = document.getElementById('alt-list');
             list.innerHTML = '';
             
-            alts.forEach(alt => {
+            suggestions.forEach(alt => {
                 const btn = document.createElement('button');
                 btn.className = "w-full p-5 alt-btn rounded-2xl font-black text-left flex justify-between items-center uppercase text-sm";
                 btn.innerHTML = `<span>${alt}</span> <span class="electric-blue">Select →</span>`;
@@ -172,10 +186,20 @@
         }
 
         async function confirmDomain() {
+            const domain = searchInput.value;
+            const urlParams = new URLSearchParams(window.location.search);
+            const recordId = urlParams.get('record_id');
+
             availableBox.style.display = 'none';
             document.getElementById('final-success').classList.add('active');
             
-            // Webhook send logic here
+            // לינק לסליקה ב-Stripe עבור חבילת ה-Custom Domain ($229)
+            // אנחנו שולחים את ה-record_id כדי לדעת למי לשייך את הקנייה
+            const stripeUrl = `https://buy.stripe.com/14A9BC3HId7Cf3j4gn?client_reference_id=${recordId}&prefilled_email=${encodeURIComponent(domain)}`;
+            
+            setTimeout(() => {
+                window.location.href = stripeUrl;
+            }, 1500);
         }
     </script>
 </body>
