@@ -10,18 +10,21 @@
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; }
         .electric-blue { color: #0070f3; }
         .bg-electric-blue { background-color: #0070f3; }
-        .premium-border { border: 8px solid #000; } /* עובי מקורי מהתמונה */
+        .premium-border { border: 8px solid #000; }
         .label-power-black { color: #000; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; font-size: 14px; display: block; }
         
+        /* אילוץ אותיות קטנות בתיבת החיפוש */
+        #target_domain { text-transform: lowercase; }
+
         .status-area { display: none; animation: fadeIn 0.4s ease-out; }
         .status-area.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Modal Dynamic */
+        /* Modal - חלונית דינמית ללא ירידת שורה */
         #confirm-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(8px); padding: 20px; }
         #confirm-modal.active { display: flex; }
-        .modal-content { max-width: 90vw; width: fit-content; min-width: 350px; }
-        #modal-domain { white-space: nowrap; display: block; transition: font-size 0.2s; }
+        .modal-content { max-width: 95vw; width: fit-content; min-width: 350px; }
+        #modal-domain { white-space: nowrap; display: block; transition: font-size 0.2s; text-align: center; }
     </style>
 </head>
 <body class="antialiased text-black">
@@ -37,8 +40,10 @@
                 Concierge Domain Setup
             </div>
 
-            <div id="search-box" class="pt-4">
-                <input type="text" id="target_domain" placeholder="ENTER DOMAIN NAME" class="w-full px-6 py-6 rounded-3xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-black text-2xl text-black text-center mb-6 uppercase">
+            <div id="search-box" class="pt-4 text-center">
+                <input type="text" id="target_domain" placeholder="enter domain name" 
+                       class="w-full px-6 py-6 rounded-3xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-black text-2xl text-black text-center mb-6">
+                
                 <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-7 rounded-3xl shadow-2xl hover:opacity-95 transition-all text-xl uppercase tracking-widest">
                     Check Availability →
                 </button>
@@ -46,7 +51,7 @@
 
             <div id="results-area" class="status-area pt-4">
                 <div id="primary-status" class="mb-10 text-center">
-                    <h3 id="primary-name" class="text-4xl font-black mb-4 italic tracking-tight"></h3>
+                    <h3 id="primary-name" class="text-4xl font-black mb-4 italic tracking-tight uppercase"></h3>
                     <div id="primary-action"></div>
                 </div>
 
@@ -55,7 +60,7 @@
                     <div id="alt-list" class="space-y-4"></div>
                 </div>
 
-                <button onclick="resetSearch()" class="w-full mt-12 py-4 bg-slate-100 rounded-2xl text-xs font-black uppercase tracking-[0.3em] text-slate-500 hover:bg-black hover:text-white transition-all">
+                <button onclick="resetSearch()" class="w-full mt-12 py-5 bg-slate-100 rounded-3xl text-sm font-black uppercase tracking-[0.3em] text-slate-500 hover:bg-black hover:text-white transition-all shadow-inner">
                     ← Search Another Name
                 </button>
             </div>
@@ -66,6 +71,7 @@
         <div class="bg-white p-12 rounded-[60px] modal-content text-center premium-border shadow-2xl">
             <h3 class="text-3xl font-black italic mb-2 uppercase">Confirm Selection</h3>
             <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest mb-6">You are about to secure:</p>
+            
             <span id="modal-domain" class="electric-blue font-black tracking-tighter"></span>
             
             <div class="space-y-4 mt-10">
@@ -79,9 +85,20 @@
         const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
         let selectedDomain = "";
 
+        // הפיכת הקלט לאותיות קטנות בזמן אמת
+        document.getElementById('target_domain').addEventListener('input', function(e) {
+            this.value = this.value.toLowerCase();
+        });
+
         async function checkAvailability() {
-            const domainInput = document.getElementById('target_domain').value.trim();
-            if(!domainInput.includes('.')) return alert("Please enter a valid domain");
+            const domainInput = document.getElementById('target_domain').value.trim().toLowerCase();
+            
+            // וולידציה מחמירה
+            const domainRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.[a-z]{2,}$/;
+            if (!domainRegex.test(domainInput)) {
+                alert("Please enter a valid domain in lowercase (e.g., domain.com)");
+                return;
+            }
 
             const btn = document.getElementById('check-btn');
             btn.innerText = "VERIFYING...";
@@ -91,7 +108,7 @@
                 const response = await fetch(makeWebhookUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain: domainInput })
+                    body: JSON.stringify({ domain: domainInput, timestamp: Date.now() }) // מניעת Cache
                 });
                 const result = await response.json();
 
@@ -102,18 +119,21 @@
                 const primaryAction = document.getElementById('primary-action');
                 primaryName.innerText = domainInput.toUpperCase();
 
-                // בדיקה קפדנית - דורש שה-Make יחזיר תשובה מדויקת
+                // בדיקת זמינות
                 if (result.available === true || result.available === "true") {
-                    primaryName.className = "text-4xl font-black mb-4 italic electric-blue tracking-tight";
-                    primaryAction.innerHTML = `<button onclick="openModal('${domainInput}')" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl uppercase tracking-widest shadow-2xl text-lg">Select Primary →</button>`;
+                    primaryName.className = "text-4xl font-black mb-4 italic electric-blue tracking-tight uppercase";
+                    primaryAction.innerHTML = `<button onclick="openModal('${domainInput}')" class="w-full bg-electric-blue text-white font-black py-6 rounded-3xl uppercase tracking-widest shadow-2xl text-lg">Select Primary →</button>`;
                 } else {
-                    primaryName.className = "text-4xl font-black mb-4 italic text-slate-200 line-through tracking-tight";
+                    primaryName.className = "text-4xl font-black mb-4 italic text-slate-200 line-through tracking-tight uppercase";
                     primaryAction.innerHTML = `<p class="text-sm font-black text-red-500 uppercase tracking-[0.2em]">Already Taken</p>`;
                 }
 
                 showAlternatives(domainInput, result.alternatives);
-            } catch (e) { alert("Server connection lost."); }
-            finally { btn.innerText = "Check Availability →"; btn.disabled = false; }
+            } catch (e) { 
+                alert("Server connection lost. Try again."); 
+            } finally { 
+                btn.innerText = "Check Availability →"; btn.disabled = false; 
+            }
         }
 
         function showAlternatives(original, alts) {
@@ -124,8 +144,9 @@
             const altsArray = Array.isArray(alts) ? alts.filter(a => a && a.trim().toLowerCase() !== original.toLowerCase()) : [];
 
             if (altsArray.length === 0) {
-                title.innerText = "No Alternatives Available";
-                title.className = "label-power-black text-center mb-4 italic text-slate-300";
+                // הודעה ברורה כשאין תוצאות
+                title.innerText = "NO ALTERNATIVES FOUND FOR THIS NAME";
+                title.className = "label-power-black text-center mb-4 italic text-slate-300 text-[10px]";
                 return;
             }
 
@@ -133,11 +154,11 @@
             title.className = "label-power-black text-center mb-8 italic";
 
             altsArray.forEach(alt => {
-                const cleanAlt = alt.trim();
+                const cleanAlt = alt.trim().toLowerCase();
                 const row = document.createElement('div');
                 row.className = "flex items-center justify-between p-6 bg-slate-50 rounded-3xl border-4 border-transparent hover:border-black transition-all group";
                 row.innerHTML = `<span class="font-black text-base uppercase">${cleanAlt}</span>
-                                <button onclick="openModal('${cleanAlt}')" class="bg-black text-white text-[10px] font-black px-6 py-3 rounded-xl uppercase tracking-widest group-hover:bg-electric-blue transition-colors">Select</button>`;
+                                <button onclick="openModal('${cleanAlt}')" class="bg-black text-white text-[10px] font-black px-6 py-3 rounded-xl uppercase tracking-widest group-hover:bg-electric-blue transition-colors shadow-sm">Select</button>`;
                 list.appendChild(row);
             });
         }
@@ -147,11 +168,12 @@
             const display = document.getElementById('modal-domain');
             display.innerText = domain.toUpperCase();
             
-            // פונט דינמי
+            // חישוב פונט דינמי למניעת ירידת שורה
             let fontSize = 3.5; 
-            if (domain.length > 15) fontSize = 2.5;
-            if (domain.length > 25) fontSize = 1.8;
-            if (domain.length > 35) fontSize = 1.4;
+            if (domain.length > 15) fontSize = 2.6;
+            if (domain.length > 22) fontSize = 2.0;
+            if (domain.length > 28) fontSize = 1.6;
+            if (domain.length > 35) fontSize = 1.2;
             
             display.style.fontSize = fontSize + 'rem';
             document.getElementById('confirm-modal').classList.add('active');
