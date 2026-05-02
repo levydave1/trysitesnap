@@ -95,19 +95,21 @@
                 </div>
             </div>
 
-            <div class="plan-card bg-slate-50 opacity-60 p-8 rounded-[40px] flex flex-col relative overflow-hidden cursor-not-allowed border-dashed border-2 border-slate-200">
-                <div class="absolute top-0 right-0 bg-slate-400 text-white text-[8px] px-3 py-1 font-black uppercase tracking-widest rounded-bl-lg">Coming Soon</div>
-                <div class="mb-4 text-slate-300">
-                    <span class="text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
-                    <div class="text-3xl font-black italic leading-none">$229</div>
-                </div>
-                <h3 class="text-lg font-black uppercase mb-2 leading-tight text-slate-400">Custom Domain</h3>
-                <p class="text-slate-400 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year.</p>
-                <div class="mt-auto flex items-center gap-2">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-300">Unavailable</span>
-                </div>
-            </div>
+            <div onclick="selectPlan('new', this, 229)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col relative">
+    <div class="absolute top-0 right-0 bg-electric-blue text-white text-[8px] px-3 py-1 font-black uppercase tracking-widest rounded-bl-lg">Most Popular</div>
+    <div class="mb-4">
+        <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
+        <div class="text-3xl font-black italic leading-none">$229</div>
+    </div>
+    <h3 class="text-lg font-black uppercase mb-2 leading-tight">Custom Domain</h3>
+    <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year. Professional & seamless.</p>
+    <div class="mt-auto flex items-center gap-2">
+        <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center circle">
+            <div class="w-3 h-3 rounded-full bg-electric-blue hidden inner-dot"></div>
         </div>
+        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Select</span>
+    </div>
+</div>
 
         <div id="domain-input-wrapper" class="hidden max-w-md mx-auto mb-12">
             <div class="bg-blue-50 border-2 border-blue-100 rounded-3xl p-6 text-center">
