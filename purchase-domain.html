@@ -10,11 +10,6 @@
         body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; }
         .electric-blue { color: #0070f3; }
         .bg-electric-blue { background-color: #0070f3; }
-        .hero-gradient { background: radial-gradient(circle at top, #f8faff 0%, #ffffff 100%); }
-        
-        .headline-spaced { letter-spacing: -0.01em; line-height: 1.1; word-spacing: 0.05em; }
-        .btn-spaced { letter-spacing: 0.05em; word-spacing: 0.15em; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        
         .premium-border { border: 6px solid #000; }
 
         .label-power-black { 
@@ -25,7 +20,6 @@
         .status-area.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Small alternative button style */
         .alt-btn {
             border: 2px solid #f1f5f9;
             transition: all 0.2s;
@@ -34,6 +28,9 @@
             border-color: #0070f3;
             background-color: #f8faff;
         }
+
+        /* עיצוב שגיאת ולידציה */
+        .input-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
     </style>
 </head>
 <body class="antialiased text-black">
@@ -49,7 +46,7 @@
     <main class="max-w-4xl mx-auto px-6 pb-24 pt-8">
         
         <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-black headline-spaced mb-6 italic">
+            <h1 class="text-4xl md:text-5xl font-black italic mb-6">
                 Final Step: Go <span class="electric-blue">Live</span>.
             </h1>
             <p class="text-lg text-slate-600 font-bold uppercase tracking-wide">
@@ -66,9 +63,13 @@
             <div id="search-box">
                 <label class="label-power-black text-center">Enter Desired Domain</label>
                 <input type="text" id="target_domain" placeholder="mybusiness.com" 
-                class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center mb-6">
+                class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center">
                 
-                <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-50 transition-all text-xl uppercase tracking-widest">
+                <p id="validation-error" class="text-red-500 text-[10px] font-black uppercase tracking-widest mt-3 hidden text-center">
+                    Please enter a valid domain (e.g. name.com)
+                </p>
+
+                <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest mt-6">
                     Check Availability ->
                 </button>
             </div>
@@ -77,7 +78,7 @@
                 <h3 class="text-2xl font-black electric-blue mb-4 uppercase italic" id="success-name">DOMAIN IS AVAILABLE</h3>
                 <p class="text-slate-500 font-bold mb-10 uppercase text-sm tracking-wide">Perfect choice. Secured for your brand.</p>
                 
-                <button onclick="confirmDomain()" class="w-full bg-electric-blue text-white font-black py-6 rounded-full shadow-2xl text-2xl uppercase btn-spaced">
+                <button onclick="confirmDomain()" class="w-full bg-electric-blue text-white font-black py-6 rounded-full shadow-2xl text-2xl uppercase tracking-widest">
                     Claim My Domain →
                 </button>
             </div>
@@ -93,16 +94,16 @@
 
             <div id="final-success" class="status-area text-center py-6">
                 <div class="text-6xl mb-6">🚀</div>
-                <h3 class="text-3xl font-black mb-3 uppercase italic headline-spaced">Engines Fired.</h3>
+                <h3 class="text-3xl font-black mb-3 uppercase italic">Engines Fired.</h3>
                 <p class="text-slate-500 font-bold text-lg leading-relaxed uppercase tracking-tight">
-                    We are securing your domain and launching your site. Check your email shortly.
+                    Redirecting to secure your domain...
                 </p>
             </div>
 
         </div>
 
         <p class="text-center mt-6 text-slate-700 font-bold uppercase text-[12px] tracking-[0.1em] max-w-sm mx-auto">
-            Your $199 license is Lifetime. Annual domain renewal fees (~$12/yr) apply via your registrar.
+            Your $229 license covers the site + your domain for the first year.
         </p>
 
     </main>
@@ -114,29 +115,43 @@
     </footer>
 
     <script>
-     const searchBox = document.getElementById('search-box');
+        const searchBox = document.getElementById('search-box');
         const checkBtn = document.getElementById('check-btn');
         const availableBox = document.getElementById('status-available');
         const takenBox = document.getElementById('status-taken');
         const searchInput = document.getElementById('target_domain');
+        const validationError = document.getElementById('validation-error');
 
-        // הוובהוק שלך ב-Make
-        const searchWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r"; 
+        // וובהוק של Make (מסוג Custom Webhook)
+        const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
 
         async function checkAvailability() {
-            const domain = searchInput.value;
-            if(!domain) return;
+            const domain = searchInput.value.trim();
+            
+            // בדיקת תקינות: דומיין חייב להכיל נקודה וסיומת (למשל name.com)
+            const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
 
+            if (!domainRegex.test(domain)) {
+                validationError.classList.remove('hidden');
+                searchInput.classList.add('input-error');
+                return;
+            }
+
+            // ניקוי שגיאות אם הכל תקין
+            validationError.classList.add('hidden');
+            searchInput.classList.remove('input-error');
+            
             checkBtn.innerText = "Searching...";
             checkBtn.disabled = true;
 
             try {
-                // שליחת הבקשה ל-Make
-                const response = await fetch(searchWebhookUrl, {
+                const response = await fetch(makeWebhookUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ domain: domain })
                 });
+
+                if (!response.ok) throw new Error('Server error');
 
                 const result = await response.json(); 
 
@@ -144,29 +159,29 @@
                 checkBtn.disabled = false;
                 searchBox.style.display = 'none';
 
-                // בדיקה אם הדומיין פנוי (Make צריך להחזיר {"available": true})
-                if(result.available === true || result.available === "true") {
+                // בדיקה אם הדומיין פנוי (לפי מה שחוזר מהוובהוק ב-Make)
+                if(result.available === true || result.available === "available" || result.available === "true") {
                     document.getElementById('success-name').innerText = domain.toUpperCase() + " IS AVAILABLE";
                     availableBox.classList.add('active');
                 } else {
-                    showAlternatives(domain, result.alternatives);
+                    showAlternatives(domain);
                     takenBox.classList.add('active');
                 }
             } catch (error) {
-                alert('Connection error. Please try again.');
+                console.error(error);
+                alert('Connection error. Please ensure your Make scenario is active.');
                 checkBtn.innerText = "Check Availability ->";
                 checkBtn.disabled = false;
             }
         }
 
-        function showAlternatives(domain, alts) {
+        function showAlternatives(domain) {
             const name = domain.split('.')[0];
-            // הצעות אוטומטיות אם לא חזרו חלופות מה-API
-            const suggestions = alts || [`get${name}.com`, `${name}site.com`, `${name}.net`];
+            const alts = [`get${name}.com`, `${name}site.com`, `${name}.net`];
             const list = document.getElementById('alt-list');
             list.innerHTML = '';
             
-            suggestions.forEach(alt => {
+            alts.forEach(alt => {
                 const btn = document.createElement('button');
                 btn.className = "w-full p-5 alt-btn rounded-2xl font-black text-left flex justify-between items-center uppercase text-sm";
                 btn.innerHTML = `<span>${alt}</span> <span class="electric-blue">Select →</span>`;
@@ -183,6 +198,8 @@
             searchBox.style.display = 'block';
             availableBox.classList.remove('active');
             takenBox.classList.remove('active');
+            validationError.classList.add('hidden');
+            searchInput.classList.remove('input-error');
         }
 
         async function confirmDomain() {
@@ -193,8 +210,7 @@
             availableBox.style.display = 'none';
             document.getElementById('final-success').classList.add('active');
             
-            // לינק לסליקה ב-Stripe עבור חבילת ה-Custom Domain ($229)
-            // אנחנו שולחים את ה-record_id כדי לדעת למי לשייך את הקנייה
+            // מעבר ל-Stripe עם ה-record_id והדומיין הנבחר בפרמטרים
             const stripeUrl = `https://buy.stripe.com/14A9BC3HId7Cf3j4gn?client_reference_id=${recordId}&prefilled_email=${encodeURIComponent(domain)}`;
             
             setTimeout(() => {
