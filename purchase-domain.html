@@ -29,7 +29,6 @@
             background-color: #f8faff;
         }
 
-        /* עיצוב שגיאת ולידציה */
         .input-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
     </style>
 </head>
@@ -85,8 +84,7 @@
 
             <div id="status-taken" class="status-area mt-4">
                 <h3 class="text-xl font-black text-black mb-6 uppercase italic text-center">That domain is taken.</h3>
-                <div class="space-y-3" id="alt-list">
-                    </div>
+                <div class="space-y-3" id="alt-list"></div>
                 <button onclick="resetSearch()" class="w-full mt-8 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-black transition-all">
                     ← Try another name
                 </button>
@@ -101,18 +99,7 @@
             </div>
 
         </div>
-
-        <p class="text-center mt-6 text-slate-700 font-bold uppercase text-[12px] tracking-[0.1em] max-w-sm mx-auto">
-            Your $229 license covers the site + your domain for the first year.
-        </p>
-
     </main>
-
-    <footer class="py-12 text-center bg-white border-t border-slate-100">
-        <p class="text-slate-800 text-xs font-black uppercase tracking-[0.4em]">
-            &copy; 2026 SiteSnap • Pure Simplicity.
-        </p>
-    </footer>
 
     <script>
         const searchBox = document.getElementById('search-box');
@@ -122,13 +109,10 @@
         const searchInput = document.getElementById('target_domain');
         const validationError = document.getElementById('validation-error');
 
-        // וובהוק של Make (מסוג Custom Webhook)
         const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
 
         async function checkAvailability() {
             const domain = searchInput.value.trim();
-            
-            // בדיקת תקינות: דומיין חייב להכיל נקודה וסיומת (למשל name.com)
             const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
 
             if (!domainRegex.test(domain)) {
@@ -137,10 +121,8 @@
                 return;
             }
 
-            // ניקוי שגיאות אם הכל תקין
             validationError.classList.add('hidden');
             searchInput.classList.remove('input-error');
-            
             checkBtn.innerText = "Searching...";
             checkBtn.disabled = true;
 
@@ -151,42 +133,50 @@
                     body: JSON.stringify({ domain: domain })
                 });
 
-                if (!response.ok) throw new Error('Server error');
-
                 const result = await response.json(); 
 
                 checkBtn.innerText = "Check Availability ->";
                 checkBtn.disabled = false;
                 searchBox.style.display = 'none';
 
-                // בדיקה אם הדומיין פנוי (לפי מה שחוזר מהוובהוק ב-Make)
-                if(result.available === true || result.available === "available" || result.available === "true") {
+                // תיקון חכם לבדיקת הסטטוס שחוזר מה-Body ב-Make
+                const isDomainAvailable = (result.available === true || result.available === "true" || result.available === "available");
+
+                if (isDomainAvailable) {
                     document.getElementById('success-name').innerText = domain.toUpperCase() + " IS AVAILABLE";
                     availableBox.classList.add('active');
                 } else {
-                    showAlternatives(domain);
+                    // הפיכת ה-Alternatives למערך אם הגיע כטקסט, וסינון הדומיין המקורי
+                    const altsRaw = Array.isArray(result.alternatives) ? result.alternatives : (result.alternatives ? result.alternatives.split(',') : []);
+                    showAlternatives(domain, altsRaw);
                     takenBox.classList.add('active');
                 }
             } catch (error) {
                 console.error(error);
-                alert('Connection error. Please ensure your Make scenario is active.');
+                alert('Connection error. Please try again.');
                 checkBtn.innerText = "Check Availability ->";
                 checkBtn.disabled = false;
             }
         }
 
-        function showAlternatives(domain) {
-            const name = domain.split('.')[0];
-            const alts = [`get${name}.com`, `${name}site.com`, `${name}.net`];
+        function showAlternatives(domain, alts) {
             const list = document.getElementById('alt-list');
             list.innerHTML = '';
             
-            alts.forEach(alt => {
+            // סינון של הדומיין שהלקוח הקליד (כי הוא הרי תפוס)
+            const filteredAlts = alts.filter(a => a.trim().toLowerCase() !== domain.toLowerCase());
+
+            if (filteredAlts.length === 0) {
+                list.innerHTML = '<p class="text-slate-400 text-xs font-bold text-center uppercase tracking-widest">No similar domains available. Try a different name.</p>';
+                return;
+            }
+
+            filteredAlts.forEach(alt => {
                 const btn = document.createElement('button');
                 btn.className = "w-full p-5 alt-btn rounded-2xl font-black text-left flex justify-between items-center uppercase text-sm";
-                btn.innerHTML = `<span>${alt}</span> <span class="electric-blue">Select →</span>`;
+                btn.innerHTML = `<span>${alt.trim()}</span> <span class="electric-blue">Select →</span>`;
                 btn.onclick = () => {
-                    searchInput.value = alt;
+                    searchInput.value = alt.trim();
                     resetSearch();
                     checkAvailability();
                 };
@@ -210,7 +200,6 @@
             availableBox.style.display = 'none';
             document.getElementById('final-success').classList.add('active');
             
-            // מעבר ל-Stripe עם ה-record_id והדומיין הנבחר בפרמטרים
             const stripeUrl = `https://buy.stripe.com/14A9BC3HId7Cf3j4gn?client_reference_id=${recordId}&prefilled_email=${encodeURIComponent(domain)}`;
             
             setTimeout(() => {
