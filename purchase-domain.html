@@ -94,71 +94,75 @@
         });
 
         async function checkAvailability() {
-            const domainInput = document.getElementById('target_domain').value.trim().toLowerCase();
-            
-            // בדיקת תקינות בסיסית (חוקי הכנס אתר)
-            const domainRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.[a-z]{2,}$/;
-            if (!domainRegex.test(domainInput)) {
-                alert("Please enter a valid domain (e.g. name.com)");
-                return;
-            }
+    const domainInputRaw = document.getElementById('target_domain').value.trim().toLowerCase();
 
-            const btn = document.getElementById('check-btn');
-            btn.innerText = "Searching...";
-            btn.disabled = true;
+    const cleanInput = domainInputRaw
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/.*$/, '');
 
-            try {
-                const response = await fetch(makeWebhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    const cleanInput = domainInput
-    .toLowerCase()
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/.*$/, '');
+    const domainRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.[a-z]{2,}$/;
+    if (!domainRegex.test(cleanInput)) {
+        alert("Please enter a valid domain (e.g. name.com)");
+        return;
+    }
 
-const base = cleanInput.replace(/\.[a-z]{2,}$/i, '');
+    const base = cleanInput.replace(/\.[a-z]{2,}$/i, '');
 
-const candidates = [
-    `${base}.com`,
-    `get${base}.com`,
-    `try${base}.com`,
-    `${base}site.com`,
-    `${base}web.com`,
-    `${base}online.com`,
-    `${base}hq.com`
-];
+    const candidates = [
+        `${base}.com`,
+        `get${base}.com`,
+        `try${base}.com`,
+        `${base}site.com`,
+        `${base}web.com`,
+        `${base}online.com`,
+        `${base}hq.com`
+    ];
 
-body: JSON.stringify({
-    domain: `${base}.com`,
-    domains: [...new Set(candidates)],
-    ts: Date.now()
-})
-                });
-                const result = await response.json();
+    const primaryDomain = `${base}.com`;
 
-                document.getElementById('search-box').style.display = 'none';
-                document.getElementById('results-area').classList.add('active');
+    const btn = document.getElementById('check-btn');
+    btn.innerText = "Searching...";
+    btn.disabled = true;
 
-                const primaryName = document.getElementById('primary-name');
-                const primaryAction = document.getElementById('primary-action');
-                primaryName.innerText = domainInput.toUpperCase();
+    try {
+        const response = await fetch(makeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                domain: primaryDomain,
+                domains: [...new Set(candidates)],
+                ts: Date.now()
+            })
+        });
 
-                // המרה לסטרינג למקרה ש-Make שולח טקסט
-                const isAvailable = String(result.available).toLowerCase() === "true";
+        const result = await response.json();
 
-                if (isAvailable) {
-                    primaryName.className = "text-3xl font-black mb-4 italic electric-blue uppercase";
-                    primaryAction.innerHTML = `<button onclick="openModal('${domainInput}')" class="w-full bg-electric-blue text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">Select Primary →</button>`;
-                } else {
-                    primaryName.className = "text-3xl font-black mb-4 italic text-slate-200 line-through uppercase";
-                    primaryAction.innerHTML = `<p class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Already Taken</p>`;
-                }
+        document.getElementById('search-box').style.display = 'none';
+        document.getElementById('results-area').classList.add('active');
 
-                showAlternatives(domainInput, result.alternatives);
-            } catch (e) { alert("Server connection error."); }
-            finally { btn.innerText = "Check Availability ->"; btn.disabled = false; }
+        const primaryName = document.getElementById('primary-name');
+        const primaryAction = document.getElementById('primary-action');
+        primaryName.innerText = primaryDomain.toUpperCase();
+
+        const isAvailable = String(result.available).toLowerCase() === "true";
+
+        if (isAvailable) {
+            primaryName.className = "text-3xl font-black mb-4 italic electric-blue uppercase";
+            primaryAction.innerHTML = `<button onclick="openModal('${primaryDomain}')" class="w-full bg-electric-blue text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">Select Primary →</button>`;
+        } else {
+            primaryName.className = "text-3xl font-black mb-4 italic text-slate-200 line-through uppercase";
+            primaryAction.innerHTML = `<p class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Already Taken</p>`;
         }
+
+        showAlternatives(primaryDomain, result.alternatives);
+    } catch (e) {
+        alert("Server connection error.");
+    } finally {
+        btn.innerText = "Check Availability ->";
+        btn.disabled = false;
+    }
+}
 
         function showAlternatives(original, alts) {
             const list = document.getElementById('alt-list');
