@@ -85,139 +85,165 @@
     </div>
 
     <script>
-        const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
-        let selectedDomain = "";
+    const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
+    let selectedDomain = "";
 
-        // הפיכת הקלט לאותיות קטנות בזמן ההקלדה
-        document.getElementById('target_domain').addEventListener('input', function(e) {
-            this.value = this.value.toLowerCase().replace(/\s/g, '');
-        });
+    document.getElementById('target_domain').addEventListener('input', function () {
+        this.value = this.value.toLowerCase().replace(/\s/g, '');
+    });
 
-        async function checkAvailability() {
-    const domainInputRaw = document.getElementById('target_domain').value.trim().toLowerCase();
+    async function checkAvailability() {
+        const rawInput = document.getElementById('target_domain').value.trim().toLowerCase();
 
-    const cleanInput = domainInputRaw
-        .replace(/^https?:\/\//, '')
-        .replace(/^www\./, '')
-        .replace(/\/.*$/, '');
+        const cleanInput = rawInput
+            .replace(/^https?:\/\//, '')
+            .replace(/^www\./, '')
+            .replace(/\/.*$/, '');
 
-    const domainRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.[a-z]{2,}$/;
-    if (!domainRegex.test(cleanInput)) {
-        alert("Please enter a valid domain (e.g. name.com)");
-        return;
-    }
+        const domainRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.[a-z]{2,}$/;
 
-    const base = cleanInput.replace(/\.[a-z]{2,}$/i, '');
-
-    const candidates = [
-        `${base}.com`,
-        `get${base}.com`,
-        `try${base}.com`,
-        `${base}site.com`,
-        `${base}web.com`,
-        `${base}online.com`,
-        `${base}hq.com`
-    ];
-
-    const primaryDomain = `${base}.com`;
-
-    const btn = document.getElementById('check-btn');
-    btn.innerText = "Searching...";
-    btn.disabled = true;
-
-    try {
-        const response = await fetch(makeWebhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                domain: primaryDomain,
-                domains: [...new Set(candidates)],
-                ts: Date.now()
-            })
-        });
-
-        const result = await response.json();
-
-        document.getElementById('search-box').style.display = 'none';
-        document.getElementById('results-area').classList.add('active');
-
-        const primaryName = document.getElementById('primary-name');
-        const primaryAction = document.getElementById('primary-action');
-        primaryName.innerText = primaryDomain.toUpperCase();
-
-        const isAvailable = String(result.available).toLowerCase() === "true";
-
-        if (isAvailable) {
-            primaryName.className = "text-3xl font-black mb-4 italic electric-blue uppercase";
-            primaryAction.innerHTML = `<button onclick="openModal('${primaryDomain}')" class="w-full bg-electric-blue text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">Select Primary →</button>`;
-        } else {
-            primaryName.className = "text-3xl font-black mb-4 italic text-slate-200 line-through uppercase";
-            primaryAction.innerHTML = `<p class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Already Taken</p>`;
+        if (!domainRegex.test(cleanInput)) {
+            alert("Please enter a valid domain (e.g. mybusiness.com)");
+            return;
         }
 
-        showAlternatives(primaryDomain, result.alternatives);
-    } catch (e) {
-        alert("Server connection error.");
-    } finally {
-        btn.innerText = "Check Availability ->";
-        btn.disabled = false;
-    }
+        const base = cleanInput.replace(/\.[a-z]{2,}$/i, '');
+        const primaryDomain = `${base}.com`;
 
-        function showAlternatives(original, alts) {
-            const list = document.getElementById('alt-list');
-            const title = document.getElementById('alt-title');
-            list.innerHTML = '';
-            
-            const altsArray = Array.isArray(alts) ? alts.filter(a => a && a.trim().toLowerCase() !== original.toLowerCase()) : [];
+        const candidates = [
+            primaryDomain,
+            `get${base}.com`,
+            `try${base}.com`,
+            `${base}site.com`,
+            `${base}web.com`,
+            `${base}online.com`,
+            `${base}hq.com`
+        ];
 
-            if (altsArray.length === 0) {
-                // שיפור נראות כשאין אלטרנטיבות
-                title.innerText = "NO ALTERNATIVES AVAILABLE";
-                title.style.color = "#cbd5e1"; 
-                return;
+        const btn = document.getElementById('check-btn');
+        btn.innerText = "Searching...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(makeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    domain: primaryDomain,
+                    domains: [...new Set(candidates)],
+                    ts: Date.now()
+                })
+            });
+
+            const result = await response.json();
+
+            document.getElementById('search-box').style.display = 'none';
+            document.getElementById('results-area').classList.add('active');
+
+            const primaryName = document.getElementById('primary-name');
+            const primaryAction = document.getElementById('primary-action');
+
+            primaryName.innerText = primaryDomain.toUpperCase();
+
+            const isAvailable = String(result.available).toLowerCase() === "true";
+
+            if (isAvailable) {
+                primaryName.className = "text-3xl font-black mb-4 italic electric-blue uppercase";
+                primaryAction.innerHTML = `<button onclick="openModal('${primaryDomain}')" class="w-full bg-electric-blue text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">Select Primary →</button>`;
+            } else {
+                primaryName.className = "text-3xl font-black mb-4 italic text-slate-200 line-through uppercase";
+                primaryAction.innerHTML = `<p class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Already Taken or Over Budget</p>`;
             }
 
-            title.innerText = "Alternative Suggestions";
-            title.style.color = "#000";
+            showAlternatives(primaryDomain, result.alternatives);
 
-            altsArray.forEach(alt => {
-                const cleanAlt = alt.trim().toLowerCase();
-                const row = document.createElement('div');
-                row.className = "flex items-center justify-between p-5 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-black transition-all";
-                row.innerHTML = `<span class="font-black text-sm uppercase">${cleanAlt}</span>
-                                <button onclick="openModal('${cleanAlt}')" class="bg-black text-white text-[10px] font-black px-5 py-2 rounded-xl uppercase tracking-widest hover:bg-electric-blue transition-colors">Select</button>`;
-                list.appendChild(row);
-            });
+        } catch (e) {
+            console.error(e);
+            alert("Server connection error.");
+        } finally {
+            btn.innerText = "Check Availability ->";
+            btn.disabled = false;
+        }
+    }
+
+    function showAlternatives(original, alts) {
+        const list = document.getElementById('alt-list');
+        const title = document.getElementById('alt-title');
+
+        list.innerHTML = '';
+
+        const altsArray = Array.isArray(alts)
+            ? alts.filter(a => a && a.trim().toLowerCase() !== original.toLowerCase())
+            : [];
+
+        if (altsArray.length === 0) {
+            title.innerText = "NO ALTERNATIVES AVAILABLE";
+            title.style.color = "#cbd5e1";
+            return;
         }
 
-        function openModal(domain) {
-            selectedDomain = domain;
-            const display = document.getElementById('modal-domain');
-            display.innerText = domain.toUpperCase();
-            
-            // חישוב פונט דינמי למניעת ירידת שורה בתוך החלונית
-            let fontSize = 3.5; 
-            if (domain.length > 12) fontSize = 2.8;
-            if (domain.length > 18) fontSize = 2.2;
-            if (domain.length > 25) fontSize = 1.6;
-            if (domain.length > 32) fontSize = 1.2;
-            
-            display.style.fontSize = fontSize + 'rem';
-            document.getElementById('confirm-modal').classList.add('active');
+        title.innerText = "Alternative Suggestions";
+        title.style.color = "#000";
+
+        altsArray.forEach(alt => {
+            const cleanAlt = alt.trim().toLowerCase();
+            const row = document.createElement('div');
+
+            row.className = "flex items-center justify-between p-5 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-black transition-all";
+            row.innerHTML = `
+                <span class="font-black text-sm uppercase">${cleanAlt}</span>
+                <button onclick="openModal('${cleanAlt}')" class="bg-black text-white text-[10px] font-black px-5 py-2 rounded-xl uppercase tracking-widest hover:bg-electric-blue transition-colors">Select</button>
+            `;
+
+            list.appendChild(row);
+        });
+    }
+
+    function openModal(domain) {
+        selectedDomain = domain;
+
+        const display = document.getElementById('modal-domain');
+        display.innerText = domain.toUpperCase();
+
+        let fontSize = 3.5;
+        if (domain.length > 12) fontSize = 2.8;
+        if (domain.length > 18) fontSize = 2.2;
+        if (domain.length > 25) fontSize = 1.6;
+        if (domain.length > 32) fontSize = 1.2;
+
+        display.style.fontSize = fontSize + 'rem';
+        document.getElementById('confirm-modal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('confirm-modal').classList.remove('active');
+    }
+
+    function proceedToStripe() {
+        const recordId = new URLSearchParams(window.location.search).get('record_id');
+
+        if (!recordId) {
+            alert("Missing record ID. Please contact support.");
+            return;
         }
 
-        function closeModal() { document.getElementById('confirm-modal').classList.remove('active'); }
-        
-        function proceedToStripe() {
-            const recordId = new URLSearchParams(window.location.search).get('record_id');
-            window.location.href = `https://buy.stripe.com/5kQ5kC4NSc3y6wNeyV8g000?client_reference_id=${recordId}&prefilled_email=${encodeURIComponent(selectedDomain)}`;
+        if (!selectedDomain) {
+            alert("Please select a domain first.");
+            return;
         }
 
-        function resetSearch() {
-            document.getElementById('search-box').style.display = 'block';
-            document.getElementById('results-area').classList.remove('active');
-            document.getElementById('target_domain').value = '';
-        }
-    </script>
+        const safeDomain = selectedDomain.toLowerCase().replace(/\./g, "_dot_");
+        const clientReferenceId = `${recordId}__${safeDomain}`;
+
+        window.location.href = `https://buy.stripe.com/5kQ5kC4NSc3y6wNeyV8g000?client_reference_id=${encodeURIComponent(clientReferenceId)}`;
+    }
+
+    function resetSearch() {
+        document.getElementById('search-box').style.display = 'block';
+        document.getElementById('results-area').classList.remove('active');
+        document.getElementById('target_domain').value = '';
+        selectedDomain = '';
+    }
+</script>
 </body>
 </html>
