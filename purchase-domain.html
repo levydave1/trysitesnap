@@ -111,7 +111,29 @@
                 const response = await fetch(makeWebhookUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ domain: domainInput, ts: Date.now() })
+                    const cleanInput = domainInput
+    .toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/.*$/, '');
+
+const base = cleanInput.replace(/\.[a-z]{2,}$/i, '');
+
+const candidates = [
+    `${base}.com`,
+    `get${base}.com`,
+    `try${base}.com`,
+    `${base}site.com`,
+    `${base}web.com`,
+    `${base}online.com`,
+    `${base}hq.com`
+];
+
+body: JSON.stringify({
+    domain: `${base}.com`,
+    domains: [...new Set(candidates)],
+    ts: Date.now()
+})
                 });
                 const result = await response.json();
 
