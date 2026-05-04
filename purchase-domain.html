@@ -7,37 +7,91 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; }
-        .electric-blue { color: #0070f3; }
-        .bg-electric-blue { background-color: #0070f3; }
-        .premium-border { border: 6px solid #000; }
-       .label-power-black { color: #000; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; font-size: 16px; display: block; margin-bottom: 12px; }
-        #target_domain { text-transform: lowercase; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #000;
+        }
 
-        .status-area { display: none; animation: fadeIn 0.4s ease-out; }
-        .status-area.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .electric-blue {
+            color: #0070f3;
+        }
 
-        .alt-btn { border: 2px solid #f1f5f9; transition: all 0.2s; }
-        .alt-btn:hover { border-color: #0070f3; background-color: #f8faff; }
+        .bg-electric-blue {
+            background-color: #0070f3;
+        }
+
+        .premium-border {
+            border: 6px solid #000;
+        }
+
+        .label-power-black {
+            color: #000;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 15px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        #target_domain {
+            text-transform: lowercase;
+        }
+
+        .status-area {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .status-area.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alt-btn {
+            border: 2px solid #f1f5f9;
+            transition: all 0.2s;
+        }
+
+        .alt-btn:hover {
+            border-color: #0070f3;
+            background-color: #f8faff;
+        }
 
         #confirm-modal {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0, 0, 0, 0.85);
             z-index: 100;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             backdrop-filter: blur(8px);
-            padding: 20px;
+            padding: 18px 14px;
             overflow-y: auto;
         }
-        #confirm-modal.active { display: flex; }
+
+        #confirm-modal.active {
+            display: flex;
+        }
 
         .modal-content {
             width: 100%;
-            max-width: 760px;
+            max-width: 680px;
+            max-height: calc(100vh - 36px);
+            overflow-y: auto;
             transition: all 0.3s ease;
         }
 
@@ -50,22 +104,22 @@
 
         .field-label {
             display: block;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.12em;
             color: #334155;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .form-input {
             width: 100%;
-            border: 3px solid #f1f5f9;
+            border: 2px solid #edf2f7;
             background: #f8fafc;
-            border-radius: 16px;
-            padding: 14px 16px;
+            border-radius: 14px;
+            padding: 10px 13px;
             font-weight: 800;
-            font-size: 16px;
+            font-size: 15px;
             color: #000;
             outline: none;
             transition: all 0.2s;
@@ -79,9 +133,9 @@
         .error-text {
             display: none;
             color: #dc2626;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 800;
-            margin-top: 7px;
+            margin-top: 6px;
         }
 
         .error-text.show {
@@ -89,27 +143,34 @@
         }
     </style>
 </head>
+
 <body class="antialiased text-black">
 
-    <header class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center">
-        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-28 w-auto object-contain mb-4">
+    <header class="max-w-7xl mx-auto px-6 py-8 flex flex-col items-center">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-24 md:h-28 w-auto object-contain mb-4">
         <div class="text-sm font-black uppercase tracking-[0.25em] text-slate-800 text-center">Premium Websites • Pure Simplicity</div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-6 pb-24 pt-8">
-        <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-5xl font-black italic mb-6">Final Step: Go <span class="electric-blue">Live</span>.</h1>
+    <main class="max-w-4xl mx-auto px-6 pb-24 pt-6">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-black italic mb-5">Final Step: Go <span class="electric-blue">Live</span>.</h1>
             <p class="text-lg text-slate-600 font-bold uppercase tracking-wide">Secure your unique digital address.</p>
         </div>
 
-        <div class="max-w-xl mx-auto premium-border p-10 md:p-16 rounded-[60px] relative bg-white shadow-2xl">
-            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">Concierge Domain Setup</div>
+        <div class="max-w-xl mx-auto premium-border p-8 md:p-14 rounded-[48px] md:rounded-[60px] relative bg-white shadow-2xl">
+            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">
+                Concierge Domain Setup
+            </div>
 
             <div id="search-box">
                 <label class="label-power-black text-center">Enter Desired Domain</label>
                 <input type="text" id="target_domain" placeholder="mybusiness.com" inputmode="url" autocomplete="off"
-                       class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center mb-4">
-                <button onclick="checkAvailability()" id="check-btn" class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest mt-2">Check Availability →</button>
+                    class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center mb-4">
+
+                <button onclick="checkAvailability()" id="check-btn"
+                    class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest mt-2">
+                    Check Availability →
+                </button>
             </div>
 
             <div id="results-area" class="status-area">
@@ -123,7 +184,8 @@
                     <div id="alt-list" class="space-y-3"></div>
                 </div>
 
-                <button onclick="resetSearch()" class="w-full mt-10 py-5 bg-slate-100 rounded-3xl text-sm font-black uppercase tracking-[0.2em] text-slate-500 hover:bg-black hover:text-white transition-all shadow-inner">
+                <button onclick="resetSearch()"
+                    class="w-full mt-10 py-5 bg-slate-100 rounded-3xl text-sm font-black uppercase tracking-[0.2em] text-slate-500 hover:bg-black hover:text-white transition-all shadow-inner">
                     ← Search another name
                 </button>
             </div>
@@ -131,18 +193,20 @@
     </main>
 
     <div id="confirm-modal">
-        <div class="bg-white p-7 md:p-10 rounded-[40px] md:rounded-[60px] modal-content premium-border shadow-2xl">
-            <div class="text-center mb-8">
-                <h3 class="text-3xl font-black italic mb-4 uppercase">Domain Registration Details</h3>
-              <p class="text-slate-600 font-bold text-base md:text-lg leading-relaxed max-w-xl mx-auto">
+        <div class="bg-white p-5 md:p-7 rounded-[32px] md:rounded-[42px] modal-content premium-border shadow-2xl">
+            <div class="text-center mb-5">
+                <h3 class="text-2xl md:text-3xl font-black italic mb-3 uppercase">Domain Registration Details</h3>
+
+                <p class="text-slate-600 font-bold text-sm md:text-base leading-relaxed max-w-xl mx-auto">
                     To secure this domain correctly, we need the official owner/contact details for the registration record.
                 </p>
-                <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest mt-5 mb-2">Selected Domain</p>
-                <span id="modal-domain" class="electric-blue font-black tracking-tighter text-3xl md:text-5xl"></span>
+
+                <p class="text-slate-400 font-black uppercase text-[10px] tracking-widest mt-4 mb-1">Selected Domain</p>
+                <span id="modal-domain" class="electric-blue font-black tracking-tighter text-2xl md:text-4xl"></span>
             </div>
 
-            <form id="registration-form" class="space-y-5">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form id="registration-form" class="space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label class="field-label">Full Name</label>
                         <input id="registrant_full_name" class="form-input" type="text" autocomplete="name" placeholder="John Smith">
@@ -174,7 +238,7 @@
                     <div class="error-text" id="err_address">Please enter a street address.</div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <div class="md:col-span-2">
                         <label class="field-label">City</label>
                         <input id="registrant_city" class="form-input" type="text" autocomplete="address-level2" placeholder="Denver">
@@ -202,21 +266,24 @@
                     <div class="error-text" id="err_country">Please select a country.</div>
                 </div>
 
-                <label class="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer">
+                <label class="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer">
                     <input id="domain_consent" type="checkbox" class="mt-1 w-5 h-5">
-                    <span class="text-base text-slate-700 font-bold leading-relaxed">
+                    <span class="text-sm md:text-base text-slate-700 font-bold leading-relaxed">
                         I confirm these details are accurate and authorize SiteSnap to secure this domain for my website.
                     </span>
                 </label>
                 <div class="error-text" id="err_consent">Please confirm authorization before continuing.</div>
 
-                <div class="space-y-4 pt-3">
-                    <button type="button" onclick="submitRegistrationAndPay()" id="pay-btn" class="w-full bg-black text-white font-black py-6 rounded-2xl uppercase tracking-widest hover:bg-electric-blue transition-all shadow-xl text-xl">
+                <div class="space-y-3 pt-2">
+                    <button type="button" onclick="submitRegistrationAndPay()" id="pay-btn"
+                        class="w-full bg-black text-white font-black py-4 rounded-2xl uppercase tracking-widest hover:bg-electric-blue transition-all shadow-xl text-lg">
                         Save Details & Pay →
                     </button>
-                    <button type="button" onclick="closeModal()" class="text-slate-400 font-black py-2 uppercase text-[10px] tracking-widest block mx-auto hover:text-black transition-all">
-    Go Back
-</button>
+
+                    <button type="button" onclick="closeModal()"
+                        class="w-full bg-white border-2 border-black text-black font-black py-4 rounded-2xl uppercase tracking-widest hover:bg-black hover:text-white transition-all text-base shadow-sm">
+                        ← Go Back
+                    </button>
                 </div>
             </form>
         </div>
@@ -336,7 +403,7 @@
             const cleanAlt = alt.trim().toLowerCase();
             const row = document.createElement('div');
 
-            row.className = "flex items-center justify-between p-5 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-black transition-all";
+            row.className = "flex items-center justify-between p-4 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-black transition-all";
             row.innerHTML = `
                 <span class="font-black text-sm uppercase">${cleanAlt}</span>
                 <button onclick="openModal('${cleanAlt}')" class="bg-black text-white text-[10px] font-black px-5 py-2 rounded-xl uppercase tracking-widest hover:bg-electric-blue transition-colors">Select</button>
@@ -352,10 +419,10 @@
         const display = document.getElementById('modal-domain');
         display.innerText = domain.toUpperCase();
 
-        let fontSize = 3.5;
-        if (domain.length > 12) fontSize = 2.8;
-        if (domain.length > 18) fontSize = 2.2;
-        if (domain.length > 25) fontSize = 1.6;
+        let fontSize = 2.8;
+        if (domain.length > 12) fontSize = 2.4;
+        if (domain.length > 18) fontSize = 2.0;
+        if (domain.length > 25) fontSize = 1.55;
         if (domain.length > 32) fontSize = 1.2;
 
         display.style.fontSize = fontSize + 'rem';
