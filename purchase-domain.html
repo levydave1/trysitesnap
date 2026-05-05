@@ -22,11 +22,11 @@
         }
 
         .premium-border {
-            border: 6px solid #000;
+            border: 5px solid #000;
         }
 
         .success-check {
-            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation: scaleIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
         @keyframes scaleIn {
@@ -42,13 +42,13 @@
         }
 
         .fade-up {
-            animation: fadeUp 0.55s ease-out forwards;
+            animation: fadeUp 0.45s ease-out forwards;
         }
 
         @keyframes fadeUp {
             from {
                 opacity: 0;
-                transform: translateY(14px);
+                transform: translateY(10px);
             }
 
             to {
@@ -57,73 +57,63 @@
             }
         }
 
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-
-            body {
-                background: #fff;
-            }
-
+        @media (max-width: 480px) {
             .premium-border {
-                border: 3px solid #000;
-                box-shadow: none !important;
+                border-width: 4px;
             }
         }
     </style>
 </head>
 
-<body class="antialiased overflow-x-hidden">
+<body class="antialiased overflow-x-hidden min-h-screen flex flex-col">
 
-    <header class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center border-b border-slate-50">
-        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-20 w-auto mb-4">
-        <div class="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 text-center">Payment Received</div>
+    <header class="max-w-6xl mx-auto w-full px-6 pt-5 pb-3 flex flex-col items-center">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-14 md:h-16 w-auto mb-2">
+        <div class="text-[9px] font-black uppercase tracking-[0.32em] text-slate-400 text-center">Payment Received</div>
     </header>
 
-    <main class="max-w-3xl mx-auto px-6 pb-24 pt-12 md:pt-16 text-center">
-        <div class="mb-9 inline-block success-check">
-            <div class="w-24 h-24 bg-electric-blue rounded-full flex items-center justify-center shadow-2xl shadow-blue-200">
-                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4" aria-hidden="true">
+    <main class="max-w-3xl mx-auto w-full px-5 pb-6 pt-2 text-center flex-1 flex flex-col justify-center">
+        <div class="mb-4 inline-block success-check mx-auto">
+            <div class="w-16 h-16 md:w-20 md:h-20 bg-electric-blue rounded-full flex items-center justify-center shadow-xl shadow-blue-100">
+                <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
                 </svg>
             </div>
         </div>
 
-        <h1 class="text-5xl md:text-7xl font-black italic tracking-tighter mb-6 leading-none uppercase fade-up">
-            Payment<br>
-            <span class="text-6xl md:text-8xl electric-blue">Received</span>.
+        <h1 class="text-4xl md:text-6xl font-black italic tracking-tighter mb-3 leading-none uppercase fade-up">
+            Payment <span class="electric-blue">Received</span>.
         </h1>
 
-        <p class="text-slate-500 text-lg md:text-xl font-bold leading-relaxed max-w-2xl mx-auto mb-10 fade-up">
+        <p class="text-slate-500 text-base md:text-lg font-bold leading-relaxed max-w-2xl mx-auto mb-5 fade-up">
             Your order is confirmed. We’re starting the setup process now, and you’ll receive email updates as the next steps are completed.
         </p>
 
-        <section class="premium-border rounded-[42px] md:rounded-[54px] p-7 md:p-12 bg-white shadow-2xl mb-10 relative overflow-hidden text-left fade-up">
-            <div class="absolute top-0 right-0 w-40 h-40 bg-blue-50 rounded-bl-full -z-10"></div>
+        <section class="premium-border rounded-[30px] md:rounded-[42px] p-5 md:p-8 bg-white shadow-2xl mb-5 relative overflow-hidden text-left fade-up">
+            <div class="absolute top-0 right-0 w-28 h-28 bg-blue-50 rounded-bl-full -z-10"></div>
 
-            <div class="text-center mb-8">
-                <div id="plan-badge" class="inline-flex items-center justify-center bg-black text-white px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.25em] mb-5">
+            <div class="text-center mb-5">
+                <div id="plan-badge" class="inline-flex items-center justify-center bg-black text-white px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.22em] mb-3">
                     Order Confirmed
                 </div>
 
-                <h2 id="plan-title" class="text-2xl md:text-3xl font-black uppercase italic tracking-tight mb-3">
+                <h2 id="plan-title" class="text-xl md:text-2xl font-black uppercase italic tracking-tight mb-2">
                     Setup Started
                 </h2>
 
-                <p id="plan-description" class="text-slate-600 font-bold text-base md:text-lg leading-relaxed max-w-xl mx-auto">
+                <p id="plan-description" class="text-slate-600 font-bold text-sm md:text-base leading-relaxed max-w-xl mx-auto">
                     We’re preparing your SiteSnap setup and will email you as soon as the next step is ready.
                 </p>
             </div>
 
-            <div id="plan-details" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"></div>
+            <div id="plan-details" class="grid grid-cols-3 gap-2 md:gap-3 mb-5"></div>
 
-            <div class="rounded-[28px] border-4 border-black bg-slate-50 p-6 md:p-8">
-                <div class="flex items-start gap-4">
-                    <div class="w-11 h-11 rounded-2xl bg-electric-blue text-white flex items-center justify-center font-black shrink-0">!</div>
+            <div class="rounded-[22px] border-2 border-black bg-slate-50 p-4 md:p-5">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-electric-blue text-white flex items-center justify-center font-black shrink-0 text-sm">!</div>
                     <div>
-                        <h3 class="font-black uppercase italic text-lg mb-2">Important note</h3>
-                        <p id="important-note" class="text-slate-600 font-bold text-sm md:text-base leading-relaxed">
+                        <h3 class="font-black uppercase italic text-sm md:text-base mb-1">Important note</h3>
+                        <p id="important-note" class="text-slate-600 font-bold text-xs md:text-sm leading-relaxed">
                             This page confirms your payment was received. Final setup confirmation will be sent by email after the relevant setup step is completed.
                         </p>
                     </div>
@@ -131,37 +121,34 @@
             </div>
         </section>
 
-        <section class="bg-slate-50 border border-slate-100 rounded-[32px] p-7 md:p-9 mb-10 text-left fade-up">
-            <div class="flex flex-col md:flex-row md:items-center gap-5 md:gap-7">
-                <div class="bg-blue-50 px-5 py-3 rounded-full flex items-center gap-3 shrink-0 self-start md:self-center">
+        <section class="bg-slate-50 border border-slate-100 rounded-[24px] p-4 md:p-5 mb-5 text-left fade-up">
+            <div class="flex items-start gap-4">
+                <div class="bg-blue-50 px-4 py-2 rounded-full flex items-center gap-3 shrink-0">
                     <span class="relative flex h-3 w-3">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
                     </span>
-                    <span class="text-xs font-black uppercase tracking-widest text-blue-600">Next Step</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-blue-600">Next</span>
                 </div>
 
                 <div>
-                    <h3 class="font-black uppercase italic text-xl mb-2">Check your inbox</h3>
-                    <p class="text-slate-500 font-bold leading-relaxed">
-                        We’ll send you an email with the next update. If Stripe receipts are enabled, Stripe may also send a separate payment receipt to your email.
+                    <h3 class="font-black uppercase italic text-base mb-1">Check your inbox</h3>
+                    <p class="text-slate-500 font-bold text-sm leading-relaxed">
+                        We’ll send you an email with the next update. Stripe may also send a separate payment receipt by email if receipts are enabled.
                     </p>
                 </div>
             </div>
         </section>
 
-        <div class="flex flex-col md:flex-row gap-4 justify-center no-print">
-            <a href="/" class="bg-black text-white px-10 py-5 rounded-full font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-800 transition-all">
+        <div class="flex justify-center fade-up">
+            <a href="/" class="bg-black text-white px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.2em] hover:bg-slate-800 transition-all">
                 Back to Home
-            </a>
-            <a href="mailto:hello@trysitesnap.com" class="border-2 border-slate-100 text-slate-400 px-10 py-5 rounded-full font-black uppercase text-[10px] tracking-[0.2em] hover:text-black hover:border-black transition-all">
-                Contact Support
             </a>
         </div>
     </main>
 
-    <footer class="py-12 text-center bg-white border-t border-slate-100">
-        <p class="text-slate-800 text-xs font-black uppercase tracking-[0.4em]">© 2026 SiteSnap • Pure Simplicity.</p>
+    <footer class="py-4 text-center bg-white border-t border-slate-100">
+        <p class="text-slate-800 text-[9px] font-black uppercase tracking-[0.3em]">© 2026 SiteSnap • Pure Simplicity.</p>
     </footer>
 
     <script>
@@ -180,34 +167,34 @@
             subdomain: {
                 badge: 'SiteSnap Subdomain',
                 title: 'Your setup has started',
-                description: 'We’re preparing your website on a SiteSnap-managed subdomain. This is the fastest path to getting your new site online.',
+                description: 'We’re preparing your website on a SiteSnap-managed subdomain — the fastest path to getting online.',
                 note: 'Your payment is confirmed. We’ll email you when your SiteSnap subdomain setup is ready or if anything else is needed.',
                 steps: [
-                    ['1', 'Payment received', 'Your order is confirmed.'],
-                    ['2', 'Setup begins', 'We prepare your SiteSnap subdomain.'],
-                    ['3', 'Email update', 'You’ll receive the next step by email.']
+                    ['1', 'Paid', 'Order confirmed.'],
+                    ['2', 'Setup', 'Subdomain setup starts.'],
+                    ['3', 'Email', 'Next update by email.']
                 ]
             },
             existing: {
                 badge: 'Existing Domain',
                 title: 'Domain connection started',
-                description: 'We received your order and will guide you through connecting your existing domain to your new SiteSnap website.',
-                note: 'Your payment is confirmed, but your existing domain is not connected automatically from this page. We’ll email you the next steps for DNS/domain connection.',
+                description: 'We received your order and will guide you through connecting your existing domain to your SiteSnap website.',
+                note: 'Your payment is confirmed, but your existing domain is not connected automatically from this page. We’ll email you the DNS/domain steps.',
                 steps: [
-                    ['1', 'Payment received', 'Your order is confirmed.'],
-                    ['2', 'Connection review', 'We prepare the domain connection steps.'],
-                    ['3', 'DNS guidance', 'You’ll receive clear instructions by email.']
+                    ['1', 'Paid', 'Order confirmed.'],
+                    ['2', 'Review', 'Connection steps prepared.'],
+                    ['3', 'Email', 'DNS guidance sent.']
                 ]
             },
             new: {
                 badge: 'New Domain',
                 title: 'Domain registration is starting',
-                description: 'We received your payment and are now starting the domain registration process for your selected domain.',
+                description: 'We received your payment and are starting the registration process for your selected domain.',
                 note: 'This page confirms your payment only. Your domain is not considered secured until registration is completed and confirmed by email.',
                 steps: [
-                    ['1', 'Payment received', 'Your order is confirmed.'],
-                    ['2', 'Domain registration', 'We re-check and attempt registration.'],
-                    ['3', 'Confirmation email', 'We’ll email you once the status is confirmed.']
+                    ['1', 'Paid', 'Order confirmed.'],
+                    ['2', 'Register', 'We attempt registration.'],
+                    ['3', 'Email', 'Status confirmed by email.']
                 ]
             },
             general: {
@@ -216,9 +203,9 @@
                 description: 'We received your payment and are starting the appropriate SiteSnap setup process for your order.',
                 note: 'This page confirms your payment was received. Final setup details and any required next steps will be sent by email.',
                 steps: [
-                    ['1', 'Payment received', 'Your order is confirmed.'],
-                    ['2', 'Setup review', 'We review the correct next step.'],
-                    ['3', 'Email update', 'You’ll receive the next update by email.']
+                    ['1', 'Paid', 'Order confirmed.'],
+                    ['2', 'Review', 'We check the next step.'],
+                    ['3', 'Email', 'Next update by email.']
                 ]
             }
         };
@@ -231,10 +218,10 @@
         contentArea.note.innerText = activePlan.note;
 
         contentArea.details.innerHTML = activePlan.steps.map(step => `
-            <div class="bg-white border-2 border-slate-100 rounded-[24px] p-5 text-center shadow-sm">
-                <div class="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-4 font-black">${step[0]}</div>
-                <h4 class="font-black uppercase text-sm mb-2">${step[1]}</h4>
-                <p class="text-slate-500 font-bold text-sm leading-relaxed">${step[2]}</p>
+            <div class="bg-white border-2 border-slate-100 rounded-[18px] p-3 text-center shadow-sm">
+                <div class="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-2 font-black text-xs">${step[0]}</div>
+                <h4 class="font-black uppercase text-[10px] md:text-xs mb-1">${step[1]}</h4>
+                <p class="text-slate-500 font-bold text-[10px] md:text-xs leading-snug">${step[2]}</p>
             </div>
         `).join('');
     </script>
