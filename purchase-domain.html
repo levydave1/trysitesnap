@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Received | SiteSnap</title>
+    <title>Secure Your Domain | SiteSnap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -22,30 +22,33 @@
         }
 
         .premium-border {
-            border: 5px solid #000;
+            border: 6px solid #000;
         }
 
-        .success-check {
-            animation: scaleIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        .label-power-black {
+            color: #000;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 15px;
+            display: block;
+            margin-bottom: 10px;
         }
 
-        @keyframes scaleIn {
-            from {
-                transform: scale(0);
-                opacity: 0;
-            }
-
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
+        #target_domain {
+            text-transform: lowercase;
         }
 
-        .fade-up {
-            animation: fadeUp 0.45s ease-out forwards;
+        .status-area {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
         }
 
-        @keyframes fadeUp {
+        .status-area.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(10px);
@@ -57,173 +60,631 @@
             }
         }
 
+        .alt-btn {
+            border: 2px solid #f1f5f9;
+            transition: all 0.2s;
+        }
+
+        .alt-btn:hover {
+            border-color: #0070f3;
+            background-color: #f8faff;
+        }
+
+        #confirm-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            align-items: flex-start;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            padding: 18px 14px;
+            overflow-y: auto;
+        }
+
+        #confirm-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            width: 100%;
+            max-width: 680px;
+            max-height: calc(100vh - 36px);
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        #modal-domain {
+            white-space: nowrap;
+            display: block;
+            text-align: center;
+            font-weight: 900;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            border: 2px solid #edf2f7;
+            background: #f8fafc;
+            border-radius: 14px;
+            padding: 10px 13px;
+            font-weight: 800;
+            font-size: 15px;
+            color: #000;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            background: #fff;
+            border-color: #0070f3;
+        }
+
+        .error-text {
+            display: none;
+            color: #dc2626;
+            font-size: 13px;
+            font-weight: 800;
+            margin-top: 6px;
+        }
+
+        .error-text.show {
+            display: block;
+        }
+
+        .domain-warning {
+            border: 2px solid #fde68a;
+            background: #fffbeb;
+            color: #92400e;
+            border-radius: 18px;
+            padding: 14px 16px;
+            font-size: 13px;
+            line-height: 1.45;
+            font-weight: 800;
+        }
+
+        .domain-warning strong {
+            color: #000;
+            font-weight: 900;
+        }
+
         @media (max-width: 480px) {
             .premium-border {
                 border-width: 4px;
+            }
+
+            .modal-content {
+                border-radius: 28px;
             }
         }
     </style>
 </head>
 
-<body class="antialiased overflow-x-hidden min-h-screen flex flex-col">
+<body class="antialiased text-black">
 
-    <header class="max-w-6xl mx-auto w-full px-6 pt-5 pb-3 flex flex-col items-center">
-        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-14 md:h-16 w-auto mb-2">
-        <div class="text-[9px] font-black uppercase tracking-[0.32em] text-slate-400 text-center">Payment Received</div>
+    <header class="max-w-7xl mx-auto px-6 py-8 flex flex-col items-center">
+        <img src="https://raw.githubusercontent.com/levydave1/trysitesnap/refs/heads/main/logo.png" alt="SiteSnap" class="h-24 md:h-28 w-auto object-contain mb-4">
+        <div class="text-sm font-black uppercase tracking-[0.25em] text-slate-800 text-center">Premium Websites • Pure Simplicity</div>
     </header>
 
-    <main class="max-w-3xl mx-auto w-full px-5 pb-6 pt-2 text-center flex-1 flex flex-col justify-center">
-        <div class="mb-4 inline-block success-check mx-auto">
-            <div class="w-16 h-16 md:w-20 md:h-20 bg-electric-blue rounded-full flex items-center justify-center shadow-xl shadow-blue-100">
-                <svg class="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
-                </svg>
-            </div>
+    <main class="max-w-4xl mx-auto px-6 pb-24 pt-6">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-black italic mb-5">Final Step: Go <span class="electric-blue">Live</span>.</h1>
+            <p class="text-lg text-slate-600 font-bold uppercase tracking-wide">Secure your unique digital address.</p>
         </div>
 
-        <h1 class="text-4xl md:text-6xl font-black italic tracking-tighter mb-3 leading-none uppercase fade-up">
-            Payment <span class="electric-blue">Received</span>.
-        </h1>
-
-        <p class="text-slate-500 text-base md:text-lg font-bold leading-relaxed max-w-2xl mx-auto mb-5 fade-up">
-            Your order is confirmed. We’re starting the setup process now, and you’ll receive email updates as the next steps are completed.
-        </p>
-
-        <section class="premium-border rounded-[30px] md:rounded-[42px] p-5 md:p-8 bg-white shadow-2xl mb-5 relative overflow-hidden text-left fade-up">
-            <div class="absolute top-0 right-0 w-28 h-28 bg-blue-50 rounded-bl-full -z-10"></div>
-
-            <div class="text-center mb-5">
-                <div id="plan-badge" class="inline-flex items-center justify-center bg-black text-white px-5 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.22em] mb-3">
-                    Order Confirmed
-                </div>
-
-                <h2 id="plan-title" class="text-xl md:text-2xl font-black uppercase italic tracking-tight mb-2">
-                    Setup Started
-                </h2>
-
-                <p id="plan-description" class="text-slate-600 font-bold text-sm md:text-base leading-relaxed max-w-xl mx-auto">
-                    We’re preparing your SiteSnap setup and will email you as soon as the next step is ready.
-                </p>
+        <div class="max-w-xl mx-auto premium-border p-8 md:p-14 rounded-[48px] md:rounded-[60px] relative bg-white shadow-2xl">
+            <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 rounded-full font-black uppercase text-xs tracking-[0.2em] whitespace-nowrap">
+                Concierge Domain Setup
             </div>
 
-            <div id="plan-details" class="grid grid-cols-3 gap-2 md:gap-3 mb-5"></div>
+            <div id="search-box">
+                <label class="label-power-black text-center">Enter Desired Domain</label>
+                <input type="text" id="target_domain" placeholder="mybusiness.com" inputmode="url" autocomplete="off"
+                    class="w-full px-6 py-5 rounded-2xl border-4 border-slate-100 bg-slate-50 focus:bg-white focus:outline-none focus:border-blue-500 transition-all font-bold text-xl text-black text-center mb-4">
 
-            <div class="rounded-[22px] border-2 border-black bg-slate-50 p-4 md:p-5">
-                <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-xl bg-electric-blue text-white flex items-center justify-center font-black shrink-0 text-sm">!</div>
-                    <div>
-                        <h3 class="font-black uppercase italic text-sm md:text-base mb-1">Important note</h3>
-                        <p id="important-note" class="text-slate-600 font-bold text-xs md:text-sm leading-relaxed">
-                            This page confirms your payment was received. Final setup confirmation will be sent by email after the relevant setup step is completed.
-                        </p>
-                    </div>
+                <div class="domain-warning mb-4">
+                    <strong>Important:</strong> Domain availability is checked in real time, but your domain is not secured until registration is completed after payment.
                 </div>
+
+                <button onclick="checkAvailability()" id="check-btn"
+                    class="w-full bg-electric-blue text-white font-black py-6 rounded-2xl shadow-xl hover:opacity-90 transition-all text-xl uppercase tracking-widest mt-2">
+                    Check Availability →
+                </button>
             </div>
-        </section>
 
-        <section class="bg-slate-50 border border-slate-100 rounded-[24px] p-4 md:p-5 mb-5 text-left fade-up">
-            <div class="flex items-start gap-4">
-                <div class="bg-blue-50 px-4 py-2 rounded-full flex items-center gap-3 shrink-0">
-                    <span class="relative flex h-3 w-3">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                    </span>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-blue-600">Next</span>
+            <div id="results-area" class="status-area">
+                <div id="primary-status" class="mb-8 text-center">
+                    <h3 id="primary-name" class="text-3xl font-black mb-4 italic uppercase"></h3>
+                    <div id="primary-action"></div>
                 </div>
 
-                <div>
-                    <h3 class="font-black uppercase italic text-base mb-1">Check your inbox</h3>
-                    <p class="text-slate-500 font-bold text-sm leading-relaxed">
-                        We’ll send you an email with the next update. Stripe may also send a separate payment receipt by email if receipts are enabled.
-                    </p>
+                <div class="domain-warning mb-8">
+                    <strong>Heads up:</strong> We will re-check the selected domain after payment. If the domain becomes unavailable or fails registration, your order will be reviewed manually.
                 </div>
+
+                <div id="alt-section" class="border-t-4 border-black pt-8 mt-8">
+                    <label id="alt-title" class="label-power-black text-center mb-6">Alternative Suggestions</label>
+                    <div id="alt-list" class="space-y-3"></div>
+                </div>
+
+                <button onclick="resetSearch()"
+                    class="w-full mt-10 py-5 bg-slate-100 rounded-3xl text-sm font-black uppercase tracking-[0.2em] text-slate-500 hover:bg-black hover:text-white transition-all shadow-inner">
+                    ← Search another name
+                </button>
             </div>
-        </section>
-
-        <div class="flex justify-center fade-up">
-            <a href="/" class="bg-black text-white px-8 py-4 rounded-full font-black uppercase text-[10px] tracking-[0.2em] hover:bg-slate-800 transition-all">
-                Back to Home
-            </a>
         </div>
     </main>
 
-    <footer class="py-4 text-center bg-white border-t border-slate-100">
-        <p class="text-slate-800 text-[9px] font-black uppercase tracking-[0.3em]">© 2026 SiteSnap • Pure Simplicity.</p>
-    </footer>
+    <div id="confirm-modal">
+        <div class="bg-white p-5 md:p-7 rounded-[32px] md:rounded-[42px] modal-content premium-border shadow-2xl">
+            <div class="text-center mb-5">
+                <h3 class="text-2xl md:text-3xl font-black italic mb-3 uppercase">Domain Registration Details</h3>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const plan = (urlParams.get('plan') || 'general').toLowerCase();
+                <p class="text-slate-600 font-bold text-sm md:text-base leading-relaxed max-w-xl mx-auto">
+                    To secure this domain correctly, we need the official owner/contact details for the registration record.
+                </p>
 
-        const contentArea = {
-            badge: document.getElementById('plan-badge'),
-            title: document.getElementById('plan-title'),
-            description: document.getElementById('plan-description'),
-            details: document.getElementById('plan-details'),
-            note: document.getElementById('important-note')
-        };
+                <p class="text-slate-400 font-black uppercase text-[10px] tracking-widest mt-4 mb-1">Selected Domain</p>
+                <span id="modal-domain" class="electric-blue font-black tracking-tighter text-2xl md:text-4xl"></span>
 
-        const plans = {
-            subdomain: {
-                badge: 'SiteSnap Subdomain',
-                title: 'Your setup has started',
-                description: 'We’re preparing your website on a SiteSnap-managed subdomain — the fastest path to getting online.',
-                note: 'Your payment is confirmed. We’ll email you when your SiteSnap subdomain setup is ready or if anything else is needed.',
-                steps: [
-                    ['1', 'Paid', 'Order confirmed.'],
-                    ['2', 'Setup', 'Subdomain setup starts.'],
-                    ['3', 'Email', 'Next update by email.']
-                ]
-            },
-            existing: {
-                badge: 'Existing Domain',
-                title: 'Domain connection started',
-                description: 'We received your order and will guide you through connecting your existing domain to your SiteSnap website.',
-                note: 'Your payment is confirmed, but your existing domain is not connected automatically from this page. We’ll email you the DNS/domain steps.',
-                steps: [
-                    ['1', 'Paid', 'Order confirmed.'],
-                    ['2', 'Review', 'Connection steps prepared.'],
-                    ['3', 'Email', 'DNS guidance sent.']
-                ]
-            },
-            new: {
-                badge: 'New Domain',
-                title: 'Domain registration is starting',
-                description: 'We received your payment and are starting the registration process for your selected domain.',
-                note: 'This page confirms your payment only. Your domain is not considered secured until registration is completed and confirmed by email.',
-                steps: [
-                    ['1', 'Paid', 'Order confirmed.'],
-                    ['2', 'Register', 'We attempt registration.'],
-                    ['3', 'Email', 'Status confirmed by email.']
-                ]
-            },
-            general: {
-                badge: 'Order Confirmed',
-                title: 'Your setup has started',
-                description: 'We received your payment and are starting the appropriate SiteSnap setup process for your order.',
-                note: 'This page confirms your payment was received. Final setup details and any required next steps will be sent by email.',
-                steps: [
-                    ['1', 'Paid', 'Order confirmed.'],
-                    ['2', 'Review', 'We check the next step.'],
-                    ['3', 'Email', 'Next update by email.']
-                ]
-            }
-        };
-
-        const activePlan = plans[plan] || plans.general;
-
-        contentArea.badge.innerText = activePlan.badge;
-        contentArea.title.innerText = activePlan.title;
-        contentArea.description.innerText = activePlan.description;
-        contentArea.note.innerText = activePlan.note;
-
-        contentArea.details.innerHTML = activePlan.steps.map(step => `
-            <div class="bg-white border-2 border-slate-100 rounded-[18px] p-3 text-center shadow-sm">
-                <div class="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center mx-auto mb-2 font-black text-xs">${step[0]}</div>
-                <h4 class="font-black uppercase text-[10px] md:text-xs mb-1">${step[1]}</h4>
-                <p class="text-slate-500 font-bold text-[10px] md:text-xs leading-snug">${step[2]}</p>
+                <div class="domain-warning text-left mt-5">
+                    <strong>Before you continue:</strong> The domain is not guaranteed until registration is completed after payment. If registration fails, SiteSnap will manually review your order and contact you.
+                </div>
             </div>
-        `).join('');
-    </script>
+
+            <form id="registration-form" class="space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="field-label">Full Name</label>
+                        <input id="registrant_full_name" class="form-input" type="text" autocomplete="name" placeholder="John Smith" required>
+                        <div class="error-text" id="err_full_name">Please enter the registrant full name.</div>
+                    </div>
+
+                    <div>
+                        <label class="field-label">Business Name</label>
+                        <input id="business_name" class="form-input" type="text" autocomplete="organization" placeholder="Your Business LLC" required>
+                        <div class="error-text" id="err_business_name">Please enter the business name.</div>
+                    </div>
+
+                    <div>
+                        <label class="field-label">Email</label>
+                        <input id="registrant_email" class="form-input" type="email" autocomplete="email" placeholder="you@example.com" required>
+                        <div class="error-text" id="err_email">Please enter a valid email address.</div>
+                    </div>
+
+                    <div>
+                        <label class="field-label">U.S. Phone</label>
+                        <input id="registrant_phone" class="form-input" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 123-4567" required>
+                        <div class="error-text" id="err_phone">Please enter a valid U.S. phone number.</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="field-label">Street Address</label>
+                    <input id="registrant_address" class="form-input" type="text" autocomplete="street-address" placeholder="123 Main St" required>
+                    <div class="error-text" id="err_address">Please enter a street address.</div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div class="md:col-span-2">
+                        <label class="field-label">City</label>
+                        <input id="registrant_city" class="form-input" type="text" autocomplete="address-level2" placeholder="Denver" required>
+                        <div class="error-text" id="err_city">Please enter a city.</div>
+                    </div>
+
+                    <div>
+                        <label class="field-label">State</label>
+                        <input id="registrant_state" class="form-input uppercase" type="text" maxlength="2" autocomplete="address-level1" placeholder="CO" required>
+                        <div class="error-text" id="err_state">Use 2 letters, e.g. CO.</div>
+                    </div>
+
+                    <div>
+                        <label class="field-label">ZIP Code</label>
+                        <input id="registrant_zip" class="form-input" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="80202" required>
+                        <div class="error-text" id="err_zip">ZIP must be 5 digits or ZIP+4. No letters.</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="field-label">Country</label>
+                    <select id="registrant_country" class="form-input" required>
+                        <option value="US" selected>United States</option>
+                    </select>
+                    <div class="error-text" id="err_country">Please select a country.</div>
+                </div>
+
+                <label class="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer">
+                    <input id="domain_consent" type="checkbox" class="mt-1 w-5 h-5">
+                    <span class="text-sm md:text-base text-slate-700 font-bold leading-relaxed">
+                        I confirm these details are accurate and authorize SiteSnap to secure this domain for my website after payment.
+                    </span>
+                </label>
+                <div class="error-text" id="err_consent">Please confirm authorization before continuing.</div>
+
+                <div class="space-y-3 pt-2">
+                    <button type="button" onclick="submitRegistrationAndPay()" id="pay-btn"
+                        class="w-full bg-black text-white font-black py-4 rounded-2xl uppercase tracking-widest hover:bg-electric-blue transition-all shadow-xl text-lg">
+                        Save Details & Pay →
+                    </button>
+
+                    <button type="button" onclick="closeModal()"
+                        class="w-full bg-white border-2 border-black text-black font-black py-4 rounded-2xl uppercase tracking-widest hover:bg-black hover:text-white transition-all text-base shadow-sm">
+                        ← Go Back
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+    const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
+    const saveRegistrationWebhookUrl = "https://hook.eu2.make.com/n6zrz27mj6m5kmytewkc50iulf19pz9h";
+    const stripePaymentLink = "https://buy.stripe.com/5kQ5kC4NSc3y6wNeyV8g000";
+
+    let selectedDomain = "";
+
+    document.getElementById('target_domain').addEventListener('input', function () {
+        this.value = this.value.toLowerCase().replace(/\s/g, '');
+    });
+
+    document.getElementById('registrant_zip').addEventListener('input', function () {
+        this.value = this.value.replace(/[^\d-]/g, '');
+    });
+
+    document.getElementById('registrant_state').addEventListener('input', function () {
+        this.value = this.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+    });
+
+    document.getElementById('registrant_phone').addEventListener('input', function () {
+        this.value = formatPhoneForDisplay(this.value);
+    });
+
+    function normalizeDomainInput(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/^https?:\/\//, '')
+            .replace(/^www\./, '')
+            .replace(/\/.*$/, '')
+            .replace(/\s/g, '');
+    }
+
+    function formatPhoneForDisplay(phone) {
+        let digits = String(phone || '').replace(/\D/g, '');
+
+        if (digits.length === 11 && digits.startsWith('1')) {
+            digits = digits.slice(1);
+        }
+
+        digits = digits.slice(0, 10);
+
+        if (digits.length <= 3) {
+            return digits;
+        }
+
+        if (digits.length <= 6) {
+            return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+        }
+
+        return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+
+    function formatUSPhoneForCloudflare(phone) {
+        const digitsOnly = String(phone || '').replace(/\D/g, '');
+        let normalized = digitsOnly;
+
+        if (normalized.length === 11 && normalized.startsWith('1')) {
+            normalized = normalized.slice(1);
+        }
+
+        if (normalized.length !== 10) {
+            return null;
+        }
+
+        return `+1.${normalized}`;
+    }
+
+    async function checkAvailability() {
+        const cleanInput = normalizeDomainInput(document.getElementById('target_domain').value);
+        const domainRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.[a-z]{2,}$/;
+
+        if (!domainRegex.test(cleanInput)) {
+            alert("Please enter a valid domain (e.g. mybusiness.com)");
+            return;
+        }
+
+        const base = cleanInput.replace(/\.[a-z]{2,}$/i, '');
+        const primaryDomain = `${base}.com`;
+
+        const candidates = [
+            primaryDomain,
+            `get${base}.com`,
+            `try${base}.com`,
+            `${base}site.com`,
+            `${base}web.com`
+        ];
+
+        const btn = document.getElementById('check-btn');
+        btn.innerText = "Searching...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(makeWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    domain: primaryDomain,
+                    domains: [...new Set(candidates)],
+                    ts: Date.now()
+                })
+            });
+
+            let result = {};
+            try {
+                result = await response.json();
+            } catch (e) {
+                result = {};
+            }
+
+            if (!response.ok) {
+                alert("Could not check this domain right now. Please try again.");
+                return;
+            }
+
+            document.getElementById('search-box').style.display = 'none';
+            document.getElementById('results-area').classList.add('active');
+
+            const primaryName = document.getElementById('primary-name');
+            const primaryAction = document.getElementById('primary-action');
+
+            primaryName.innerText = primaryDomain.toUpperCase();
+
+            const isAvailable = String(result.available).toLowerCase() === "true";
+
+            if (isAvailable) {
+                primaryName.className = "text-3xl font-black mb-4 italic electric-blue uppercase";
+                primaryAction.innerHTML = `<button onclick="openModal('${escapeForAttribute(primaryDomain)}')" class="w-full bg-electric-blue text-white font-black py-5 rounded-2xl uppercase tracking-widest shadow-xl">Select Primary →</button>`;
+            } else {
+                primaryName.className = "text-3xl font-black mb-4 italic text-slate-200 line-through uppercase";
+                primaryAction.innerHTML = `<p class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Already Taken or Over Budget</p>`;
+            }
+
+            showAlternatives(primaryDomain, result.alternatives);
+
+        } catch (e) {
+            console.error(e);
+            alert("Server connection error.");
+        } finally {
+            btn.innerText = "Check Availability →";
+            btn.disabled = false;
+        }
+    }
+
+    function showAlternatives(original, alts) {
+        const list = document.getElementById('alt-list');
+        const title = document.getElementById('alt-title');
+
+        list.innerHTML = '';
+
+        const altsArray = Array.isArray(alts)
+            ? alts.filter(a => a && a.trim().toLowerCase() !== original.toLowerCase())
+            : [];
+
+        if (altsArray.length === 0) {
+            title.innerText = "NO ALTERNATIVES AVAILABLE";
+            title.style.color = "#cbd5e1";
+            return;
+        }
+
+        title.innerText = "Alternative Suggestions";
+        title.style.color = "#000";
+
+        altsArray.forEach(alt => {
+            const cleanAlt = normalizeDomainInput(alt);
+            if (!cleanAlt) return;
+
+            const row = document.createElement('div');
+            const name = document.createElement('span');
+            const button = document.createElement('button');
+
+            row.className = "flex items-center justify-between gap-3 p-4 bg-slate-50 rounded-2xl border-2 border-transparent hover:border-black transition-all";
+            name.className = "font-black text-sm uppercase break-all";
+            name.innerText = cleanAlt;
+
+            button.type = "button";
+            button.className = "bg-black text-white text-[10px] font-black px-5 py-2 rounded-xl uppercase tracking-widest hover:bg-electric-blue transition-colors whitespace-nowrap";
+            button.innerText = "Select";
+            button.onclick = function () {
+                openModal(cleanAlt);
+            };
+
+            row.appendChild(name);
+            row.appendChild(button);
+            list.appendChild(row);
+        });
+    }
+
+    function openModal(domain) {
+        selectedDomain = normalizeDomainInput(domain);
+
+        const display = document.getElementById('modal-domain');
+        display.innerText = selectedDomain.toUpperCase();
+
+        let fontSize = 2.8;
+        if (selectedDomain.length > 12) fontSize = 2.4;
+        if (selectedDomain.length > 18) fontSize = 2.0;
+        if (selectedDomain.length > 25) fontSize = 1.55;
+        if (selectedDomain.length > 32) fontSize = 1.2;
+
+        display.style.fontSize = fontSize + 'rem';
+        document.getElementById('confirm-modal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('confirm-modal').classList.remove('active');
+    }
+
+    function showError(id, show) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.toggle('show', show);
+    }
+
+    function getValue(id) {
+        return document.getElementById(id).value.trim();
+    }
+
+    function escapeForAttribute(value) {
+        return String(value || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function validateRegistrationForm() {
+        const fullName = getValue('registrant_full_name');
+        const businessName = getValue('business_name');
+        const email = getValue('registrant_email');
+        const phone = getValue('registrant_phone');
+        const address = getValue('registrant_address');
+        const city = getValue('registrant_city');
+        const state = getValue('registrant_state').toUpperCase();
+        const zip = getValue('registrant_zip');
+        const country = getValue('registrant_country');
+        const consent = document.getElementById('domain_consent').checked;
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const formattedPhone = formatUSPhoneForCloudflare(phone);
+        const stateRegex = /^[A-Z]{2}$/;
+        const zipRegex = /^\d{5}(-?\d{4})?$/;
+
+        let valid = true;
+
+        showError('err_full_name', fullName.length < 2);
+        if (fullName.length < 2) valid = false;
+
+        showError('err_business_name', businessName.length < 2);
+        if (businessName.length < 2) valid = false;
+
+        showError('err_email', !emailRegex.test(email));
+        if (!emailRegex.test(email)) valid = false;
+
+        showError('err_phone', !formattedPhone);
+        if (!formattedPhone) valid = false;
+
+        showError('err_address', address.length < 4);
+        if (address.length < 4) valid = false;
+
+        showError('err_city', city.length < 2);
+        if (city.length < 2) valid = false;
+
+        showError('err_state', !stateRegex.test(state));
+        if (!stateRegex.test(state)) valid = false;
+
+        showError('err_zip', !zipRegex.test(zip));
+        if (!zipRegex.test(zip)) valid = false;
+
+        showError('err_country', country !== 'US');
+        if (country !== 'US') valid = false;
+
+        showError('err_consent', !consent);
+        if (!consent) valid = false;
+
+        return valid;
+    }
+
+    async function submitRegistrationAndPay() {
+        const recordId = new URLSearchParams(window.location.search).get('record_id');
+
+        if (!recordId) {
+            alert("Missing record ID. Please contact support.");
+            return;
+        }
+
+        if (!selectedDomain) {
+            alert("Please select a domain first.");
+            return;
+        }
+
+        if (!validateRegistrationForm()) {
+            return;
+        }
+
+        const formattedPhone = formatUSPhoneForCloudflare(getValue('registrant_phone'));
+
+        if (!formattedPhone) {
+            showError('err_phone', true);
+            return;
+        }
+
+        const btn = document.getElementById('pay-btn');
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+
+        const payload = {
+            record_id: recordId,
+            selected_domain: selectedDomain,
+            registrant_full_name: getValue('registrant_full_name'),
+            registrant_email: getValue('registrant_email'),
+            registrant_phone: formattedPhone,
+            business_name: getValue('business_name'),
+            registrant_address: getValue('registrant_address'),
+            registrant_city: getValue('registrant_city'),
+            registrant_state: getValue('registrant_state').toUpperCase(),
+            registrant_zip: getValue('registrant_zip'),
+            registrant_country: 'US',
+            consent: document.getElementById('domain_consent').checked,
+            ts: Date.now()
+        };
+
+        try {
+            const response = await fetch(saveRegistrationWebhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            let result = {};
+            try {
+                result = await response.json();
+            } catch (e) {
+                result = {};
+            }
+
+            if (!response.ok || result.success === false) {
+                alert(result.message || "Could not save registration details. Please try again.");
+                btn.innerText = "Save Details & Pay →";
+                btn.disabled = false;
+                return;
+            }
+
+            const safeDomain = selectedDomain.toLowerCase().replace(/\./g, "_dot_");
+            const clientReferenceId = `${recordId}__${safeDomain}`;
+
+            window.location.href = `${stripePaymentLink}?client_reference_id=${encodeURIComponent(clientReferenceId)}`;
+
+        } catch (e) {
+            console.error(e);
+            alert("Server connection error. Please try again.");
+            btn.innerText = "Save Details & Pay →";
+            btn.disabled = false;
+        }
+    }
+
+    function resetSearch() {
+        document.getElementById('search-box').style.display = 'block';
+        document.getElementById('results-area').classList.remove('active');
+        document.getElementById('target_domain').value = '';
+        selectedDomain = '';
+    }
+</script>
 </body>
 </html>
