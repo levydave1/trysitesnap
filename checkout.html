@@ -6,41 +6,45 @@
     <title>Finalize Your Site | SiteSnap</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #000; }
-        .electric-blue { color: #0070f3; }
-        .bg-electric-blue { background-color: #0070f3; }
-        .premium-border { border: 6px solid #000; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #000;
+        }
+
+        .electric-blue {
+            color: #0070f3;
+        }
+
+        .bg-electric-blue {
+            background-color: #0070f3;
+        }
+
+        .premium-border {
+            border: 6px solid #000;
+        }
         
-        .plan-card { 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            cursor: pointer; 
-            border: 4px solid #f1f5f9; 
+        .plan-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 4px solid #f1f5f9;
             position: relative;
         }
-        .plan-card.selected { 
-            border-color: #0070f3; 
-            background-color: #f8faff; 
+
+        .plan-card.selected {
+            border-color: #0070f3;
+            background-color: #f8faff;
             transform: translateY(-5px);
             box-shadow: 0 20px 40px rgba(0, 112, 243, 0.1);
         }
-        
-        #agreement-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(8px);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .agreement-box { max-height: 300px; overflow-y: auto; }
-        .agreement-box::-webkit-scrollbar { width: 6px; }
-        .agreement-box::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 
-        .disabled-btn { opacity: 0.3 !important; cursor: not-allowed !important; pointer-events: none !important; }
+        .disabled-btn {
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
         
         .popular-badge {
             position: absolute;
@@ -57,8 +61,69 @@
             box-shadow: 0 4px 12px rgba(0, 112, 243, 0.3);
             z-index: 20;
         }
+
+        #agreement-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.82);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 18px 14px;
+            overflow-y: auto;
+        }
+
+        .agreement-modal-card {
+            width: 100%;
+            max-width: 760px;
+            max-height: calc(100vh - 36px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .agreement-box {
+            max-height: 330px;
+            overflow-y: auto;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            background: #f8fafc;
+        }
+
+        @media (max-width: 640px) {
+            .agreement-box {
+                max-height: 300px;
+                padding: 16px;
+            }
+        }
+
+        .agreement-box::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .agreement-box::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .agree-disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .agree-hint {
+            display: none;
+        }
+
+        .agree-hint.show {
+            display: block;
+        }
     </style>
 </head>
+
 <body class="antialiased">
 
     <header class="max-w-7xl mx-auto px-6 py-10 flex flex-col items-center">
@@ -72,11 +137,15 @@
             <h1 class="text-4xl md:text-6xl font-black italic tracking-tighter mb-4 leading-none uppercase">
                 Activate Your <span class="electric-blue">License</span>
             </h1>
+
             <div class="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-2 mb-4">
                 <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
                 <p class="text-blue-600 font-black uppercase text-[10px] tracking-widest">AI Efficiency Discount Applied (70% Off)</p>
             </div>
-            <p class="text-slate-500 font-bold uppercase text-xs tracking-widest block mt-2">Lifetime Access • No Monthly Fees • Instant Deployment</p>
+
+            <p class="text-slate-500 font-bold uppercase text-xs tracking-widest block mt-2">
+                Lifetime Website Content • One-Time Activation • No Monthly Website License Fees
+            </p>
         </div>
 
         <div class="grid md:grid-cols-3 gap-6 mb-12">
@@ -86,8 +155,12 @@
                     <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$665 Value</span>
                     <div class="text-3xl font-black italic leading-none">$199</div>
                 </div>
+
                 <h3 class="text-lg font-black uppercase mb-2 leading-tight">SiteSnap Subdomain</h3>
-                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">Use our free subdomain: name.trysitesnap.com</p>
+                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">
+                    Use a SiteSnap subdomain, such as name.trysitesnap.com.
+                </p>
+
                 <div class="mt-auto flex items-center gap-2">
                     <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center">
                         <div class="w-3 h-3 rounded-full bg-black hidden inner-dot"></div>
@@ -101,8 +174,12 @@
                     <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$665 Value</span>
                     <div class="text-3xl font-black italic leading-none">$199</div>
                 </div>
+
                 <h3 class="text-lg font-black uppercase mb-2 leading-tight">Own Domain</h3>
-                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">Connect a domain you already own (GoDaddy, etc.)</p>
+                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">
+                    Connect a domain you already own through your registrar or DNS provider.
+                </p>
+
                 <div class="mt-auto flex items-center gap-2">
                     <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center">
                         <div class="w-3 h-3 rounded-full bg-black hidden inner-dot"></div>
@@ -113,12 +190,17 @@
 
             <div onclick="selectPlan('new', this, 229)" class="plan-card bg-white p-8 rounded-[40px] flex flex-col">
                 <div class="popular-badge">Most Popular</div>
+
                 <div class="mb-4">
                     <span class="text-slate-400 text-sm font-bold line-through tracking-tighter block leading-none mb-1">$725 Value</span>
                     <div class="text-3xl font-black italic leading-none">$229</div>
                 </div>
+
                 <h3 class="text-lg font-black uppercase mb-2 leading-tight">Custom Domain</h3>
-                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">We buy & setup your .com for the first year. Professional & seamless.</p>
+                <p class="text-slate-500 text-xs font-bold leading-relaxed mb-6">
+                    We attempt to buy and set up a standard .com domain for the first year.
+                </p>
+
                 <div class="mt-auto flex items-center gap-2">
                     <div class="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center">
                         <div class="w-3 h-3 rounded-full bg-black hidden inner-dot"></div>
@@ -130,10 +212,16 @@
 
         <div id="domain-input-wrapper" class="hidden max-w-md mx-auto mb-12">
             <div class="bg-blue-50 border-2 border-blue-100 rounded-3xl p-6 text-center">
-                <label class="block text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3 italic">Enter Your Domain Name</label>
-                <input type="text" id="customer-domain" placeholder="example.com" 
+                <label class="block text-[10px] font-black uppercase tracking-widest text-blue-600 mb-3 italic">
+                    Enter Your Existing Domain Name
+                </label>
+
+                <input type="text" id="customer-domain" placeholder="example.com"
                        class="w-full p-4 rounded-2xl border-2 border-white focus:border-blue-500 outline-none text-center font-bold text-lg shadow-sm">
-                <p id="domain-error" class="text-[9px] text-red-500 mt-2 font-black uppercase hidden tracking-widest">Please enter a valid domain (e.g. site.com)</p>
+
+                <p id="domain-error" class="text-[9px] text-red-500 mt-2 font-black uppercase hidden tracking-widest">
+                    Please enter a valid domain, e.g. site.com
+                </p>
             </div>
         </div>
 
@@ -141,42 +229,148 @@
             <button id="confirm-btn" onclick="openModal()" class="bg-black text-white font-black py-6 px-16 rounded-full text-2xl uppercase tracking-tighter shadow-2xl hover:bg-electric-blue hover:scale-105 transition-all">
                 Confirm Selection →
             </button>
-            <p class="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Final step before payment</p>
+
+            <p class="mt-4 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                Final step before payment
+            </p>
         </div>
 
     </main>
 
     <div id="agreement-modal">
-        <div class="bg-white premium-border rounded-[50px] max-w-2xl w-full p-8 md:p-12 relative overflow-hidden">
-            <button onclick="closeModal()" class="absolute top-6 right-8 font-black text-slate-300 hover:text-black uppercase text-xs tracking-widest">Close [x]</button>
+        <div class="bg-white premium-border rounded-[36px] md:rounded-[46px] agreement-modal-card p-6 md:p-8 relative">
+            <button onclick="closeModal()" class="absolute top-5 right-6 font-black text-slate-400 hover:text-black uppercase text-xs tracking-widest">
+                Close [x]
+            </button>
             
-            <h2 class="text-3xl font-black uppercase italic mb-6">Service <span class="electric-blue">Agreement</span></h2>
+            <h2 class="text-2xl md:text-3xl font-black uppercase italic mb-3 pr-20">
+                Service <span class="electric-blue">Agreement</span>
+            </h2>
+
+            <p class="text-sm md:text-base text-slate-500 font-bold leading-relaxed mb-4">
+                Please review the terms below before continuing. You must scroll to the bottom and confirm your agreement before payment.
+            </p>
             
-            <div class="agreement-box pr-4 mb-8 text-slate-600 text-sm font-medium leading-relaxed space-y-6 text-left">
+            <div id="agreement-box" class="agreement-box mb-4 text-slate-600 text-sm font-medium leading-relaxed space-y-5 text-left">
                 <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">1. Lifetime License</h4>
-                    <p>SiteSnap grants a Lifetime License for the generated website. One-time payment, no recurring fees.</p>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">1. Website Activation & Digital Service</h4>
+                    <p>By proceeding, you confirm that you reviewed the website draft and authorize SiteSnap to continue with activation, technical setup, publishing preparation, and related digital services for your business.</p>
                 </div>
+
                 <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">2. Approval & Final Sale</h4>
-                    <p>By proceeding, you approve the draft. All sales are final due to the nature of digital AI delivery.</p>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">2. Website Content, Not a SaaS Platform</h4>
+                    <p>SiteSnap sells the website content, design, structure, and activation service created for your business. Unless separately agreed in writing, SiteSnap is not selling an ongoing SaaS subscription, managed software account, guaranteed hosting service, uptime service, maintenance plan, compliance service, legal service, marketing guarantee, or monthly support package.</p>
                 </div>
+
                 <div>
-                    <h4 class="text-black font-black uppercase text-xs mb-1">3. Ownership & Credits</h4>
-                    <p>Client owns the content. A small "Designed by SiteSnap" link remains in the footer.</p>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">3. Subdomain Option</h4>
+                    <p>If you choose to use a SiteSnap subdomain, that option is provided as an extra convenience for customers who need a simple way to publish their website. SiteSnap may provide, change, suspend, redirect, or discontinue subdomain access at its discretion. A subdomain does not create ownership rights in the SiteSnap domain, brand, hosting infrastructure, DNS system, or platform. SiteSnap is not responsible for business loss, downtime, ranking issues, email issues, technical limitations, or other consequences related to use of a subdomain.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">4. Client Responsibility for Accuracy</h4>
+                    <p>You are responsible for reviewing and confirming that all business details, text, images, services, claims, prices, contact information, addresses, licenses, certifications, testimonials, and any other website content are accurate, legal, current, and appropriate for your business. SiteSnap may use automated tools, public information, AI-assisted systems, and client-provided information. Final responsibility for the website content belongs to the client.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">5. Final Digital Sale</h4>
+                    <p>Because SiteSnap provides custom digital work, AI-assisted design, website content, setup, technical activation, and deployment services, all sales are final once payment is completed and work begins. Refunds are not provided for change of mind, subjective design preferences, requests that differ from the approved draft, delays caused by third parties, or issues the client could have reviewed before approval.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">6. SiteSnap Right to Refuse, Cancel, or Refund</h4>
+                    <p>SiteSnap reserves the right, at its sole discretion, to refuse service, stop work, cancel an order, delay activation, move a project to manual review, or issue a full or partial refund if SiteSnap determines that the service cannot or should not be provided. This may include incorrect information, payment issues, technical problems, legal risk, abusive conduct, unsupported business types, unreasonable demands, third-party restrictions, or any other operational reason.</p>
+                    <p>If SiteSnap chooses to issue a refund, that does not create an obligation to issue refunds in similar cases. Any refund may exclude payment processing fees, domain costs, registrar fees, third-party charges, and other non-refundable costs already incurred.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">7. Custom Domain Purchase Option</h4>
+                    <p>If you choose the Custom Domain option, SiteSnap will attempt to secure a standard available .com domain for the first year, based on the domain selected during checkout. Domain registration is handled through third-party registrar infrastructure.</p>
+                    <p>A domain search, domain availability result, price check, or checkout selection does not reserve, hold, freeze, or guarantee the domain. Until the domain is successfully purchased and registered through the registrar, the domain has not been acquired.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">8. Domain Availability & Price Checks</h4>
+                    <p>SiteSnap performs an availability and price check before payment and performs an additional check before attempting to register a domain. These checks are designed to reduce the risk of purchasing an expensive, premium, unavailable, unsupported, or non-standard domain.</p>
+                    <p>However, domain availability and pricing may change at any time until registration is completed. A domain that appears available during search may become unavailable before purchase. A domain may also be reclassified, blocked, priced differently, or rejected by registrar systems.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">9. Included Domain Limits</h4>
+                    <p>The Custom Domain option includes an attempt to purchase a standard domain within SiteSnap’s included registration allowance. It does not include premium domains, resale domains, aftermarket domains, unusually expensive domains, non-standard extensions, domains with unusually high renewal costs, or domains requiring manual negotiation or additional registrar fees.</p>
+                    <p>If the selected domain is unavailable, premium, over the included price limit, unsupported, rejected, or otherwise not suitable for automated purchase, SiteSnap is not required to purchase it. SiteSnap may ask you to select another domain, move the order to manual review, request an additional payment, or cancel/refund the order at SiteSnap’s discretion, excluding any third-party costs already incurred.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">10. No Refunds for Domains Successfully Purchased</h4>
+                    <p>Once a new domain is successfully purchased and registered for you, the domain portion of the purchase is non-refundable. This refers specifically to a newly purchased domain registration, not to connecting a domain you already own.</p>
+                    <p>Domain registrations are third-party transactions. After a domain is successfully registered, registrars generally do not allow cancellation or refund of that registration. If you later change your mind, want a different domain, decide not to use the website, request cancellation, or believe the domain is no longer suitable, the cost of the purchased domain remains non-refundable.</p>
+                    <p>If SiteSnap issues a refund for any other part of the service, the purchased domain cost, registrar fees, payment processing fees, and other non-refundable third-party costs may be deducted.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">11. Domain Registration Details & Authorization</h4>
+                    <p>If SiteSnap collects domain registration details from you, you confirm that the information provided is accurate, complete, current, and authorized. You authorize SiteSnap to use those details to check, purchase, register, configure, connect, and manage the selected domain for your website.</p>
+                    <p>Incorrect, incomplete, unsupported, or unverifiable registration details may delay or prevent registration, cause manual review, or result in cancellation. SiteSnap is not responsible for registration failure or delay caused by inaccurate information provided by the client.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">12. Existing Domain Connections</h4>
+                    <p>If you choose to use a domain you already own, you are responsible for providing access, DNS permissions, registrar access, or the ability to make required DNS changes. SiteSnap may assist with connection, but cannot guarantee access to accounts or registrars controlled by third parties.</p>
+                    <p>SiteSnap is not responsible for delays, restrictions, account access issues, DNS mistakes, registrar limitations, security locks, verification requirements, or other issues involving a domain, DNS account, or registrar account that SiteSnap does not control.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">13. DNS Timing & Activation</h4>
+                    <p>After a domain is purchased or connected, the website may not become visible everywhere immediately. DNS updates, SSL certificates, browser cache, registrar systems, hosting systems, and network propagation can take time. SiteSnap will use reasonable efforts to connect the website, but does not guarantee instant activation or a specific propagation timeline.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">14. Privacy, Accessibility & Cookies</h4>
+                    <p>SiteSnap may add standard privacy policy, accessibility statement, cookie notice, or other basic compliance-style pages or notices to help make the website appear more complete and professional. These materials are general templates only.</p>
+                    <p>SiteSnap is not a law firm and does not provide legal advice. SiteSnap does not guarantee that any privacy policy, accessibility statement, cookie notice, terms page, legal text, or compliance component satisfies any specific law, regulation, jurisdiction, industry rule, accessibility requirement, privacy framework, cookie requirement, or consumer protection law.</p>
+                    <p>The client is responsible for reviewing, approving, customizing, maintaining, and legally validating all legal, privacy, accessibility, cookie, and compliance materials. The client should consult a qualified attorney or compliance professional where appropriate.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">15. Third-Party Services</h4>
+                    <p>The service may rely on third-party providers, including but not limited to Stripe for payments, Cloudflare or other registrars for domains and DNS, hosting providers, email tools, automation tools, AI systems, analytics tools, form tools, map providers, image providers, font providers, and other infrastructure services.</p>
+                    <p>SiteSnap does not control the availability, policies, processing times, pricing changes, technical limitations, downtime, account decisions, or terms of third-party providers. Delays or failures caused by third parties do not constitute a breach by SiteSnap.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">16. Revisions & Additional Work</h4>
+                    <p>Only revisions, adjustments, or services expressly included in the offer are included. Additional changes, redesigns, rewritten copy, extra pages, advanced SEO, custom integrations, booking systems, payment systems, complex forms, ongoing support, maintenance, or work beyond the original scope may require additional fees.</p>
+                    <p>SiteSnap may refuse requested changes that are unreasonable, outside the service scope, technically impractical, legally risky, time-intensive, or inconsistent with the product purchased.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">17. Limitation of Liability</h4>
+                    <p>SiteSnap provides the service using reasonable commercial efforts but does not guarantee business results, search ranking, AI search appearance, lead volume, revenue, sales, uptime, legal compliance, accessibility compliance, privacy compliance, domain availability, domain ownership outcome, or uninterrupted operation.</p>
+                    <p>To the maximum extent permitted by law, SiteSnap is not liable for indirect, incidental, special, consequential, punitive, or business damages, including lost profits, lost revenue, lost goodwill, lost data, lost opportunity, lost domain opportunity, third-party claims, or business interruption.</p>
+                    <p>If any liability is found, SiteSnap’s total liability is limited to the amount actually paid by the client for the relevant service, excluding non-refundable third-party costs such as domains, registrar fees, payment processing fees, and other external costs.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-black font-black uppercase text-xs mb-1">18. Client Confirmation</h4>
+                    <p>By clicking the agreement checkbox and continuing to payment, you confirm that you have read, understood, and agreed to these terms, including the final sale policy, the limitations on domain purchases, the non-refundable nature of a newly purchased domain registration, your responsibility for website content, and the fact that SiteSnap does not provide legal advice.</p>
                 </div>
             </div>
 
-            <div class="flex items-start gap-4 mb-8 cursor-pointer text-left" onclick="toggleAgree()">
-                <input type="checkbox" id="agree-check" class="w-6 h-6 mt-1 rounded border-2 border-slate-200">
-                <p class="text-xs font-bold text-black uppercase tracking-tight leading-tight">
-                    I have read the agreement and confirm that my site is ready for activation.
-                </p>
-            </div>
+            <p id="scroll-hint" class="agree-hint show text-[11px] font-black uppercase tracking-widest text-blue-600 mb-4">
+                Scroll to the bottom of the agreement to enable confirmation.
+            </p>
 
-            <button id="final-pay-btn" disabled onclick="redirectToStripe()" 
-                    class="w-full bg-slate-200 text-slate-400 font-black py-6 rounded-full text-2xl uppercase transition-all cursor-not-allowed">
-                Agree & Pay $<span id="modal-price">199</span> →
+            <label id="agree-label" class="flex items-start gap-4 mb-5 text-left agree-disabled">
+                <input type="checkbox" id="agree-check" disabled class="w-6 h-6 mt-1 rounded border-2 border-slate-200">
+                <span class="text-xs md:text-sm font-bold text-black uppercase tracking-tight leading-tight">
+                    I have read and agree to the terms above, including the final sale policy, the domain purchase limits, and the fact that a newly purchased domain registration is non-refundable once completed.
+                </span>
+            </label>
+
+            <button id="final-pay-btn" disabled onclick="redirectToStripe()"
+                    class="w-full bg-slate-200 text-slate-400 font-black py-5 rounded-full text-xl md:text-2xl uppercase transition-all cursor-not-allowed">
+                Agree & Pay →
             </button>
         </div>
     </div>
@@ -184,14 +378,17 @@
     <script>
         let selectedPlan = '';
         let selectedPrice = 199;
+        let agreementScrolled = false;
+
         const urlParams = new URLSearchParams(window.location.search);
         const recordId = urlParams.get('record_id');
         const businessName = urlParams.get('business_name') || 'Your Business';
         const webhookUrl = "https://hook.eu2.make.com/qxlsjiy1kzakh6qgujtdu2igyxk9h5lk";
 
         function validateDomain(val) {
+            const cleaned = val.replace(/^(https?:\/\/)?(www\.)?/, '').trim();
             const regex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
-            return regex.test(val.replace(/^(https?:\/\/)?(www\.)?/, ''));
+            return regex.test(cleaned);
         }
 
         function checkFormValidity() {
@@ -212,6 +409,16 @@
             return true;
         }
 
+        function updateFinalButtonText() {
+            const btn = document.getElementById('final-pay-btn');
+
+            if (selectedPlan === 'new') {
+                btn.innerHTML = "Agree & Find My Domain →";
+            } else {
+                btn.innerHTML = `Agree & Pay $${selectedPrice} →`;
+            }
+        }
+
         function selectPlan(type, element, price) {
             selectedPlan = type;
             selectedPrice = price;
@@ -229,38 +436,80 @@
                 domainWrapper.classList.remove('hidden');
             } else {
                 domainWrapper.classList.add('hidden');
-                // התיקון שלך: ניקוי מפורש של הכפתור והודעות השגיאה
                 confirmBtn.classList.remove('disabled-btn');
-                document.getElementById('customer-domain').value = ''; 
+                document.getElementById('customer-domain').value = '';
                 document.getElementById('domain-error').classList.add('hidden');
             }
 
             const actionArea = document.getElementById('action-area');
             actionArea.classList.remove('hidden');
-            setTimeout(() => { actionArea.classList.add('opacity-100', 'translate-y-0'); }, 10);
-            
-            const finalBtn = document.getElementById('final-pay-btn');
-            if (type === 'new') {
-                finalBtn.innerText = "Find My Domain →";
-            } else {
-                finalBtn.innerHTML = `Agree & Pay $<span id="modal-price">${price}</span> →`;
-            }
-            
-            document.getElementById('modal-price').innerText = price;
+            setTimeout(() => {
+                actionArea.classList.add('opacity-100', 'translate-y-0');
+            }, 10);
+
+            updateFinalButtonText();
             checkFormValidity();
         }
 
         document.getElementById('customer-domain').addEventListener('input', checkFormValidity);
 
-        function openModal() { if(checkFormValidity()) document.getElementById('agreement-modal').style.display = 'flex'; }
-        function closeModal() { document.getElementById('agreement-modal').style.display = 'none'; }
+        function resetAgreementState() {
+            agreementScrolled = false;
 
-        function toggleAgree() {
-            const check = document.getElementById('agree-check');
+            const agreementBox = document.getElementById('agreement-box');
+            const agreeCheck = document.getElementById('agree-check');
+            const agreeLabel = document.getElementById('agree-label');
+            const scrollHint = document.getElementById('scroll-hint');
+            const finalBtn = document.getElementById('final-pay-btn');
+
+            agreementBox.scrollTop = 0;
+
+            agreeCheck.checked = false;
+            agreeCheck.disabled = true;
+            agreeLabel.classList.add('agree-disabled');
+            scrollHint.classList.add('show');
+
+            finalBtn.disabled = true;
+            finalBtn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+            finalBtn.classList.remove('bg-electric-blue', 'text-white', 'shadow-2xl');
+
+            updateFinalButtonText();
+        }
+
+        function openModal() {
+            if (!checkFormValidity()) return;
+
+            resetAgreementState();
+            document.getElementById('agreement-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('agreement-modal').style.display = 'none';
+        }
+
+        function enableAgreementCheckbox() {
+            const agreeCheck = document.getElementById('agree-check');
+            const agreeLabel = document.getElementById('agree-label');
+            const scrollHint = document.getElementById('scroll-hint');
+
+            agreementScrolled = true;
+            agreeCheck.disabled = false;
+            agreeLabel.classList.remove('agree-disabled');
+            scrollHint.classList.remove('show');
+        }
+
+        document.getElementById('agreement-box').addEventListener('scroll', function () {
+            const nearBottom = this.scrollTop + this.clientHeight >= this.scrollHeight - 12;
+
+            if (nearBottom && !agreementScrolled) {
+                enableAgreementCheckbox();
+            }
+        });
+
+        document.getElementById('agree-check').addEventListener('change', function () {
             const btn = document.getElementById('final-pay-btn');
-            if (event.target.tagName !== 'INPUT') check.checked = !check.checked;
 
-            if (check.checked) {
+            if (this.checked && agreementScrolled) {
                 btn.disabled = false;
                 btn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
                 btn.classList.add('bg-electric-blue', 'text-white', 'shadow-2xl');
@@ -269,26 +518,44 @@
                 btn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
                 btn.classList.remove('bg-electric-blue', 'text-white', 'shadow-2xl');
             }
-        }
+        });
 
         async function redirectToStripe() {
-            if (!recordId) return alert("Missing Record ID.");
+            if (!recordId) {
+                alert("Missing Record ID.");
+                return;
+            }
+
+            const agreeCheck = document.getElementById('agree-check');
+
+            if (!agreementScrolled || !agreeCheck.checked) {
+                alert("Please scroll through the agreement and confirm the terms before continuing.");
+                return;
+            }
 
             if (selectedPlan === 'new') {
-                window.location.href = `purchase-domain.html?record_id=${recordId}&business_name=${encodeURIComponent(businessName)}`;
+                window.location.href = `/purchase-domain?record_id=${encodeURIComponent(recordId)}&business_name=${encodeURIComponent(businessName)}`;
                 return;
             }
 
             if (selectedPlan === 'existing') {
-                const domain = document.getElementById('customer-domain').value;
+                const domain = document.getElementById('customer-domain').value.trim().toLowerCase();
+
+                if (!validateDomain(domain)) {
+                    alert("Please enter a valid existing domain.");
+                    return;
+                }
+
                 try {
-                    await fetch(`${webhookUrl}?record_id=${recordId}&domain=${domain}`, { mode: 'no-cors' });
-                } catch (e) { console.log("Domain sync initiated"); }
+                    await fetch(`${webhookUrl}?record_id=${encodeURIComponent(recordId)}&domain=${encodeURIComponent(domain)}`, { mode: 'no-cors' });
+                } catch (e) {
+                    console.log("Domain sync initiated");
+                }
             }
 
             const stripeLinks = {
-                'existing': `https://buy.stripe.com/14AeVccgk7Nig7naiF8g001?client_reference_id=${recordId}`,
-                'subdomain': `https://buy.stripe.com/7sY14m4NSd7Cf3jgH38g002?client_reference_id=${recordId}`
+                existing: `https://buy.stripe.com/14AeVccgk7Nig7naiF8g001?client_reference_id=${encodeURIComponent(recordId)}`,
+                subdomain: `https://buy.stripe.com/7sY14m4NSd7Cf3jgH38g002?client_reference_id=${encodeURIComponent(recordId)}`
             };
             
             window.location.href = stripeLinks[selectedPlan];
