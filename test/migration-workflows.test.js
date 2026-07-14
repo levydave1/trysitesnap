@@ -147,11 +147,13 @@ test("Vercel delivery client targets the dedicated project for deploy, domain an
     return new Response(JSON.stringify(body), { status: 200 });
   } });
   assert.equal((await client.deployHtml("<html></html>")).id, "dpl_test");
+  assert.equal((await client.getDeployment("dpl_test")).id, "dpl_test");
   await client.addProjectDomain("demo.trysitesnap.com");
   assert.equal((await client.assignAlias("dpl_test", "demo.trysitesnap.com")).alias, "demo.trysitesnap.com");
   assert.match(calls[0].url, /projectId=prj_test/);
-  assert.match(calls[1].url, /\/v10\/projects\/prj_test\/domains/);
-  assert.match(calls[2].url, /\/v2\/deployments\/dpl_test\/aliases/);
+  assert.match(calls[1].url, /\/v13\/deployments\/dpl_test/);
+  assert.match(calls[2].url, /\/v10\/projects\/prj_test\/domains/);
+  assert.match(calls[3].url, /\/v2\/deployments\/dpl_test\/aliases/);
 });
 
 test("10 deploys, aliases, updates Airtable, and embeds scenario 12", async () => {
@@ -166,6 +168,7 @@ test("10 deploys, aliases, updates Airtable, and embeds scenario 12", async () =
     },
     vercelDelivery: {
       async deployHtml(html) { calls.push(["deploy", html]); return { id: "dpl_test" }; },
+      async waitUntilReady(id) { calls.push(["ready", id]); },
       async addProjectDomain(domain) { calls.push(["domain", domain]); },
       async assignAlias(id, domain) { calls.push(["alias", id, domain]); return { alias: domain }; }
     },
@@ -173,9 +176,9 @@ test("10 deploys, aliases, updates Airtable, and embeds scenario 12", async () =
     telegram: null
   }, { skipNotifications: true });
   assert.equal(result.domain, "migration-test.trysitesnap.com");
-  assert.deepEqual(calls.slice(1, 3), [["domain", "migration-test.trysitesnap.com"], ["alias", "dpl_test", "migration-test.trysitesnap.com"]]);
+  assert.deepEqual(calls.slice(1, 4), [["ready", "dpl_test"], ["domain", "migration-test.trysitesnap.com"], ["alias", "dpl_test", "migration-test.trysitesnap.com"]]);
   assert.match(calls[0][1], /sketch-opened/);
-  assert.equal(calls[3][2][config.airtable.fields.generatedSiteUrl], "https://migration-test.trysitesnap.com");
+  assert.equal(calls[4][2][config.airtable.fields.generatedSiteUrl], "https://migration-test.trysitesnap.com");
 });
 
 test("12 writes the first open and suppresses later duplicate notifications", async () => {

@@ -221,6 +221,7 @@ export async function processSiteDelivery(event, dependencies, options = {}) {
 
   const deployment = await vercelDelivery.deployHtml(html, config.vercelDelivery.projectName);
   if (!deployment.id) throw new Error("Vercel did not return a deployment ID");
+  await vercelDelivery.waitUntilReady(deployment.id);
   const targets = plan === "existing" && !domain.startsWith("www.") ? [domain, `www.${domain}`] : [domain];
   const aliases = [];
   for (const target of targets) {

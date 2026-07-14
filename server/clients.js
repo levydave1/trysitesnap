@@ -163,6 +163,24 @@ export function createVercelDeliveryClient({ projectId, teamId, token, timeoutMs
       );
       return payload;
     },
+    async getDeployment(deploymentId) {
+      const { payload } = await call(
+        `/v13/deployments/${encodeURIComponent(deploymentId)}?${query}`,
+        "GET"
+      );
+      return payload;
+    },
+    async waitUntilReady(deploymentId, { attempts = 30, intervalMs = 1000 } = {}) {
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const deployment = await this.getDeployment(deploymentId);
+        if (deployment.readyState === "READY") return deployment;
+        if (["ERROR", "CANCELED"].includes(deployment.readyState)) {
+          throw new Error(`Vercel deployment ended in ${deployment.readyState}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+      throw new Error("Vercel deployment did not become ready in time");
+    },
     async addProjectDomain(domain) {
       return call(
         `/v10/projects/${encodeURIComponent(projectId)}/domains?${query}`,
