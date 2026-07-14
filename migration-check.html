@@ -12,7 +12,7 @@
   <label for="secret">Migration test secret</label><input id="secret" type="password" autocomplete="off">
   <label for="record">Airtable test record</label><input id="record" value="recwrMbu32Qy4Jc87">
   <label for="domain">Domain</label><input id="domain" value="migration-verification-20260714.trysitesnap.com">
-  <button id="check">08 safe domain check</button><button id="deliver">10 test delivery</button><button id="opened">12 sketch opened</button>
+  <button id="check">08 safe domain check</button><button id="deliver">10 test delivery</button><button id="opened">12 sketch opened</button><button id="mail">10 production mail</button>
   <pre id="result">Ready.</pre>
   <script>
     const endpoint='/api/a82d419715134c24857d4c4b05f7a6fa-migration-test';
@@ -21,6 +21,7 @@
     document.getElementById('check').onclick=()=>run('domain-check');
     document.getElementById('deliver').onclick=()=>run('site-delivery');
     document.getElementById('opened').onclick=opened;
+    document.getElementById('mail').onclick=()=>run('mail-relay');
   </script>
 </body>
 </html>

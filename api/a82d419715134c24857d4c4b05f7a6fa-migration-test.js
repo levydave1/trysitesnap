@@ -34,6 +34,16 @@ export default async function handler(request, response) {
     return response.status(400).json({ success: false, code: "TEST_RECORD_REQUIRED" });
   }
   try {
+    if (request.body?.action === "mail-relay") {
+      const { mail } = createRuntimeDependencies({ mail: true });
+      const sentAt = new Date().toISOString();
+      const result = await mail.send({
+        to: "office@sitesnappreview.com",
+        subject: `SiteSnap production mail test ${sentAt}`,
+        html: `<p><strong>SiteSnap production mail path is live.</strong></p><p>${sentAt}</p>`
+      });
+      return response.status(200).json({ success: true, result, sentAt });
+    }
     if (request.body?.action === "domain-check") {
       const domain = String(request.body?.domain || "").toLowerCase();
       const event = fakeEvent({
