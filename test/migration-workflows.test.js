@@ -39,6 +39,7 @@ test("10 prepares one clean HTML document with the new scenario 12 tracker", () 
   assert.doesNotMatch(html, /remove/);
   assert.match(html, /api\/3b7f5316669d40c19e243c38f67b52ec/);
   assert.doesNotMatch(html, /sketch-opened/);
+  assert.match(html, /sitesnapOpenStatus="recorded"/);
   assert.equal((html.match(/<\/html>/g) || []).length, 1);
 });
 

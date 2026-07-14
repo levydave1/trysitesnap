@@ -66,7 +66,7 @@ export function deliveryEmail(kind, { businessName, businessId, domain }) {
 function trackingScript(recordId) {
   const id = JSON.stringify(recordId);
   const endpoint = JSON.stringify(trackerEndpoint);
-  return `<script data-sitesnap-open-tracker>(function(){var r=${id},k="sitesnap-opened:"+r;if(localStorage.getItem(k))return;fetch(${endpoint},{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record_id:r,opened_at:new Date().toISOString()}),keepalive:true}).then(function(x){if(x.ok)localStorage.setItem(k,"1")}).catch(function(){})})();</script>`;
+  return `<script data-sitesnap-open-tracker>(function(){var s=document.currentScript,r=${id},k="sitesnap-opened:"+r;if(localStorage.getItem(k)){s.dataset.sitesnapOpenStatus="duplicate";return}s.dataset.sitesnapOpenStatus="pending";fetch(${endpoint},{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record_id:r,opened_at:new Date().toISOString()}),keepalive:true}).then(function(x){if(x.ok){localStorage.setItem(k,"1");s.dataset.sitesnapOpenStatus="recorded"}else{s.dataset.sitesnapOpenStatus="failed"}}).catch(function(){s.dataset.sitesnapOpenStatus="failed"})})();</script>`;
 }
 
 const siteFooter = `<style>.sitesnap-footer-bar{background:#000;color:#fff;padding:14px 18px;text-align:center;font:600 10px/1.5 Inter,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase}.sitesnap-footer-bar a{color:#fff;margin:0 8px}</style><footer class="sitesnap-footer-bar" data-sitesnap-footer>Powered by SiteSnap · <a href="https://trysitesnap.com/checkout">Terms & Privacy</a></footer>`;
