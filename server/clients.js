@@ -2,6 +2,8 @@ function upstreamError(service, status, details = "") {
   const error = new Error(`${service} request failed (${status})${details ? `: ${details}` : ""}`);
   error.code = `${service.toUpperCase()}_UPSTREAM_ERROR`;
   error.status = 502;
+  error.upstreamStatus = status;
+  error.upstreamDetails = details;
   return error;
 }
 
@@ -135,7 +137,7 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
   };
 }
 
-export function createVercelDeliveryClient({ projectId, teamId, token, timeoutMs, fetchImpl = fetch }) {
+export function createVercelDeliveryClient({ projectId, teamId, token, timeoutMs, fetchImpl = fetch, sleepImpl = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) }) {
   if (!token) throw new Error("VERCEL_DELIVERY_TOKEN is not configured");
   const query = `teamId=${encodeURIComponent(teamId)}`;
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
@@ -177,7 +179,7 @@ export function createVercelDeliveryClient({ projectId, teamId, token, timeoutMs
         if (["ERROR", "CANCELED"].includes(deployment.readyState)) {
           throw new Error(`Vercel deployment ended in ${deployment.readyState}`);
         }
-        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        await sleepImpl(intervalMs);
       }
       throw new Error("Vercel deployment did not become ready in time");
     },
@@ -189,13 +191,21 @@ export function createVercelDeliveryClient({ projectId, teamId, token, timeoutMs
         [409]
       );
     },
-    async assignAlias(deploymentId, domain) {
-      const { payload } = await call(
-        `/v2/deployments/${encodeURIComponent(deploymentId)}/aliases?${query}`,
-        "POST",
-        { alias: domain }
-      );
-      return payload;
+    async assignAlias(deploymentId, domain, { attempts = 8, intervalMs = 2000 } = {}) {
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        try {
+          const { payload } = await call(
+            `/v2/deployments/${encodeURIComponent(deploymentId)}/aliases?${query}`,
+            "POST",
+            { alias: domain }
+          );
+          return payload;
+        } catch (error) {
+          const certificatePending = error.upstreamStatus === 400 && /missing (?:an? )?ssl certificate/i.test(error.upstreamDetails || "");
+          if (!certificatePending || attempt === attempts - 1) throw error;
+          await sleepImpl(intervalMs);
+        }
+      }
     }
   };
 }

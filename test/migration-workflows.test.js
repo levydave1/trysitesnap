@@ -157,6 +157,28 @@ test("Vercel delivery client targets the dedicated project for deploy, domain an
   assert.match(calls[3].url, /\/v2\/deployments\/dpl_test\/aliases/);
 });
 
+test("Vercel delivery waits for a new domain SSL certificate before aliasing", async () => {
+  let aliasAttempts = 0;
+  const delays = [];
+  const client = createVercelDeliveryClient({
+    projectId: "prj_test",
+    teamId: "team_test",
+    token: "secret",
+    timeoutMs: 1000,
+    sleepImpl: async (ms) => delays.push(ms),
+    fetchImpl: async () => {
+      aliasAttempts += 1;
+      if (aliasAttempts < 3) {
+        return new Response(JSON.stringify({ error: { message: "The domain you are trying to associate is missing a SSL certificate" } }), { status: 400 });
+      }
+      return new Response(JSON.stringify({ alias: "new.trysitesnap.com" }), { status: 200 });
+    }
+  });
+  assert.equal((await client.assignAlias("dpl_test", "new.trysitesnap.com")).alias, "new.trysitesnap.com");
+  assert.equal(aliasAttempts, 3);
+  assert.deepEqual(delays, [2000, 2000]);
+});
+
 test("10 deploys, aliases, updates Airtable, and embeds scenario 12", async () => {
   const calls = [];
   const input = JSON.stringify({ files: [{ file: "index.html", data: "<!doctype html><html><body>Migration delivery</body></html>" }] });
