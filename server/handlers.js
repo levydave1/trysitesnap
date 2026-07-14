@@ -81,7 +81,7 @@ export async function domainRegistration(body, { airtable, config }) {
     [field.selectedDomain]: requireDomain(body?.selected_domain),
     [field.registrantCity]: requireText(body?.registrant_city, "registrant_city"),
     [field.registrantAddress]: requireText(body?.registrant_address, "registrant_address"),
-    [field.businessName]: requireText(body?.business_name, "business_name"),
+    [field.registrantBusinessName]: requireText(body?.business_name, "business_name"),
     [field.registrantPhone]: requireText(body?.registrant_phone, "registrant_phone", 40),
     [field.paymentStatus]: config.compatibility.paymentStatusValue,
     [field.registrantCountry]: requireText(body?.registrant_country, "registrant_country", 100)

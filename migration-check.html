@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SiteSnap migration verification</title>
+  <style>body{font-family:system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 18px;color:#111}label{display:block;margin:16px 0 6px;font-weight:700}input,button{font:inherit;padding:10px;border:1px solid #999;border-radius:8px}input{width:100%;box-sizing:border-box}button{margin:14px 8px 0 0;background:#111;color:#fff;cursor:pointer}pre{white-space:pre-wrap;background:#f4f4f4;padding:16px;border-radius:10px;min-height:80px}</style>
+</head>
+<body>
+  <h1>SiteSnap migration verification</h1>
+  <p>This page is enabled only during the Make cutover. Domain checks never purchase. The delivery test is restricted to the designated Airtable test record and a trysitesnap.com test subdomain.</p>
+  <label for="secret">Migration test secret</label><input id="secret" type="password" autocomplete="off">
+  <label for="record">Airtable test record</label><input id="record" value="recwrMbu32Qy4Jc87">
+  <label for="domain">Domain</label><input id="domain" value="migration-verification-20260714.trysitesnap.com">
+  <button id="check">08 safe domain check</button><button id="deliver">10 test delivery</button>
+  <pre id="result">Ready.</pre>
+  <script>
+    const endpoint='/api/a82d419715134c24857d4c4b05f7a6fa-migration-test';
+    async function run(action){const result=document.getElementById('result');result.textContent='Running…';const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','X-SiteSnap-Test-Secret':document.getElementById('secret').value},body:JSON.stringify({action,record_id:document.getElementById('record').value,domain:document.getElementById('domain').value})});result.textContent=JSON.stringify(await response.json(),null,2)}
+    document.getElementById('check').onclick=()=>run('domain-check');
+    document.getElementById('deliver').onclick=()=>run('site-delivery');
+  </script>
+</body>
+</html>

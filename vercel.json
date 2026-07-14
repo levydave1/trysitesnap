@@ -1,3 +1,11 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "functions": {
+    "api/1c177b7f64d64fa9a9a4dce318d8d681-stripe-events.js": {
+      "maxDuration": 60
+    },
+    "api/a82d419715134c24857d4c4b05f7a6fa-migration-test.js": {
+      "maxDuration": 60
+    }
+  }
 }
