@@ -37,7 +37,8 @@ test("10 prepares one clean HTML document with the new scenario 12 tracker", () 
   const html = prepareDeliveredHtml(input, "recIoxgm0vtZ9DmGv");
   assert.match(html, /<h1>Hello<\/h1>/);
   assert.doesNotMatch(html, /remove/);
-  assert.match(html, /3b7f5316669d40c19e243c38f67b52ec-sketch-opened/);
+  assert.match(html, /api\/3b7f5316669d40c19e243c38f67b52ec/);
+  assert.doesNotMatch(html, /sketch-opened/);
   assert.equal((html.match(/<\/html>/g) || []).length, 1);
 });
 
@@ -177,7 +178,8 @@ test("10 deploys, aliases, updates Airtable, and embeds scenario 12", async () =
   }, { skipNotifications: true });
   assert.equal(result.domain, "migration-test.trysitesnap.com");
   assert.deepEqual(calls.slice(1, 4), [["ready", "dpl_test"], ["domain", "migration-test.trysitesnap.com"], ["alias", "dpl_test", "migration-test.trysitesnap.com"]]);
-  assert.match(calls[0][1], /sketch-opened/);
+  assert.match(calls[0][1], /api\/3b7f5316669d40c19e243c38f67b52ec/);
+  assert.doesNotMatch(calls[0][1], /sketch-opened/);
   assert.equal(calls[4][2][config.airtable.fields.generatedSiteUrl], "https://migration-test.trysitesnap.com");
 });
 
