@@ -35,7 +35,7 @@ export default async function handler(request, response) {
   }
   try {
     if (request.body?.action === "mail-relay") {
-      const { mail } = createRuntimeDependencies({ mail: true });
+      const { mail } = createRuntimeDependencies({ notifications: true });
       const sentAt = new Date().toISOString();
       const result = await mail.send({
         to: "office@sitesnappreview.com",
