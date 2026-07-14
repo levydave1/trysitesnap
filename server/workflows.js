@@ -75,7 +75,7 @@ function requiredLeadText(value, name, max = 500) {
 function airtableRawValue(value) {
   if (value === undefined || value === null) return "";
   if (typeof value === "object") return JSON.stringify(value);
-  return value;
+  return String(value);
 }
 
 function rawOutscraperFields(lead, place, fields) {

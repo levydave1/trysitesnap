@@ -34,7 +34,7 @@ test("00 creates the raw business and generation job before notifying", async ()
     outscraper: {
       async searchPlace(input) {
         calls.push(["outscraper", input]);
-        return { category: "Bakery", reviews_per_score: { 5: 10 }, subtypes: ["Cafe"], phone: "+1 555 0100" };
+        return { category: "Bakery", reviews_per_score: { 5: 10 }, subtypes: ["Cafe"], phone: "+1 555 0100", photos_count: 314713 };
       }
     },
     airtable: {
@@ -49,6 +49,7 @@ test("00 creates the raw business and generation job before notifying", async ()
   assert.equal(calls[0][0], "outscraper");
   assert.equal(calls[1][1], config.airtable.rawOutscraperTableId);
   assert.equal(calls[1][2][config.airtable.rawOutscraperFields.reviewsPerScore], '{"5":10}');
+  assert.equal(calls[1][2][config.airtable.rawOutscraperFields.photosCount], "314713");
   assert.equal(calls[2][1], config.airtable.tableId);
   assert.equal(calls[2][2][config.airtable.fields.businessId], "recRawMigrationTest");
   assert.match(calls[3][1], /Migration Test Bakery/);
