@@ -1,6 +1,15 @@
 # Make migration: scenarios 07, 07.5 and 09
 
-This branch replaces the three browser-facing Make webhooks with Vercel Functions in the existing SiteSnap project.
+This project replaces the three browser-facing Make webhooks with Vercel Functions in the existing SiteSnap project.
+
+## Current production status
+
+- Completed and verified on 2026-07-14.
+- Production commit: `634ad0b` on `main`.
+- Verified in a Vercel Preview, on `trysitesnap.com`, and again on `trysitesnap.com` after Make was turned off.
+- Make scenarios `9165920` (07), `9177085` (07.5), and `9129372` (09) are inactive and were not deleted.
+- Airtable verification record: `recwrMbu32Qy4Jc87` (clearly marked as migration test data).
+- Production is hosted by Vercel and does not depend on either local computer being online.
 
 ## Runtime mapping
 
@@ -28,5 +37,7 @@ Do not put either value in this shared folder or in Git.
 5. Deploy the same commit to Production and repeat the browser tests on `trysitesnap.com`.
 6. Turn off (do not delete) Make scenarios 07, 07.5 and 09.
 7. Repeat all production tests while Make remains off.
+
+All seven steps above were completed successfully. Leave the three Make scenarios inactive as a rollback reference; do not delete them during the staged migration.
 
 The production runtime is Vercel, so the shared folder and either computer can be used for maintenance without being required to stay online.
