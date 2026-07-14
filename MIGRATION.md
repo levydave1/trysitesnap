@@ -41,3 +41,26 @@ Do not put either value in this shared folder or in Git.
 All seven steps above were completed successfully. Leave the three Make scenarios inactive as a rollback reference; do not delete them during the staged migration.
 
 The production runtime is Vercel, so the shared folder and either computer can be used for maintenance without being required to stay online.
+
+## In progress: scenarios 08, 10 and 12
+
+The replacement code is deployed on `main` and has been exercised in Production. The Make scenarios remain active until the remaining credentials and cutover checks are complete.
+
+| Make scenario | Make ID | Replacement endpoint | Production verification |
+| --- | --- | --- | --- |
+| 08 | `9177306` | `/api/1c177b7f64d64fa9a9a4dce318d8d681-stripe-events` | Safe Cloudflare check passed at $10.46 registration and renewal; no purchase was made |
+| 10 | `9095672` | same Stripe endpoint | Deployed and opened `migration-production3-20260714.trysitesnap.com` without Make |
+| 12 | `9246011` | `/api/3b7f5316669d40c19e243c38f67b52ec` | GET compatibility passed and the delivered site's cross-origin tracker reported `recorded` |
+
+Scenario 11 (`9235829`) is intentionally skipped and must not be changed. Scenario 04 remains active; its embedded scenario-12 webhook URL must be changed to the opaque Production endpoint above before scenario 12 is turned off.
+
+Production test record: `recwrMbu32Qy4Jc87`. The delivery flow includes bounded Vercel deployment readiness and SSL-certificate retries, both found and verified during live Production testing.
+
+### Remaining cutover work
+
+1. Import the single-URL blueprint change into scenario 04 and save it without running the scenario.
+2. Configure and verify `STRIPE_WEBHOOK_SECRET`, `MAIL_RELAY_URL`, the mail relay property, and `TELEGRAM_BOT_TOKEN`.
+3. Re-run Production checks with email and Telegram notifications enabled.
+4. Turn off, but do not delete, Make scenarios 08, 10 and 12.
+5. Repeat the Production checks while those Make scenarios are inactive.
+6. Remove the temporary migration-test surface and rotate the Vercel delivery token after the old Make token is no longer needed.
