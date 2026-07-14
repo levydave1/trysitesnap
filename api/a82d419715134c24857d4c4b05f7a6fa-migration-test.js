@@ -62,7 +62,20 @@ export default async function handler(request, response) {
         airtable: true,
         vercelDelivery: true,
         notifications: true
-      }), { testMode: true, plan: "subdomain", recordId, domain, skipNotifications: true });
+      }), {
+        testMode: true,
+        plan: "subdomain",
+        recordId,
+        domain,
+        skipNotifications: true,
+        htmlSource: JSON.stringify({
+          name: "sitesnap-migration-verification",
+          files: [{
+            file: "index.html",
+            data: "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>SiteSnap migration verified</title></head><body style=\"font-family:system-ui;text-align:center;padding:15vh 20px\"><h1>SiteSnap migration verified</h1><p>Scenario 10 delivered this page without Make.</p></body></html>"
+          }]
+        })
+      });
       return response.status(200).json({ success: true, result });
     }
     return response.status(400).json({ success: false, code: "UNKNOWN_ACTION" });

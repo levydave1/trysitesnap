@@ -214,7 +214,7 @@ export async function processSiteDelivery(event, dependencies, options = {}) {
   const businessName = text(fields["Business Name"], "Customer");
   const businessId = text(fields["Business ID"]);
   const customerEmail = text(fields["Customer Email"] || fields.Email);
-  const html = prepareDeliveredHtml(fields["HTML-TAKE2"], id);
+  const html = prepareDeliveredHtml(options.htmlSource || fields["HTML-TAKE2"], id);
   const domain = domainName(options.domain || (plan === "existing"
     ? fields["User Input URL"]
     : `${text(fields.Domain_Slug)}.trysitesnap.com`));
