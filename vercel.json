@@ -3,6 +3,9 @@
   "functions": {
     "api/1c177b7f64d64fa9a9a4dce318d8d681-stripe-events.js": {
       "maxDuration": 60
+    },
+    "api/b066e90394264c16ad9ee7e09d682844-website-leads.js": {
+      "maxDuration": 60
     }
   }
 }

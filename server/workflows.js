@@ -55,6 +55,129 @@ async function notifications(items) {
   return results.map((result) => result.status === "fulfilled" ? "sent" : "failed");
 }
 
+function requiredLeadText(value, name, max = 500) {
+  const normalized = text(value);
+  if (!normalized) {
+    const error = new Error(`Missing ${name}`);
+    error.status = 400;
+    error.code = "INVALID_WEBSITE_LEAD";
+    throw error;
+  }
+  if (normalized.length > max) {
+    const error = new Error(`${name} is too long`);
+    error.status = 400;
+    error.code = "INVALID_WEBSITE_LEAD";
+    throw error;
+  }
+  return normalized;
+}
+
+function airtableRawValue(value) {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return value;
+}
+
+function rawOutscraperFields(lead, place, fields) {
+  const mapped = [
+    [fields.reviewsPerScore, place.reviews_per_score],
+    [fields.state, place.state],
+    [fields.category, place.category],
+    [fields.street, place.street],
+    [fields.photosCount, place.photos_count],
+    [fields.rating, place.rating],
+    [fields.source, "site"],
+    [fields.reviewsId, place.reviews_id],
+    [fields.leadSource, "site"],
+    [fields.city, place.city],
+    [fields.workingHoursCsv, place.working_hours_csv_compatible],
+    [fields.email, lead.email],
+    [fields.businessName, lead.businessName],
+    [fields.subtypes, place.subtypes],
+    [fields.about, place.about],
+    [fields.workingHours, place.working_hours],
+    [fields.cid, place.cid],
+    [fields.type, place.type],
+    [fields.description, place.description],
+    [fields.phone, place.phone],
+    [fields.placeId, place.place_id],
+    [fields.reviewsTags, place.reviews_tags],
+    [fields.submittedAddress, lead.address],
+    [fields.stateCode, place.state_code],
+    [fields.postalCode, place.postal_code],
+    [fields.reviews, place.reviews],
+    [fields.country, place.country],
+    [fields.photo, place.photo],
+    [fields.website, place.website],
+    [fields.county, place.county],
+    [fields.countryCode, place.country_code],
+    [fields.logo, place.logo]
+  ];
+  return Object.fromEntries(
+    mapped
+      .filter(([field, value]) => field && value !== undefined && value !== null && value !== "")
+      .map(([field, value]) => [field, airtableRawValue(value)])
+  );
+}
+
+export async function processWebsiteLead(body, dependencies) {
+  const businessName = requiredLeadText(body?.business_name, "business_name");
+  const address = requiredLeadText(body?.address, "address");
+  const email = requiredLeadText(body?.email, "email", 320);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const error = new Error("Invalid email");
+    error.status = 400;
+    error.code = "INVALID_WEBSITE_LEAD";
+    throw error;
+  }
+  if (body?.submitted_at) {
+    const submittedAt = new Date(body.submitted_at);
+    if (!Number.isFinite(submittedAt.getTime())) {
+      const error = new Error("Invalid submitted_at");
+      error.status = 400;
+      error.code = "INVALID_WEBSITE_LEAD";
+      throw error;
+    }
+  }
+
+  const { airtable, outscraper, telegram, config } = dependencies;
+  const place = await outscraper.searchPlace({
+    query: `${businessName} ${address}`,
+    limit: config.outscraper.limit,
+    language: config.outscraper.language,
+    region: config.outscraper.region
+  });
+  if (!place) {
+    const error = new Error("No matching business found");
+    error.status = 422;
+    error.code = "BUSINESS_NOT_FOUND";
+    throw error;
+  }
+
+  const lead = { businessName, address, email };
+  const rawRecord = await airtable.createRecord(
+    config.airtable.rawOutscraperTableId,
+    rawOutscraperFields(lead, place, config.airtable.rawOutscraperFields)
+  );
+  if (!rawRecord.id) throw new Error("Airtable did not return the raw record ID");
+  const generationRecord = await airtable.createRecord(config.airtable.tableId, {
+    [config.airtable.fields.customerEmail]: email,
+    [config.airtable.fields.jobBusinessName]: businessName,
+    [config.airtable.fields.businessId]: rawRecord.id
+  });
+
+  const category = text(place.category || place.type || place.subtypes, "Unknown category");
+  const notification = await notifications([
+    telegram?.send(`התקבל ליד מהאתר\n${businessName}\n${category}`)
+  ]);
+  return {
+    success: true,
+    raw_record_id: rawRecord.id,
+    generation_record_id: generationRecord.id || null,
+    notification: notification[0] || "skipped"
+  };
+}
+
 function registrationContact(fields) {
   return {
     email: text(fields["Domain Registration Email"]),

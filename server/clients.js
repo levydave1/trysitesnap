@@ -133,6 +133,63 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
         );
       }
       return payload;
+    },
+    async createRecord(targetTableId, fields) {
+      const response = await fetchImpl(
+        `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(targetTableId)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ fields, typecast: false }),
+          signal: AbortSignal.timeout(timeoutMs)
+        }
+      );
+      const payload = await readJson(response);
+      if (!response.ok) {
+        throw upstreamError(
+          "airtable",
+          response.status,
+          payload.error?.message || payload.error?.type || payload.raw || ""
+        );
+      }
+      return payload;
+    }
+  };
+}
+
+function firstOutscraperPlace(payload) {
+  let data = payload?.data ?? payload;
+  while (Array.isArray(data) && data.length === 1 && Array.isArray(data[0])) data = data[0];
+  if (Array.isArray(data)) return data[0] || null;
+  return data && typeof data === "object" && !data.error ? data : null;
+}
+
+export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("OUTSCRAPER_API_KEY is not configured");
+  return {
+    async searchPlace({ query, limit = 1, language = "en", region = "US" }) {
+      const url = new URL(endpoint);
+      url.searchParams.set("query", query);
+      url.searchParams.set("limit", String(limit));
+      url.searchParams.set("language", language);
+      url.searchParams.set("region", region);
+      url.searchParams.set("async", "false");
+      const response = await fetchImpl(url, {
+        headers: { "X-API-KEY": apiKey },
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      const payload = await readJson(response);
+      if (!response.ok) {
+        throw upstreamError(
+          "outscraper",
+          response.status,
+          payload.errorMessage || payload.error?.message || payload.error || payload.raw || ""
+        );
+      }
+      return firstOutscraperPlace(payload);
     }
   };
 }

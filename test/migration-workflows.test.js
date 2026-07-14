@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
-import { createCloudflareClient, createVercelDeliveryClient } from "../server/clients.js";
+import { createCloudflareClient, createOutscraperClient, createVercelDeliveryClient } from "../server/clients.js";
 import { config } from "../server/config.js";
 import { verifyStripeEvent } from "../server/stripe-webhook.js";
 import { prepareDeliveredHtml } from "../server/templates.js";
-import { processDomainPurchase, processSiteDelivery, recordSketchOpened } from "../server/workflows.js";
+import { processDomainPurchase, processSiteDelivery, processWebsiteLead, recordSketchOpened } from "../server/workflows.js";
 
 function stripeEvent(overrides = {}) {
   return {
@@ -21,6 +21,56 @@ function stripeEvent(overrides = {}) {
     } }
   };
 }
+
+test("00 creates the raw business and generation job before notifying", async () => {
+  const calls = [];
+  const result = await processWebsiteLead({
+    business_name: "Migration Test Bakery",
+    address: "New York, NY",
+    email: "lead@example.com",
+    submitted_at: "2026-07-14T10:00:00Z"
+  }, {
+    config,
+    outscraper: {
+      async searchPlace(input) {
+        calls.push(["outscraper", input]);
+        return { category: "Bakery", reviews_per_score: { 5: 10 }, subtypes: ["Cafe"], phone: "+1 555 0100" };
+      }
+    },
+    airtable: {
+      async createRecord(tableId, fields) {
+        calls.push(["airtable", tableId, fields]);
+        return { id: tableId === config.airtable.rawOutscraperTableId ? "recRawMigrationTest" : "recJobMigrationTest" };
+      }
+    },
+    telegram: { async send(message) { calls.push(["telegram", message]); } }
+  });
+  assert.equal(result.success, true);
+  assert.equal(calls[0][0], "outscraper");
+  assert.equal(calls[1][1], config.airtable.rawOutscraperTableId);
+  assert.equal(calls[1][2][config.airtable.rawOutscraperFields.reviewsPerScore], '{"5":10}');
+  assert.equal(calls[2][1], config.airtable.tableId);
+  assert.equal(calls[2][2][config.airtable.fields.businessId], "recRawMigrationTest");
+  assert.match(calls[3][1], /Migration Test Bakery/);
+  assert.match(calls[3][1], /Bakery/);
+});
+
+test("00 Outscraper client uses a synchronous one-result search", async () => {
+  let request;
+  const client = createOutscraperClient({
+    apiKey: "secret",
+    endpoint: "https://api.outscraper.cloud/google-maps-search",
+    timeoutMs: 1000,
+    fetchImpl: async (url, options) => {
+      request = { url: String(url), options };
+      return new Response(JSON.stringify({ data: [[{ name: "Migration Test Bakery" }]] }), { status: 200 });
+    }
+  });
+  assert.equal((await client.searchPlace({ query: "Migration Test Bakery New York", limit: 1 })).name, "Migration Test Bakery");
+  assert.match(request.url, /limit=1/);
+  assert.match(request.url, /async=false/);
+  assert.equal(request.options.headers["X-API-KEY"], "secret");
+});
 
 test("Stripe signatures are verified against the untouched raw body", () => {
   const raw = Buffer.from(JSON.stringify(stripeEvent()));

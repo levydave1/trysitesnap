@@ -2,6 +2,7 @@ import {
   createAirtableClient,
   createCloudflareClient,
   createMailRelayClient,
+  createOutscraperClient,
   createTelegramClient,
   createVercelDeliveryClient
 } from "./clients.js";
@@ -22,6 +23,13 @@ export function createRuntimeDependencies(needs = {}) {
       accountId: config.cloudflare.accountId,
       apiToken: process.env.CLOUDFLARE_API_TOKEN,
       timeoutMs: config.upstreamTimeoutMs
+    });
+  }
+  if (needs.outscraper) {
+    dependencies.outscraper = createOutscraperClient({
+      apiKey: process.env.OUTSCRAPER_API_KEY,
+      endpoint: config.outscraper.endpoint,
+      timeoutMs: config.outscraper.timeoutMs
     });
   }
   if (needs.vercelDelivery) {

@@ -8,6 +8,7 @@ export const config = Object.freeze({
   airtable: {
     baseId: "appHTGFZeyuXbRmvt",
     tableId: "tbl3pEHQ9gMSDs489",
+    rawOutscraperTableId: "tblF7fN1VCF7JWlvA",
     fields: {
       existingDomain: "fldvynrxwT7lCptbK",
       selectedDomain: "fldT7f1UgIPhyN7SP",
@@ -34,7 +35,48 @@ export const config = Object.freeze({
       finalDomain: "fldcpuGanKoHdPKCz",
       generatedSiteUrl: "fldBQozQBfC1v3bTF",
       notesLog: "fldRRzGjVM9A3FcKl"
+    },
+    rawOutscraperFields: {
+      reviewsPerScore: "fld1Vnf4AkS9fjcvs",
+      state: "fld2pJ6wNXQonZa4U",
+      category: "fld324NAkX5FZm5HE",
+      street: "fld4ERlg5ILek5IOX",
+      photosCount: "fld4ORQLjOj4eWQkq",
+      rating: "fld55uZmhkTcHyra5",
+      source: "fld8Qzktv0Ik8nztK",
+      reviewsId: "fldBzOdiZJE9JRlLA",
+      leadSource: "fldCAyGLeMyC49W7G",
+      city: "fldDFkcB2yQhgdMK7",
+      workingHoursCsv: "fldDifXTDyDwAHDE7",
+      email: "fldFwLWPEy9olMkwR",
+      businessName: "fldGdPWfVauQeKMH3",
+      subtypes: "fldHE29wUFjO8yDqh",
+      about: "fldHdQ2hGWgnjJNjE",
+      workingHours: "fldKJdlMbtjtxzKfQ",
+      cid: "fldQPZrb6lHqSjEkV",
+      type: "fldUzEbUmeBU60i5G",
+      description: "fldYbga1ompa2Ee09",
+      phone: "fldd34I4QdnLoRO8x",
+      placeId: "fldfMiPmQz4yrElfd",
+      reviewsTags: "fldfUXfFbxmoi77Mp",
+      submittedAddress: "fldj1QL9UANkmpWeK",
+      stateCode: "fldkig3jIwZzfNbd3",
+      postalCode: "fldmDOqeWMH9W3U0p",
+      reviews: "fldn010ig3ae52YmH",
+      country: "fldn5TSecIviB99Py",
+      photo: "fldnE8utbrFcrP9rk",
+      website: "fldrOvLXoReB1EsZL",
+      county: "fldsCn2KIKWBMCMJw",
+      countryCode: "fldsM7kXjgWdKnY5m",
+      logo: "fldyw9BlfSH6IGLWW"
     }
+  },
+  outscraper: {
+    endpoint: "https://api.outscraper.cloud/google-maps-search",
+    limit: 1,
+    language: "en",
+    region: "US",
+    timeoutMs: 25000
   },
   stripe: {
     webhookToleranceSeconds: 300,
