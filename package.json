@@ -1,0 +1,13 @@
+{
+  "name": "trysitesnap",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check server/clients.js && node --check server/config.js && node --check server/handlers.js && node --check server/vercel.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

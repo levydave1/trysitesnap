@@ -383,7 +383,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const recordId = urlParams.get('record_id');
         const businessName = urlParams.get('business_name') || 'Your Business';
-        const webhookUrl = "https://hook.eu2.make.com/qxlsjiy1kzakh6qgujtdu2igyxk9h5lk";
+        const existingDomainUrl = "/api/9cb2a449abf2498ab8de9665800c75d9-existing-domain";
 
         function validateDomain(val) {
             const cleaned = val.replace(/^(https?:\/\/)?(www\.)?/, '').trim();
@@ -547,7 +547,7 @@
                 }
 
                 try {
-                    await fetch(`${webhookUrl}?record_id=${encodeURIComponent(recordId)}&domain=${encodeURIComponent(domain)}`, { mode: 'no-cors' });
+                    await fetch(`${existingDomainUrl}?record_id=${encodeURIComponent(recordId)}&domain=${encodeURIComponent(domain)}`, { mode: 'no-cors' });
                 } catch (e) {
                     console.log("Domain sync initiated");
                 }

@@ -328,8 +328,8 @@
     </div>
 
 <script>
-    const makeWebhookUrl = "https://hook.eu2.make.com/lsapnqg6h81b8nxavc2kbyc8l0uqrp4r";
-    const saveRegistrationWebhookUrl = "https://hook.eu2.make.com/n6zrz27mj6m5kmytewkc50iulf19pz9h";
+    const domainAvailabilityUrl = "/api/b80bf73b56624b3bb4eb7ab5075eaed2-domain-availability";
+    const saveRegistrationUrl = "/api/d2e5d68217354b4bb6b38dafcdeee9ab-domain-registration";
     const stripePaymentLink = "https://buy.stripe.com/5kQ5kC4NSc3y6wNeyV8g000";
 
     let selectedDomain = "";
@@ -420,7 +420,7 @@
         btn.disabled = true;
 
         try {
-            const response = await fetch(makeWebhookUrl, {
+            const response = await fetch(domainAvailabilityUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -646,7 +646,7 @@
         };
 
         try {
-            const response = await fetch(saveRegistrationWebhookUrl, {
+            const response = await fetch(saveRegistrationUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
