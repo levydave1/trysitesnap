@@ -9,6 +9,7 @@ export const config = Object.freeze({
     baseId: "appHTGFZeyuXbRmvt",
     tableId: "tbl3pEHQ9gMSDs489",
     rawOutscraperTableId: "tblF7fN1VCF7JWlvA",
+    emailThreadsTableId: "tblGP20OTbsYT8KEC",
     fields: {
       existingDomain: "fldvynrxwT7lCptbK",
       selectedDomain: "fldT7f1UgIPhyN7SP",
@@ -69,7 +70,30 @@ export const config = Object.freeze({
       county: "fldsCn2KIKWBMCMJw",
       countryCode: "fldsM7kXjgWdKnY5m",
       logo: "fldyw9BlfSH6IGLWW"
+    },
+    emailThreadFields: {
+      subject: "fld6esjeshOyRhBiC",
+      body: "fld7Y0KrOrrNXSwrl",
+      direction: "fld8a9b4BPbdbmE5h",
+      contactName: "fldMHIgA2ZdMwkVx4",
+      sender: "fldT9z9bDRRVFPwfw",
+      rawBusinessRecord: "fldV8n1aIJrSifa3f",
+      sentAt: "fldXnDmXBFZBMZgWE",
+      instantlyLeadId: "fldiuE6MbLkikLxtO",
+      businessName: "fldkQS2tbwIYOayAn",
+      recipientEmail: "fldkyn5HHvY28Ozoc",
+      status: "fldlFthMdDEHBfrUN",
+      searchText: "flds3TpkLSye0xdTc"
     }
+  },
+  emailExport: {
+    campaignId: "6cd2f082-7246-40c3-9b71-23b1f2fc5678",
+    maxRecords: 200,
+    concurrency: 4,
+    timezone: "Asia/Jerusalem",
+    senderLabel: "sitesnap-test (levy.dave.1@gmail.com)",
+    geminiModel: "gemini-3.1-flash-lite",
+    claudeModel: "claude-sonnet-4-6"
   },
   outscraper: {
     endpoint: "https://api.outscraper.cloud/google-maps-search",

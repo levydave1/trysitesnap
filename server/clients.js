@@ -111,6 +111,48 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
       }
       return payload;
     },
+    async getRecordFromTable(targetTableId, recordId) {
+      const response = await fetchImpl(
+        `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(targetTableId)}/${encodeURIComponent(recordId)}`,
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: AbortSignal.timeout(timeoutMs)
+        }
+      );
+      const payload = await readJson(response);
+      if (!response.ok) {
+        throw upstreamError("airtable", response.status, payload.error?.message || payload.error?.type || payload.raw || "");
+      }
+      return payload;
+    },
+    async listRecords(targetTableId, options = {}) {
+      const records = [];
+      let offset = "";
+      do {
+        const url = new URL(`https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(targetTableId)}`);
+        url.searchParams.set("pageSize", String(Math.min(100, Math.max(1, options.pageSize || 100))));
+        if (options.returnFieldsByFieldId) url.searchParams.set("returnFieldsByFieldId", "true");
+        if (options.filterByFormula) url.searchParams.set("filterByFormula", options.filterByFormula);
+        for (const field of options.fields || []) url.searchParams.append("fields[]", field);
+        for (const [index, sort] of (options.sort || []).entries()) {
+          url.searchParams.set(`sort[${index}][field]`, sort.field);
+          url.searchParams.set(`sort[${index}][direction]`, sort.direction || "asc");
+        }
+        if (offset) url.searchParams.set("offset", offset);
+        const response = await fetchImpl(url, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: AbortSignal.timeout(timeoutMs)
+        });
+        const payload = await readJson(response);
+        if (!response.ok) {
+          throw upstreamError("airtable", response.status, payload.error?.message || payload.error?.type || payload.raw || "");
+        }
+        records.push(...(Array.isArray(payload.records) ? payload.records : []));
+        offset = payload.offset || "";
+        if (options.maxRecords && records.length >= options.maxRecords) break;
+      } while (offset);
+      return options.maxRecords ? records.slice(0, options.maxRecords) : records;
+    },
     async updateRecord(recordId, fields) {
       const response = await fetchImpl(
         `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(tableId)}/${encodeURIComponent(recordId)}`,
@@ -190,6 +232,115 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
         );
       }
       return firstOutscraperPlace(payload);
+    }
+  };
+}
+
+function modelJson(text, service) {
+  const normalized = String(text || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  try {
+    return JSON.parse(normalized);
+  } catch {
+    throw upstreamError(service, 200, "model returned invalid JSON");
+  }
+}
+
+async function retryingJson(service, url, options, { timeoutMs, fetchImpl, attempts = 4 }) {
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await fetchImpl(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
+      const payload = await readJson(response);
+      if (response.ok) return payload;
+      const details = payload.error?.message || payload.message || payload.error || payload.raw || "";
+      if (response.status !== 429 && response.status < 500) {
+        throw upstreamError(service, response.status, details);
+      }
+      lastError = upstreamError(service, response.status, details);
+    } catch (error) {
+      lastError = error;
+      if (error.upstreamStatus && error.upstreamStatus !== 429 && error.upstreamStatus < 500) throw error;
+    }
+    if (attempt < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 750 * (2 ** attempt)));
+    }
+  }
+  throw lastError;
+}
+
+export function createGeminiClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  return {
+    async analyze({ system, user }) {
+      const payload = await retryingJson("gemini", endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents: [{ role: "user", parts: [{ text: user }] }],
+          generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
+        })
+      }, { timeoutMs, fetchImpl });
+      const output = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
+      return modelJson(output, "gemini");
+    }
+  };
+}
+
+export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
+  return {
+    async writeEmail({ system, user }) {
+      const payload = await retryingJson("claude", "https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+          "x-api-key": apiKey
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 1000,
+          temperature: 0.8,
+          system,
+          messages: [{ role: "user", content: user }],
+          output_config: {
+            format: {
+              type: "json_schema",
+              schema: {
+                type: "object",
+                properties: { subject: { type: "string" }, body: { type: "string" } },
+                required: ["subject", "body"],
+                additionalProperties: false
+              }
+            }
+          }
+        })
+      }, { timeoutMs, fetchImpl });
+      const output = payload.content?.filter((part) => part.type === "text").map((part) => part.text || "").join("") || "";
+      return modelJson(output, "claude");
+    }
+  };
+}
+
+export function createInstantlyClient({ apiKey, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("INSTANTLY_API_KEY is not configured");
+  const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };
+  return {
+    async createLead(lead) {
+      return retryingJson("instantly", "https://api.instantly.ai/api/v2/leads", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(lead)
+      }, { timeoutMs, fetchImpl });
+    },
+    async listLeads(query = {}) {
+      return retryingJson("instantly", "https://api.instantly.ai/api/v2/leads/list", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(query)
+      }, { timeoutMs, fetchImpl });
     }
   };
 }

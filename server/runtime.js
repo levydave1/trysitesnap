@@ -1,6 +1,9 @@
 import {
   createAirtableClient,
+  createClaudeClient,
   createCloudflareClient,
+  createGeminiClient,
+  createInstantlyClient,
   createMailRelayClient,
   createOutscraperClient,
   createTelegramClient,
@@ -30,6 +33,22 @@ export function createRuntimeDependencies(needs = {}) {
       apiKey: process.env.OUTSCRAPER_API_KEY,
       endpoint: config.outscraper.endpoint,
       timeoutMs: config.outscraper.timeoutMs
+    });
+  }
+  if (needs.emailExport) {
+    dependencies.gemini = createGeminiClient({
+      apiKey: process.env.GEMINI_API_KEY,
+      model: config.emailExport.geminiModel,
+      timeoutMs: 45000
+    });
+    dependencies.claude = createClaudeClient({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: config.emailExport.claudeModel,
+      timeoutMs: 60000
+    });
+    dependencies.instantly = createInstantlyClient({
+      apiKey: process.env.INSTANTLY_API_KEY,
+      timeoutMs: 30000
     });
   }
   if (needs.vercelDelivery) {
