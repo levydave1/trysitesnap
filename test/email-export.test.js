@@ -79,8 +79,10 @@ test("02 v2 prompt stays grounded and excludes first-email pricing", () => {
   });
   assert.match(prompt.user, /Family and employment law services/);
   assert.match(prompt.system, /using public information/);
-  assert.match(prompt.system, /Do not use.*pricing/i);
-  assert.match(prompt.system, /35 to 50 words/);
+  assert.match(prompt.system, /no cost or obligation to take a look/i);
+  assert.match(prompt.system, /Do not imply that the finished website, launch, domain, or service is free/i);
+  assert.match(prompt.system, /Do not use.*finished-site pricing/i);
+  assert.match(prompt.system, /40 to 55 words/);
 });
 
 test("02 preview tests always redirect three generated emails to the approved inbox", async () => {

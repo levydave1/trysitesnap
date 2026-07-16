@@ -66,7 +66,7 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - Production uses the v2 one-model flow: one Claude structured-output request receives the verified Airtable lead fields and returns the subject/body JSON directly. Gemini is not initialized or called in v2.
 - The original Gemini-to-Claude chain and its exact prompts remain in the code as the `legacy` flow. Set `EMAIL_EXPORT_FLOW=legacy` in Vercel and redeploy to roll back without restoring code or reactivating Make.
 - `/api/02-email-preview-test` is a protected, non-exporting test route. It requires exactly three Airtable Raw record IDs, can send only to the hard-coded approved inbox `levy.dave.1@gmail.com`, and neither calls Instantly nor writes to Airtable.
-- The v2 first email intentionally omits pricing. It focuses on the already-drafted preview, one grounded detail, one practical benefit, and a permission-based CTA. Pricing belongs in a follow-up after interest.
+- The v2 first email intentionally omits finished-site pricing. It focuses on the already-drafted preview, one grounded detail, one practical benefit, and a permission-based CTA. It states once that viewing the preview has no cost or obligation, without implying that the finished website or launch is free. The `$199` offer belongs in a follow-up after interest.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
