@@ -2,9 +2,9 @@
 
 SiteSnap's migrated automations run as Vercel Functions and no longer depend on Make or on either local computer being online. The shared folder can be used from either computer for maintenance and deployments.
 
-## Production status — 2026-07-14
+## Production status — 2026-07-16
 
-- Make scenarios 00, 07, 07.5, 08, 09, 10 and 12 are inactive and were not deleted.
+- Make scenarios 00, 02, 07, 07.5, 08, 09, 10 and 12 are inactive and were not deleted.
 - Scenario 00 still has 6 historical records waiting in its Make queue. They were intentionally left untouched; new website leads bypass Make completely.
 - Scenario 11 was intentionally skipped and was not changed.
 - Scenario 04 remains active. Its embedded sketch-open tracker points to the production scenario-12 replacement endpoint.
@@ -16,6 +16,7 @@ SiteSnap's migrated automations run as Vercel Functions and no longer depend on 
 | Make scenario | Make ID | Production replacement |
 | --- | --- | --- |
 | 00 | `b066e90394264c16ad9ee7e09d682844` (webhook slug) | `/api/b066e90394264c16ad9ee7e09d682844-website-leads` |
+| 02 | `9205366` | `/api/02-export-email-to-instantly` and its winter-time companion route |
 | 07 | `9165920` | `/api/b80bf73b56624b3bb4eb7ab5075eaed2-domain-availability` |
 | 07.5 | `9177085` | `/api/d2e5d68217354b4bb6b38dafcdeee9ab-domain-registration` |
 | 08 | `9177306` | `/api/1c177b7f64d64fa9a9a4dce318d8d681-stripe-events` |
@@ -30,8 +31,10 @@ SiteSnap's migrated automations run as Vercel Functions and no longer depend on 
 - 10: the production workflow deployed and opened `migration-token-final-20260714.trysitesnap.com` after the Vercel delivery token was rotated. The page states that scenario 10 delivered it without Make.
 - 12: opening a delivered sketch wrote the timestamp to Airtable and sent the matching Telegram notification. The check was repeated successfully after rotating the Telegram bot token.
 - Mail: the Google Apps Script relay sent both a direct test and a message through the production SiteSnap runtime. Its Google authorization is limited to sending mail.
+- 02: a protected production run read an eligible Raw Outscraper lead, generated the analysis with Gemini, generated the email with Claude, created the lead in the correct Instantly campaign, wrote the complete outgoing Email Threads record in Airtable, and delivered the Telegram summary. The same run returned HTTP 200 in Vercel. The lead and audit record were verified in the provider UIs before Make was deactivated.
 
 Production test record used during cutover: `recwrMbu32Qy4Jc87`.
+Scenario 02 production test Raw record: `recdfAC9tau5DtoS1`.
 
 ## Production secrets
 
@@ -44,6 +47,20 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - `MAIL_RELAY_URL` and `MAIL_RELAY_SECRET`
 - `TELEGRAM_BOT_TOKEN`
 - `OUTSCRAPER_API_KEY`
+- `GEMINI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `INSTANTLY_API_KEY`
+- `CRON_SECRET`
+- `EMAIL_EXPORT_MAX_RECORDS`
+
+## Scenario 02 operating notes
+
+- Vercel owns the schedule, so scenario 02 does not depend on either local computer or on the shared folder being open.
+- Two UTC cron entries cover Israeli daylight-saving and winter time. Each route checks that the local hour in `Asia/Jerusalem` is 12 before doing work, preventing a duplicate daily run.
+- The production batch limit is 200 eligible leads. Malformed source email addresses are ignored before the limit is applied, so an invalid oldest row cannot block the queue.
+- Instantly duplicate guards and the Airtable `sent` audit record make retries safe for already-exported Raw records.
+- Vercel Hobby cron execution has a flexible one-hour window. The run is therefore expected during the 12:00–12:59 Israel-time hour, not necessarily at exactly 12:00:00.
+- The migrated runtime deliberately keeps the original two-model prompt chain for cutover parity. The recommended next prompt revision is documented in `PROMPT_RECOMMENDATIONS.md` and is not active yet.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
