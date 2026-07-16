@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check server/clients.js && node --check server/config.js && node --check server/email-export.js && node --check server/email-export-handler.js && node --check server/email-prompts.js && node --check server/handlers.js && node --check server/runtime.js && node --check server/stripe-webhook.js && node --check server/templates.js && node --check server/vercel.js && node --check server/workflows.js && node --check api/02-export-email-to-instantly.js && node --check api/02-export-email-to-instantly-winter.js && node --check api/b066e90394264c16ad9ee7e09d682844-website-leads.js"
+    "check": "node --check server/clients.js && node --check server/config.js && node --check server/email-export.js && node --check server/email-export-handler.js && node --check server/email-preview-test.js && node --check server/email-prompts.js && node --check server/handlers.js && node --check server/runtime.js && node --check server/stripe-webhook.js && node --check server/templates.js && node --check server/vercel.js && node --check server/workflows.js && node --check api/02-email-preview-test.js && node --check api/02-export-email-to-instantly.js && node --check api/02-export-email-to-instantly-winter.js && node --check api/b066e90394264c16ad9ee7e09d682844-website-leads.js"
   },
   "engines": {
     "node": ">=20"

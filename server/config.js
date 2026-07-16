@@ -92,6 +92,8 @@ export const config = Object.freeze({
     concurrency: 4,
     timezone: "Asia/Jerusalem",
     senderLabel: "sitesnap-test (levy.dave.1@gmail.com)",
+    testRecipient: "levy.dave.1@gmail.com",
+    defaultFlow: "v2",
     geminiModel: "gemini-3.1-flash-lite",
     claudeModel: "claude-sonnet-4-6"
   },

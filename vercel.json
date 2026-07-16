@@ -13,6 +13,9 @@
     },
     "api/02-export-email-to-instantly-winter.js": {
       "maxDuration": 300
+    },
+    "api/02-email-preview-test.js": {
+      "maxDuration": 300
     }
   },
   "crons": [

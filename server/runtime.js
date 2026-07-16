@@ -36,11 +36,13 @@ export function createRuntimeDependencies(needs = {}) {
     });
   }
   if (needs.emailExport) {
-    dependencies.gemini = createGeminiClient({
-      apiKey: process.env.GEMINI_API_KEY,
-      model: config.emailExport.geminiModel,
-      timeoutMs: 45000
-    });
+    if (needs.emailFlow === "legacy") {
+      dependencies.gemini = createGeminiClient({
+        apiKey: process.env.GEMINI_API_KEY,
+        model: config.emailExport.geminiModel,
+        timeoutMs: 45000
+      });
+    }
     dependencies.claude = createClaudeClient({
       apiKey: process.env.ANTHROPIC_API_KEY,
       model: config.emailExport.claudeModel,

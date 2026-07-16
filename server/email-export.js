@@ -1,4 +1,4 @@
-import { legacyClaudePrompt, legacyGeminiPrompt } from "./email-prompts.js";
+import { legacyClaudePrompt, legacyGeminiPrompt, modernClaudePrompt } from "./email-prompts.js";
 
 const rawFieldNames = [
   "First Name",
@@ -25,7 +25,7 @@ export function isValidLeadEmail(value) {
   return /^[^\s@/?#]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(email);
 }
 
-function leadFromRecord(record) {
+export function leadFromEmailRecord(record) {
   const fields = record.fields || {};
   const firstName = clean(fields["First Name"]);
   const lastName = clean(fields["Last Name"]);
@@ -47,6 +47,10 @@ function leadFromRecord(record) {
   };
 }
 
+export function normalizeEmailFlow(value) {
+  return String(value || "").trim().toLowerCase() === "legacy" ? "legacy" : "v2";
+}
+
 function analysisFromGemini(output) {
   return {
     hook: clean(output?.hook),
@@ -60,6 +64,16 @@ function emailFromClaude(output) {
   const body = clean(output?.body);
   if (!subject || !body) throw new Error("Claude did not return subject and body");
   return { subject, body };
+}
+
+export async function generateEmailForLead(dependencies, lead, flow = "v2") {
+  const selectedFlow = normalizeEmailFlow(flow);
+  if (selectedFlow === "legacy") {
+    if (!dependencies.gemini) throw new Error("Gemini is required for the legacy email flow");
+    const analysis = analysisFromGemini(await dependencies.gemini.analyze(legacyGeminiPrompt(lead)));
+    return emailFromClaude(await dependencies.claude.writeEmail(legacyClaudePrompt(lead, analysis)));
+  }
+  return emailFromClaude(await dependencies.claude.writeEmail(modernClaudePrompt(lead)));
 }
 
 function linkedIds(value) {
@@ -131,14 +145,13 @@ export async function processEmailExportBatch(dependencies, options = {}) {
   const candidates = rawRecords
     .filter((record) => record?.id && !completed.has(record.id))
     .sort((a, b) => String(a.createdTime || "").localeCompare(String(b.createdTime || "")))
-    .filter((record) => isValidLeadEmail(leadFromRecord(record).email))
+    .filter((record) => isValidLeadEmail(leadFromEmailRecord(record).email))
     .slice(0, maxRecords);
 
   const results = await mapConcurrent(candidates, options.concurrency || config.emailExport.concurrency, async (record) => {
-    const lead = leadFromRecord(record);
+    const lead = leadFromEmailRecord(record);
     try {
-      const analysis = analysisFromGemini(await gemini.analyze(legacyGeminiPrompt(lead)));
-      const email = emailFromClaude(await claude.writeEmail(legacyClaudePrompt(lead, analysis)));
+      const email = await generateEmailForLead({ gemini, claude }, lead, options.flow);
       const instantLead = await ensureInstantlyLead(instantly, {
         campaign: config.emailExport.campaignId,
         email: lead.email,
@@ -199,6 +212,7 @@ export async function processEmailExportBatch(dependencies, options = {}) {
   }
   return {
     success: true,
+    flow: normalizeEmailFlow(options.flow),
     candidates: candidates.length,
     exported: results.filter((item) => item.status === "exported").length,
     skipped: results.filter((item) => item.status === "skipped").length,

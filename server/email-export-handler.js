@@ -1,4 +1,4 @@
-import { processEmailExportBatch, isLocalNoon } from "./email-export.js";
+import { processEmailExportBatch, isLocalNoon, normalizeEmailFlow } from "./email-export.js";
 import { createRuntimeDependencies } from "./runtime.js";
 
 function authorized(request) {
@@ -20,7 +20,8 @@ export async function emailExportHandler(request, response) {
   }
   if (!authorized(request)) return response.status(401).json({ success: false, code: "UNAUTHORIZED" });
 
-  const dependencies = createRuntimeDependencies({ airtable: true, emailExport: true, notifications: true });
+  const flow = normalizeEmailFlow(request.body?.flow || process.env.EMAIL_EXPORT_FLOW);
+  const dependencies = createRuntimeDependencies({ airtable: true, emailExport: true, emailFlow: flow, notifications: true });
   if (request.method === "GET" && !isLocalNoon(new Date(), dependencies.config.emailExport.timezone)) {
     return response.status(200).json({ success: true, skipped: true, reason: "outside_local_noon" });
   }
@@ -29,10 +30,12 @@ export async function emailExportHandler(request, response) {
     const result = await processEmailExportBatch(dependencies, {
       maxRecords: number(request.body?.max_records, configuredLimit),
       recordId: request.body?.record_id || undefined,
+      flow,
       notify: request.body?.notify !== false
     });
     console.log(JSON.stringify({
       event: "scenario_02_completed",
+      flow: result.flow,
       candidates: result.candidates,
       exported: result.exported,
       skipped: result.skipped,
@@ -49,4 +52,3 @@ export async function emailExportHandler(request, response) {
     return response.status(500).json({ success: false, code: error.code || "SCENARIO_02_FAILED" });
   }
 }
-
