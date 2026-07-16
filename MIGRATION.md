@@ -32,6 +32,7 @@ SiteSnap's migrated automations run as Vercel Functions and no longer depend on 
 - 12: opening a delivered sketch wrote the timestamp to Airtable and sent the matching Telegram notification. The check was repeated successfully after rotating the Telegram bot token.
 - Mail: the Google Apps Script relay sent both a direct test and a message through the production SiteSnap runtime. Its Google authorization is limited to sending mail.
 - 02: a protected production run read an eligible Raw Outscraper lead, generated the analysis with Gemini, generated the email with Claude, created the lead in the correct Instantly campaign, wrote the complete outgoing Email Threads record in Airtable, and delivered the Telegram summary. The same run returned HTTP 200 in Vercel. The lead and audit record were verified in the provider UIs before Make was deactivated.
+- 02 v2: production now uses one Claude structured-output call instead of the Gemini-to-Claude chain. A protected production test generated three different customer-specific emails and redirected all three exclusively to `levy.dave.1@gmail.com`. The endpoint returned HTTP 200 with `flow: v2` and `sent: 3`; Gmail showed exactly the matching three messages. No Instantly lead or Airtable Email Threads record is created by this test route.
 
 Production test record used during cutover: `recwrMbu32Qy4Jc87`.
 Scenario 02 production test Raw record: `recdfAC9tau5DtoS1`.
@@ -52,6 +53,8 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - `INSTANTLY_API_KEY`
 - `CRON_SECRET`
 - `EMAIL_EXPORT_MAX_RECORDS`
+- `EMAIL_EXPORT_FLOW` (`v2` in production; change to `legacy` for model-flow rollback)
+- `EMAIL_PREVIEW_TEST_SECRET`
 
 ## Scenario 02 operating notes
 
@@ -60,7 +63,10 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - The production batch limit is 200 eligible leads. Malformed source email addresses are ignored before the limit is applied, so an invalid oldest row cannot block the queue.
 - Instantly duplicate guards and the Airtable `sent` audit record make retries safe for already-exported Raw records.
 - Vercel Hobby cron execution has a flexible one-hour window. The run is therefore expected during the 12:00–12:59 Israel-time hour, not necessarily at exactly 12:00:00.
-- The migrated runtime deliberately keeps the original two-model prompt chain for cutover parity. The recommended next prompt revision is documented in `PROMPT_RECOMMENDATIONS.md` and is not active yet.
+- Production uses the v2 one-model flow: one Claude structured-output request receives the verified Airtable lead fields and returns the subject/body JSON directly. Gemini is not initialized or called in v2.
+- The original Gemini-to-Claude chain and its exact prompts remain in the code as the `legacy` flow. Set `EMAIL_EXPORT_FLOW=legacy` in Vercel and redeploy to roll back without restoring code or reactivating Make.
+- `/api/02-email-preview-test` is a protected, non-exporting test route. It requires exactly three Airtable Raw record IDs, can send only to the hard-coded approved inbox `levy.dave.1@gmail.com`, and neither calls Instantly nor writes to Airtable.
+- The v2 first email intentionally omits pricing. It focuses on the already-drafted preview, one grounded detail, one practical benefit, and a permission-based CTA. Pricing belongs in a follow-up after interest.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
