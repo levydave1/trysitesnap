@@ -20,6 +20,11 @@ function clean(value) {
   return String(value ?? "").trim();
 }
 
+export function isValidLeadEmail(value) {
+  const email = clean(value).toLowerCase();
+  return /^[^\s@/?#]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(email);
+}
+
 function leadFromRecord(record) {
   const fields = record.fields || {};
   const firstName = clean(fields["First Name"]);
@@ -95,7 +100,7 @@ function summaryMessage(results) {
   const failed = results.filter((item) => item.status === "failed");
   const names = exported.slice(0, 15).map((item) => `- ${item.businessName}`).join("\n");
   const omitted = exported.length > 15 ? `\n- ועוד ${exported.length - 15}` : "";
-  return `נטענו הלידים לאיירטיבל\nנשלחו: ${exported.length}\nנכשלו: ${failed.length}${names ? `\n${names}${omitted}` : ""}`;
+  return `נטענו לידים ל-Instantly\nנשלחו: ${exported.length}\nנכשלו: ${failed.length}${names ? `\n${names}${omitted}` : ""}`;
 }
 
 export async function processEmailExportBatch(dependencies, options = {}) {
@@ -126,13 +131,11 @@ export async function processEmailExportBatch(dependencies, options = {}) {
   const candidates = rawRecords
     .filter((record) => record?.id && !completed.has(record.id))
     .sort((a, b) => String(a.createdTime || "").localeCompare(String(b.createdTime || "")))
+    .filter((record) => isValidLeadEmail(leadFromRecord(record).email))
     .slice(0, maxRecords);
 
   const results = await mapConcurrent(candidates, options.concurrency || config.emailExport.concurrency, async (record) => {
     const lead = leadFromRecord(record);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email)) {
-      return { status: "skipped", recordId: record.id, businessName: lead.businessName, reason: "invalid_email" };
-    }
     try {
       const analysis = analysisFromGemini(await gemini.analyze(legacyGeminiPrompt(lead)));
       const email = emailFromClaude(await claude.writeEmail(legacyClaudePrompt(lead, analysis)));

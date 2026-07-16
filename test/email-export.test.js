@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createClaudeClient, createGeminiClient, createInstantlyClient } from "../server/clients.js";
-import { processEmailExportBatch, isLocalNoon } from "../server/email-export.js";
+import { processEmailExportBatch, isLocalNoon, isValidLeadEmail } from "../server/email-export.js";
 import { config } from "../server/config.js";
 
 test("02 direct AI clients request the configured models and parse JSON", async () => {
@@ -88,10 +88,38 @@ test("02 exports only undocumented raw leads and records the Instantly result", 
   assert.match(messages[0], /נשלחו: 1/);
 });
 
+test("02 ignores malformed source emails before applying the batch limit", async () => {
+  const sent = [];
+  const result = await processEmailExportBatch({
+    config: { ...config, emailExport: { ...config.emailExport, maxRecords: 1 } },
+    airtable: {
+      async listRecords(tableId) {
+        if (tableId === config.airtable.emailThreadsTableId) return [];
+        return [
+          { id: "recMalformed", createdTime: "2026-01-01T00:00:00Z", fields: { Email: "owner@example.com?subject=contact" } },
+          { id: "recValid", createdTime: "2026-01-02T00:00:00Z", fields: { Email: "owner+test@example.com", "Business Name": "Valid Lead" } }
+        ];
+      },
+      async createRecord() { return { id: "recThread" }; }
+    },
+    gemini: { async analyze() { return { hook: "detail" }; } },
+    claude: { async writeEmail() { return { subject: "Quick idea", body: "Short email" }; } },
+    instantly: {
+      async createLead(payload) { sent.push(payload.email); return { id: "lead-valid" }; },
+      async listLeads() { return { items: [] }; }
+    },
+    telegram: { async send() {} }
+  });
+  assert.equal(result.candidates, 1);
+  assert.equal(result.exported, 1);
+  assert.deepEqual(sent, ["owner+test@example.com"]);
+  assert.equal(isValidLeadEmail("owner@example.com?subject=contact"), false);
+  assert.equal(isValidLeadEmail("owner+test@example.com"), true);
+});
+
 test("02 local-noon gate follows Israel daylight saving time", () => {
   assert.equal(isLocalNoon(new Date("2026-07-16T09:30:00Z")), true);
   assert.equal(isLocalNoon(new Date("2026-07-16T10:30:00Z")), false);
   assert.equal(isLocalNoon(new Date("2026-12-16T10:30:00Z")), true);
   assert.equal(isLocalNoon(new Date("2026-12-16T09:30:00Z")), false);
 });
-
