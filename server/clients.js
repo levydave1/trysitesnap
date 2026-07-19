@@ -198,21 +198,6 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
         );
       }
       return payload;
-    },
-    async refreshWebhook(webhookId) {
-      const response = await fetchImpl(
-        `https://api.airtable.com/v0/bases/${encodeURIComponent(baseId)}/webhooks/${encodeURIComponent(webhookId)}/refresh`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${accessToken}` },
-          signal: AbortSignal.timeout(timeoutMs)
-        }
-      );
-      const payload = await readJson(response);
-      if (!response.ok) {
-        throw upstreamError("airtable", response.status, payload.error?.message || payload.error?.type || payload.raw || "");
-      }
-      return payload;
     }
   };
 }

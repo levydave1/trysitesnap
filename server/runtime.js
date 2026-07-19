@@ -10,19 +10,15 @@ import {
   createVercelDeliveryClient
 } from "./clients.js";
 import { config } from "./config.js";
-import { withOptionalAirtableMirror } from "./airtable-mirror.js";
 
 export function createRuntimeDependencies(needs = {}) {
   const dependencies = { config };
   if (needs.airtable) {
-    const airtable = createAirtableClient({
+    dependencies.airtable = createAirtableClient({
       baseId: config.airtable.baseId,
       tableId: config.airtable.tableId,
       accessToken: process.env.AIRTABLE_ACCESS_TOKEN,
       timeoutMs: config.upstreamTimeoutMs
-    });
-    dependencies.airtable = withOptionalAirtableMirror(airtable, {
-      defaultTableId: config.airtable.tableId
     });
   }
   if (needs.cloudflare) {

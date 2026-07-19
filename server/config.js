@@ -8,17 +8,8 @@ export const config = Object.freeze({
   airtable: {
     baseId: "appHTGFZeyuXbRmvt",
     tableId: "tbl3pEHQ9gMSDs489",
-    businessesTableId: "tblwQtNvfoFA8mRoK",
     rawOutscraperTableId: "tblF7fN1VCF7JWlvA",
     emailThreadsTableId: "tblGP20OTbsYT8KEC",
-    ordersDomainsTableId: "tbl6JynIPTqIfhWc1",
-    mirrorTables: [
-      { name: "Businesses", id: "tblwQtNvfoFA8mRoK" },
-      { name: "Generation Jobs", id: "tbl3pEHQ9gMSDs489" },
-      { name: "Email Threads", id: "tblGP20OTbsYT8KEC" },
-      { name: "Orders Domains", id: "tbl6JynIPTqIfhWc1" },
-      { name: "Raw outscraper", id: "tblF7fN1VCF7JWlvA" }
-    ],
     fields: {
       existingDomain: "fldvynrxwT7lCptbK",
       selectedDomain: "fldT7f1UgIPhyN7SP",
