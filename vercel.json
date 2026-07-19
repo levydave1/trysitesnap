@@ -16,6 +16,12 @@
     },
     "api/02-email-preview-test.js": {
       "maxDuration": 300
+    },
+    "api/airtable-reconcile.js": {
+      "maxDuration": 300
+    },
+    "api/airtable-webhook.js": {
+      "maxDuration": 300
     }
   },
   "crons": [
@@ -26,6 +32,10 @@
     {
       "path": "/api/02-export-email-to-instantly-winter",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/airtable-reconcile",
+      "schedule": "17 1 * * *"
     }
   ]
 }

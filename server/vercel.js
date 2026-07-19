@@ -1,5 +1,6 @@
 import { createAirtableClient, createCloudflareClient } from "./clients.js";
 import { config } from "./config.js";
+import { withOptionalAirtableMirror } from "./airtable-mirror.js";
 
 function requestOrigin(request) {
   const protocol = String(request.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
@@ -56,11 +57,14 @@ export function createVercelHandler({ method, action, needsCloudflare = false, n
         });
       }
       if (needsAirtable) {
-        dependencies.airtable = createAirtableClient({
+        const airtable = createAirtableClient({
           baseId: config.airtable.baseId,
           tableId: config.airtable.tableId,
           accessToken: process.env.AIRTABLE_ACCESS_TOKEN,
           timeoutMs: config.upstreamTimeoutMs
+        });
+        dependencies.airtable = withOptionalAirtableMirror(airtable, {
+          defaultTableId: config.airtable.tableId
         });
       }
 
