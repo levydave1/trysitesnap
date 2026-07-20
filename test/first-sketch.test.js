@@ -60,7 +60,7 @@ test("04 test mode deploys and emails only the approved inbox without Airtable w
     token: trackerMatch[2]
   }), true);
   assert.match(deps.calls.deployments[0], /id="contact"/);
-  assert.match(deps.calls.deployments[0], /data-sitesnap-map/);
+  assert.match(deps.calls.deployments[0], /google\.com\/maps/);
   assert.match(deps.calls.deployments[0], /google\.com\/maps/);
   assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
   assert.match(deps.calls.deployments[0], /Why this sketch/);
@@ -139,6 +139,18 @@ test("04 repairs a truncated model document and retries one malformed repair", a
   assert.equal(auditCalls, 2);
   assert.match(deps.calls.deployments[0], /<h1>Repaired<\/h1>/);
   assert.match(deps.calls.deployments[0], /data-sitesnap-preview/);
+});
+
+test("04 deploys a complete deterministic fallback when both repairs remain truncated", async () => {
+  const deps = dependencies();
+  deps.sketchHtml.generate = async () => "<html><body><main>truncated";
+  deps.sketchAudit.generate = async () => "<html><body><main>still truncated";
+  const result = await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  assert.equal(result.auditUsed, true);
+  assert.equal(result.fallbackUsed, true);
+  assert.match(deps.calls.deployments[0], /<!doctype html>/i);
+  assert.match(deps.calls.deployments[0], /google\.com\/maps/);
+  assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
 });
 
 test("04 live mode mirrors the Make fields and notifies after deployment", async () => {
