@@ -124,10 +124,10 @@ test("04 repair mode safely republishes an existing preview without Airtable wri
   assert.match(deps.calls.deployments[0], /sitesnap-brand-header/);
 });
 
-test("04 retries the audit when model HTML contains an unclosed quoted tag", async () => {
+test("04 repairs a truncated model document and retries one malformed repair", async () => {
   const deps = dependencies();
   let auditCalls = 0;
-  deps.sketchHtml.generate = async () => '<!doctype html><html><head></head><body><p class="broken</body></html>';
+  deps.sketchHtml.generate = async () => '<!doctype html><html><head></head><body><main>truncated';
   deps.sketchAudit.generate = async () => {
     auditCalls += 1;
     if (auditCalls === 1) {
