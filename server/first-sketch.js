@@ -208,6 +208,24 @@ Return raw HTML only. The page must feel custom-built, be responsive and accessi
   Avoid a flat sequence of solid-color rectangles. Use at least three restrained, industry-appropriate background treatments across the page, such as layered gradients, a subtle dot or grid pattern, soft radial glows, or abstract geometric shapes. Vary the treatments without reducing text contrast or making every site look like the same template. Include subtle scroll-reveal motion and a slow hero-image zoom, while respecting prefers-reduced-motion. Include this hidden audit note near the end: <template id="sitesnap-category-note">A short, factual explanation of the design choices for this business category.</template>`;
 }
 
+function fallbackBriefJson(facts) {
+  return JSON.stringify({
+    BUSINESS_NAME: facts.businessName,
+    INDUSTRY: facts.category,
+    PHONE: facts.phone,
+    ADDRESS: facts.address,
+    CITY_COUNTRY: [facts.city, facts.state, facts.country].filter(Boolean).join(", "),
+    TAGLINE: `Professional ${facts.category || "local"} services you can count on`,
+    ABOUT_US: facts.about,
+    SERVICES: facts.category ? [facts.category] : ["Professional Services"],
+    TESTIMONIALS: [],
+    PRIMARY_COLOR: "#0f766e",
+    ACCENT_COLOR: "#0ea5e9",
+    BACKGROUND_COLOR: "#f8fafc",
+    TEXT_COLOR: "#0f172a"
+  });
+}
+
 function fallbackWebsite(facts, briefJson, images) {
   const brief = JSON.parse(briefJson);
   const color = (value, fallback) => /^#[0-9a-f]{6}$/i.test(text(value)) ? text(value) : fallback;
@@ -392,37 +410,58 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   if (!facts.businessName) throw new Error("Business name is missing");
   const siteFacts = publicFacts(facts, config.firstSketch.testRecipient);
 
-  const [research, stock] = await runStage("research", timings, () => Promise.all([
+  const [researchResult, stockResult] = await runStage("research", timings, () => Promise.allSettled([
     tavily.search(`Official website, portfolio, customer reviews and professional assets for ${facts.businessName} (${facts.category}) in ${facts.address || `${facts.city}, ${facts.state}`}. Prefer official sources and direct image links.`),
     pexels.search([facts.category, facts.city, facts.state].filter(Boolean).join(", "), (id.charCodeAt(id.length - 1) % 8) + 1)
   ]));
-  const brief = safeJson(await runStage("brief", timings, () => sketchBrief.generate({
-    system: briefSystem(),
-    user: `VERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nRESEARCH:\n${researchText(research)}\n\nCreate the strict website brief.`,
-    maxTokens: 4096,
-    temperature: 0.3,
-    json: true
-  })));
+  const research = researchResult.status === "fulfilled" ? researchResult.value : { results: [], images: [] };
+  const stock = stockResult.status === "fulfilled" ? stockResult.value : { photos: [] };
+  const researchFallbackUsed = researchResult.status === "rejected" || stockResult.status === "rejected";
+  let briefFallbackUsed = false;
+  let brief;
+  try {
+    brief = await runStage("brief", timings, async () => safeJson(await sketchBrief.generate({
+      system: briefSystem(),
+      user: `VERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nRESEARCH:\n${researchText(research)}\n\nCreate the strict website brief.`,
+      maxTokens: 4096,
+      temperature: 0.3,
+      json: true
+    })));
+  } catch {
+    briefFallbackUsed = true;
+    brief = fallbackBriefJson(siteFacts);
+  }
   const images = [...new Set([...(research.images || []), ...pexelsImages(stock)])].filter((url) => /^https:\/\//i.test(url)).slice(0, 30);
-  const claudeOutput = stripHtml(await runStage("html", timings, () => sketchHtml.generate({
-    system: htmlSystem(),
-    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website. HARD LIMIT: exactly 5 polished sections, no code comments, and under 3,200 output tokens. Finish the entire document including closing body and html tags before adding optional details.`,
-    maxTokens: 4000,
-    temperature: 0.4
-  })));
+  let htmlProviderFailed = false;
+  let claudeOutput = "";
+  try {
+    claudeOutput = stripHtml(await runStage("html", timings, () => sketchHtml.generate({
+      system: htmlSystem(),
+      user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website. HARD LIMIT: exactly 5 polished sections, no code comments, and under 3,200 output tokens. Finish the entire document including closing body and html tags before adding optional details.`,
+      maxTokens: 4000,
+      temperature: 0.4
+    })));
+  } catch {
+    htmlProviderFailed = true;
+  }
   let geminiOutput = claudeOutput;
   let structureError = htmlStructureError(geminiOutput);
   let auditUsed = false;
   let fallbackUsed = false;
-  if (structureError) {
+  let repairProviderFailed = false;
+  if (structureError && !htmlProviderFailed) {
     auditUsed = true;
-    geminiOutput = stripHtml(await runStage("html_repair_1", timings, () => sketchAudit.generate({
-      system: auditSystem(),
-      user: `MALFORMED_HTML:\n${geminiOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe generated website is structurally invalid (${structureError}). Return a shorter complete HTML document under 3,500 tokens. Close every quote and tag, preserve the intended page, remove unsupported content, and do not truncate the response.`,
-      maxTokens: 4500,
-      temperature: 0.1
-    })));
-    structureError = htmlStructureError(geminiOutput);
+    try {
+      geminiOutput = stripHtml(await runStage("html_repair_1", timings, () => sketchAudit.generate({
+        system: auditSystem(),
+        user: `MALFORMED_HTML:\n${geminiOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe generated website is structurally invalid (${structureError}). Return a shorter complete HTML document under 3,500 tokens. Close every quote and tag, preserve the intended page, remove unsupported content, and do not truncate the response.`,
+        maxTokens: 4500,
+        temperature: 0.1
+      })));
+      structureError = htmlStructureError(geminiOutput);
+    } catch {
+      repairProviderFailed = true;
+    }
   }
   if (structureError) {
     fallbackUsed = true;
@@ -483,6 +522,10 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     deploymentId: deployment.id,
     auditUsed,
     fallbackUsed,
+    researchFallbackUsed,
+    briefFallbackUsed,
+    htmlProviderFailed,
+    repairProviderFailed,
     timings,
     airtableUpdated: !options.testMode,
     notificationSent: false

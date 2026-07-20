@@ -150,6 +150,22 @@ test("04 deploys a complete deterministic fallback when the repair remains trunc
   assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
 });
 
+test("04 still deploys when every optional research and AI provider fails", async () => {
+  const deps = dependencies();
+  deps.tavily.search = async () => { throw new Error("tavily unavailable"); };
+  deps.pexels.search = async () => { throw new Error("pexels unavailable"); };
+  deps.sketchBrief.generate = async () => { throw new Error("brief unavailable"); };
+  deps.sketchHtml.generate = async () => { throw new Error("html unavailable"); };
+  deps.sketchAudit.generate = async () => { throw new Error("repair should not run"); };
+  const result = await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  assert.equal(result.researchFallbackUsed, true);
+  assert.equal(result.briefFallbackUsed, true);
+  assert.equal(result.htmlProviderFailed, true);
+  assert.equal(result.fallbackUsed, true);
+  assert.equal(result.repairProviderFailed, false);
+  assert.match(deps.calls.deployments[0], /Professional Roofing services/i);
+});
+
 test("04 live mode mirrors the Make fields and notifies after deployment", async () => {
   const deps = dependencies();
   const result = await runFirstSketch("recABCDEFGHIJKLMN", deps);
