@@ -49,6 +49,7 @@ test("04 test mode deploys and emails only the approved inbox without Airtable w
   assert.equal(deps.calls.mail[0].to, "levy.dave.1@gmail.com");
   assert.match(deps.calls.mail[0].subject, /^\[SiteSnap 04 Test\]/);
   assert.match(deps.calls.deployments[0], /sitesnap-open-tracker/);
+  assert.match(deps.calls.deployments[0], /data-sitesnap-anchor-nav/);
   assert.match(deps.calls.deployments[0], /data-sitesnap-test="true"/);
   const trackerMatch = deps.calls.deployments[0].match(/e=(\d+),t="([a-f0-9]+)"/);
   assert.ok(trackerMatch);
