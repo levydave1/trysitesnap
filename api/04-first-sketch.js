@@ -82,7 +82,8 @@ export default async function firstSketchHandler(request, response) {
       : request.body?.record_id
         ? await runFirstSketch(request.body.record_id, dependencies, {
             testMode,
-            redirectEmail: !testMode && process.env.SCENARIO_04_EMAIL_MODE !== "customer"
+            redirectEmail: !testMode && process.env.SCENARIO_04_EMAIL_MODE !== "customer",
+            retryEmail: !testMode && request.body?.retry_email === true
           })
         : await runFirstSketchQueue(dependencies, { cutoverAt: process.env.SCENARIO_04_CUTOVER_AT });
     console.log(JSON.stringify({ event: "scenario_04_completed", ...result }));

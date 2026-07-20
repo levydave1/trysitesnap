@@ -198,3 +198,20 @@ test("04 live retry returns an existing draft without regenerating or emailing",
   assert.equal(deps.calls.updates.length, 0);
   assert.equal(deps.calls.mail.length, 0);
 });
+
+test("04 recovers only the failed email stage for an existing live draft", async () => {
+  const deps = dependencies();
+  deps.airtable.getRecord = async () => ({ id: "recABCDEFGHIJKLMN", fields: {
+    "Business ID": "recNOPQRSTUVWXYZ1",
+    "Business Name": "Acme Roofing",
+    "Customer Email": "customer@example.com",
+    "Draft Site URL": "existing-preview.vercel.app"
+  } });
+  const result = await runFirstSketch("recABCDEFGHIJKLMN", deps, { retryEmail: true });
+  assert.equal(result.recoveredEmail, true);
+  assert.equal(result.draftUrl, "https://existing-preview.vercel.app");
+  assert.equal(deps.calls.deployments.length, 0);
+  assert.equal(deps.calls.updates.length, 0);
+  assert.equal(deps.calls.mail.length, 1);
+  assert.equal(deps.calls.mail[0].to, "customer@example.com");
+});

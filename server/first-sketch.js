@@ -397,15 +397,44 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   const jobFields = job.fields || {};
   const existingDraft = text(jobFields["Draft Site URL"]);
   if (!options.testMode && existingDraft) {
+    const draftUrl = /^https?:\/\//i.test(existingDraft) ? existingDraft : `https://${existingDraft}`;
+    const businessName = text(jobFields["Business Name"], "Customer");
+    const emailRedirected = Boolean(options.redirectEmail);
+    const recipient = emailRedirected ? config.firstSketch.testRecipient : text(jobFields["Customer Email"]);
+    if (options.retryEmail) {
+      if (!recipient) {
+        const error = new Error("No email recipient is available for the retry");
+        error.code = "SCENARIO_04_EMAIL_RETRY_MISSING_RECIPIENT";
+        error.stage = "email_retry";
+        throw error;
+      }
+      await runStage("email_retry", timings, () => mail.send({
+        to: recipient,
+        ...sketchEmail({ businessName, url: draftUrl, recordId: id, testMode: emailRedirected })
+      }));
+      return {
+        success: true,
+        recoveredEmail: true,
+        testMode: false,
+        recordId: id,
+        businessName,
+        recipient,
+        emailRedirected,
+        draftUrl,
+        airtableUpdated: false,
+        notificationSent: false,
+        timings
+      };
+    }
     return {
       success: true,
       duplicate: true,
       testMode: false,
       recordId: id,
-      businessName: text(jobFields["Business Name"], "Customer"),
-      recipient: text(jobFields["Customer Email"]),
+      businessName,
+      recipient,
       emailRedirected: false,
-      draftUrl: /^https?:\/\//i.test(existingDraft) ? existingDraft : `https://${existingDraft}`,
+      draftUrl,
       airtableUpdated: false,
       notificationSent: false
     };
