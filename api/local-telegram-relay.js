@@ -18,7 +18,7 @@ export default async function handler(request, response) {
     const result = await processTelegramRelay({
       authorization: request.headers.authorization,
       body: request.body,
-      relaySecret: process.env.AIRTABLE_ACCESS_TOKEN,
+      relaySecret: process.env.LOCAL_TELEGRAM_RELAY_SECRET,
       telegram
     });
     return response.status(200).json(result);
