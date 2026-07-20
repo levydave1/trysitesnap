@@ -1,3 +1,5 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 const recordIdPattern = /^rec[a-zA-Z0-9]{14}$/;
 
 function text(value, fallback = "") {
@@ -26,6 +28,79 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function localUsPhone(value) {
+  let digits = text(value).replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
+  const display = digits.length === 10
+    ? `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+    : text(value).replace(/^\+1\s*/, "");
+  return { digits, display };
+}
+
+function publicFacts(facts, testRecipient) {
+  const internalEmail = text(testRecipient).toLowerCase();
+  const email = text(facts.email);
+  return {
+    ...facts,
+    email: internalEmail && email.toLowerCase() === internalEmail ? "" : email,
+    phone: localUsPhone(facts.phone).display
+  };
+}
+
+function regexEscape(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
+  const phone = localUsPhone(facts.phone);
+  let html = cleanHtml(rawHtml)
+    .replace(/\+1(?=\s*\(?\d{3}\)?[\s.-]*\d{3}[\s.-]*\d{4})/g, "")
+    .replace(/<img\b[^>]*>/gi, (tag) => {
+      const isLogo = /\balt\s*=\s*["'][^"']*logo/i.test(tag)
+        || (facts.logo && tag.includes(facts.logo));
+      if (!isLogo) return tag;
+      if (/\bclass\s*=\s*["']/i.test(tag)) {
+        return tag.replace(/(\bclass\s*=\s*["'])([^"']*)/i, (_match, start, classes) => {
+          const safeClasses = classes
+            .split(/\s+/)
+            .filter((name) => name && name !== "rounded-full" && name !== "object-cover")
+            .join(" ");
+          return `${start}${safeClasses} sitesnap-brand-logo object-contain`;
+        });
+      }
+      return tag.replace(/^<img/i, '<img class="sitesnap-brand-logo object-contain"');
+    });
+  if (phone.digits) {
+    html = html.replace(/href\s*=\s*(["'])tel:[^"']*\1/gi, `href="tel:${phone.digits}"`);
+  }
+  for (const email of suppressedEmails.map(text).filter(Boolean)) {
+    const escaped = regexEscape(email);
+    html = html
+      .replace(new RegExp(`<a\\b[^>]*href\\s*=\\s*["']mailto:${escaped}[^"']*["'][^>]*>[\\s\\S]*?<\\/a>`, "gi"), "")
+      .replace(new RegExp(escaped, "gi"), "");
+  }
+  return html;
+}
+
+function testOpenPayload(recordId, businessName, expiresAt) {
+  return `${recordId}\n${businessName}\n${expiresAt}`;
+}
+
+function testOpenToken(secret, recordId, businessName, expiresAt) {
+  return createHmac("sha256", secret)
+    .update(testOpenPayload(recordId, businessName, expiresAt))
+    .digest("hex");
+}
+
+export function verifyTestOpenToken({ secret, recordId, businessName, expiresAt, token, now = Date.now() }) {
+  if (!secret || !recordIdPattern.test(text(recordId)) || !businessName || !token) return false;
+  const expires = Number(expiresAt);
+  if (!Number.isFinite(expires) || expires < now || expires > now + 32 * 24 * 60 * 60 * 1000) return false;
+  const expected = Buffer.from(testOpenToken(secret, recordId, businessName, expires));
+  const actual = Buffer.from(text(token));
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
 function rawFacts(fields) {
@@ -62,13 +137,13 @@ function htmlSystem() {
 
 Return raw HTML only. The page must feel custom-built, be responsive and accessible, and include header, hero, trust proof, services, about, reviews only when supported, contact and footer. Use only supplied facts and image URLs. Never invent claims, testimonials, ratings, licenses, awards, guarantees or hours. Use tel: links and internal anchors; do not link visitors back to the old business website. Do not use tiny body text. Include a valid viewport meta tag and initialize Lucide once.
 
-In the contact section include a Google Maps iframe only when an address exists. Keep the primary CTA as Call Now when a phone exists. Include this hidden audit note near the end: <template id="sitesnap-category-note">A short, factual explanation of the design choices for this business category.</template>`;
+  In the contact section include a Google Maps iframe only when an address exists. Keep the primary CTA as Call Now when a phone exists. For US phone numbers, display the local ten-digit format without a visible +1 prefix. Never crop a business logo: use object-contain, preserve its natural aspect ratio, and do not force a circle. Keep a meaningful hero visual visible on mobile. All important mobile tap targets must be at least 44px high. Include subtle scroll-reveal motion and a slow hero-image zoom, while respecting prefers-reduced-motion. Include this hidden audit note near the end: <template id="sitesnap-category-note">A short, factual explanation of the design choices for this business category.</template>`;
 }
 
 function auditSystem() {
   return `You are a senior HTML QA engineer. Repair the supplied HTML with minimal changes. Preserve its design, copy, structure, colors and section order. Return one complete raw HTML document only.
 
-Fix incomplete tags, invalid links, contrast/accessibility problems, broken image URLs, mobile overflow and missing Lucide initialization. Remove unsupported claims and placeholder content. Never invent facts. Keep only supplied image URLs. Ensure phone links match the verified phone and a valid map iframe exists only when an address exists. Preserve the hidden sitesnap-category-note template.`;
+  Fix incomplete tags, invalid links, contrast/accessibility problems, broken image URLs, mobile overflow and missing Lucide initialization. Remove unsupported claims and placeholder content. Never invent facts. Keep only supplied image URLs. Ensure phone links match the verified phone and use local ten-digit display without a visible +1 prefix. Never crop logos or force them into circles; use object-contain and preserve their aspect ratio. Keep the hero visual available on mobile, make important tap targets at least 44px high, and retain accessible motion with prefers-reduced-motion support. Preserve the hidden sitesnap-category-note template.`;
 }
 
 function researchText(research) {
@@ -84,17 +159,40 @@ function pexelsImages(pexels) {
   return (pexels.photos || []).map((photo) => photo.src?.large || photo.src?.landscape).filter(Boolean);
 }
 
-function injectSiteSnapControls(rawHtml, recordId, facts, { trackOpen = true } = {}) {
-  const html = cleanHtml(rawHtml);
+function injectSiteSnapControls(rawHtml, recordId, facts, { trackOpen = true, testMode = false, testSecret = "", suppressedEmails = [] } = {}) {
+  const html = normalizeGeneratedHtml(rawHtml, facts, suppressedEmails);
   const category = html.match(/<template id="sitesnap-category-note">\s*([\s\S]*?)\s*<\/template>/i)?.[1] || "This design was tailored to the business category, local audience and verified brand cues.";
   const location = [facts.address, facts.city, facts.state].filter(Boolean).join(", ");
-  const phoneHref = facts.phone.replace(/\D/g, "");
-  const contact = /id=["']contact["']/i.test(html) ? "" : `<section id="contact" style="padding:72px 20px;background:#f8fafc;color:#0f172a;font-family:Inter,system-ui,sans-serif"><div style="max-width:900px;margin:auto;text-align:center"><p style="font-weight:800;color:#0070f3;text-transform:uppercase;letter-spacing:.14em">Contact</p><h2 style="font-size:clamp(30px,5vw,48px);margin:8px 0 18px">Ready to talk?</h2>${location ? `<p style="font-size:18px">${escapeHtml(location)}</p>` : ""}<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:28px">${phoneHref ? `<a href="tel:+1${escapeHtml(phoneHref.replace(/^1/, ""))}" style="background:#0070f3;color:#fff;padding:15px 24px;border-radius:999px;text-decoration:none;font-weight:800">Call ${escapeHtml(facts.phone)}</a>` : ""}${facts.email ? `<a href="mailto:${escapeHtml(facts.email)}" style="border:2px solid #0f172a;color:#0f172a;padding:13px 24px;border-radius:999px;text-decoration:none;font-weight:800">Email Us</a>` : ""}</div>${location ? `<iframe title="Map for ${escapeHtml(facts.businessName)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="width:100%;height:320px;border:0;border-radius:24px;margin-top:36px" src="https://www.google.com/maps?q=${encodeURIComponent(location)}&output=embed"></iframe>` : ""}</div></section>`;
-  const tracker = trackOpen ? `<script data-sitesnap-open-tracker>(function(){var r=${JSON.stringify(recordId)},k="sitesnap-opened:"+r;if(localStorage.getItem(k))return;fetch("https://trysitesnap.com/api/3b7f5316669d40c19e243c38f67b52ec",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record_id:r,business_name:${JSON.stringify(facts.businessName)},opened_at:new Date().toISOString()}),keepalive:true}).then(function(x){if(x.ok)localStorage.setItem(k,"1")}).catch(function(){})})();</script>` : "";
-  const block = `<style data-sitesnap-preview>.sitesnap-preview-cta{position:fixed;right:20px;bottom:20px;z-index:9999;background:#0070f3;color:#fff;border-radius:999px;padding:13px 20px;text-decoration:none;font:800 14px/1.2 Inter,system-ui,sans-serif;box-shadow:0 10px 28px rgba(0,0,0,.28)}.sitesnap-preview-note{max-width:900px;margin:0 auto;padding:28px 20px;color:#334155;font:500 14px/1.6 Inter,system-ui,sans-serif}</style>
+  const phone = localUsPhone(facts.phone);
+  const contact = /id=["']contact["']/i.test(html) ? "" : `<section id="contact" style="padding:72px 20px;background:#f8fafc;color:#0f172a;font-family:Inter,system-ui,sans-serif"><div style="max-width:900px;margin:auto;text-align:center"><p style="font-weight:800;color:#0070f3;text-transform:uppercase;letter-spacing:.14em">Contact</p><h2 style="font-size:clamp(30px,5vw,48px);margin:8px 0 18px">Ready to talk?</h2>${location ? `<p style="font-size:18px">${escapeHtml(location)}</p>` : ""}<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:28px">${phone.digits ? `<a href="tel:${escapeHtml(phone.digits)}" style="background:#0070f3;color:#fff;padding:15px 24px;border-radius:999px;text-decoration:none;font-weight:800">Call ${escapeHtml(phone.display)}</a>` : ""}${facts.email ? `<a href="mailto:${escapeHtml(facts.email)}" style="border:2px solid #0f172a;color:#0f172a;padding:13px 24px;border-radius:999px;text-decoration:none;font-weight:800">Email Us</a>` : ""}</div>${location ? `<iframe title="Map for ${escapeHtml(facts.businessName)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="width:100%;height:320px;border:0;border-radius:24px;margin-top:36px" src="https://www.google.com/maps?q=${encodeURIComponent(location)}&output=embed"></iframe>` : ""}</div></section>`;
+  let tracker = trackOpen ? `<script data-sitesnap-open-tracker>(function(){var s=document.currentScript,r=${JSON.stringify(recordId)},k="sitesnap-opened:"+r;if(localStorage.getItem(k)){s.dataset.sitesnapOpenStatus="duplicate";return}s.dataset.sitesnapOpenStatus="pending";fetch("https://trysitesnap.com/api/3b7f5316669d40c19e243c38f67b52ec",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record_id:r,business_name:${JSON.stringify(facts.businessName)},opened_at:new Date().toISOString()}),keepalive:true}).then(function(x){if(x.ok){localStorage.setItem(k,"1");s.dataset.sitesnapOpenStatus="recorded"}else{s.dataset.sitesnapOpenStatus="failed"}}).catch(function(){s.dataset.sitesnapOpenStatus="failed"})})();</script>` : "";
+  if (testMode && testSecret) {
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    const token = testOpenToken(testSecret, recordId, facts.businessName, expiresAt);
+    tracker = `<script data-sitesnap-open-tracker data-sitesnap-test="true">(function(){var s=document.currentScript,r=${JSON.stringify(recordId)},b=${JSON.stringify(facts.businessName)},e=${expiresAt},t=${JSON.stringify(token)},k="sitesnap-test-opened:"+r+":"+t.slice(0,8);if(localStorage.getItem(k)){s.dataset.sitesnapOpenStatus="duplicate";return}s.dataset.sitesnapOpenStatus="pending";fetch("https://trysitesnap.com/api/04-first-sketch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({event:"test_open",record_id:r,business_name:b,expires:e,token:t,opened_at:new Date().toISOString(),page_url:location.href}),keepalive:true}).then(function(x){if(x.ok){localStorage.setItem(k,"1");s.dataset.sitesnapOpenStatus="recorded"}else{s.dataset.sitesnapOpenStatus="failed"}}).catch(function(){s.dataset.sitesnapOpenStatus="failed"})})();</script>`;
+  }
+  const legacyBlock = `<style data-sitesnap-preview>.sitesnap-preview-cta{position:fixed;right:20px;bottom:20px;z-index:9999;background:#0070f3;color:#fff;border-radius:999px;padding:13px 20px;text-decoration:none;font:800 14px/1.2 Inter,system-ui,sans-serif;box-shadow:0 10px 28px rgba(0,0,0,.28)}.sitesnap-preview-note{max-width:900px;margin:0 auto;padding:28px 20px;color:#334155;font:500 14px/1.6 Inter,system-ui,sans-serif}</style>
 ${contact}
 <div class="sitesnap-preview-note" data-sitesnap-design-note>${escapeHtml(category)}</div>
 <a class="sitesnap-preview-cta" href="https://trysitesnap.com/finalize?record_id=${encodeURIComponent(recordId)}" target="_blank" rel="noopener noreferrer">Personalize This Sketch →</a>
+${tracker}`;
+  void legacyBlock;
+  const finalizeUrl = `https://trysitesnap.com/finalize?record_id=${encodeURIComponent(recordId)}&business_name=${encodeURIComponent(facts.businessName)}`;
+  const block = `<style data-sitesnap-preview>
+.sitesnap-brand-logo{object-fit:contain!important;border-radius:4px!important;background:transparent!important}
+.sitesnap-preview-cta{position:fixed;right:20px;bottom:20px;z-index:9999;min-height:44px;border:0;background:#0070f3;color:#fff;border-radius:999px;padding:12px 20px;font:800 14px/1.2 Inter,system-ui,sans-serif;box-shadow:0 10px 28px rgba(0,0,0,.28);cursor:pointer}
+.sitesnap-design-notes-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(15,23,42,.72)}
+.sitesnap-design-notes-overlay[data-open="true"]{display:flex}.sitesnap-design-notes-card{position:relative;width:min(620px,100%);max-height:85vh;overflow:auto;border-radius:24px;background:#fff;padding:32px;color:#0f172a;box-shadow:0 25px 70px rgba(0,0,0,.35);font:500 16px/1.65 Inter,system-ui,sans-serif}.sitesnap-design-notes-close{position:absolute;right:14px;top:10px;border:0;background:transparent;font-size:28px;cursor:pointer;min-width:44px;min-height:44px}
+#finalize-section{clear:both;padding:70px 20px;border-top:5px solid #facc15;background:#0070f3;text-align:center;font-family:Inter,system-ui,sans-serif}#finalize-section h2{margin:0 0 18px;color:#facc15;font-size:clamp(32px,6vw,48px);font-weight:900}#finalize-section p{max-width:800px;margin:0 auto 30px;color:#fff;font-size:18px;line-height:1.65}#finalize-section a{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;background:#facc15;color:#0754b8;padding:14px 28px;text-decoration:none;font-weight:900}
+.sitesnap-reveal{opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s ease}.sitesnap-reveal.sitesnap-visible{opacity:1;transform:none}.sitesnap-hero-image{animation:sitesnap-hero-zoom 12s ease-in-out infinite alternate}@keyframes sitesnap-hero-zoom{from{transform:scale(1)}to{transform:scale(1.045)}}
+@media(max-width:480px){.sitesnap-preview-cta{right:16px;bottom:16px}.sitesnap-design-notes-card{padding:28px 22px}#finalize-section{padding:56px 18px}}
+@media(prefers-reduced-motion:reduce){.sitesnap-reveal{opacity:1;transform:none;transition:none}.sitesnap-hero-image{animation:none!important}}
+</style>
+${contact}
+<button class="sitesnap-preview-cta" type="button" aria-haspopup="dialog" aria-controls="sitesnap-design-notes">&#128161; Why this sketch?</button>
+<div id="sitesnap-design-notes" class="sitesnap-design-notes-overlay" role="dialog" aria-modal="true" aria-labelledby="sitesnap-design-notes-title"><div class="sitesnap-design-notes-card"><button class="sitesnap-design-notes-close" type="button" aria-label="Close">&times;</button><h2 id="sitesnap-design-notes-title" style="font-size:30px;font-weight:900;margin:0 0 12px">A quick note about this sketch</h2><p data-sitesnap-design-note>${escapeHtml(category)}</p><p>This first version was designed around the verified business details, local audience and the actions customers are most likely to take.</p><a href="${finalizeUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;min-height:48px;align-items:center;border-radius:999px;background:#0070f3;color:white;padding:12px 22px;text-decoration:none;font-weight:900">Personalize this sketch &rarr;</a></div></div>
+<section id="finalize-section"><h2>Ready to Take This Live?</h2><p>We crafted this website preview especially for <strong>${escapeHtml(facts.businessName)}</strong>. It combines verified business information, local relevance and a mobile-first structure. Ready to add final details and start accepting leads?</p><a href="${finalizeUrl}" target="_blank" rel="noopener noreferrer">Finalize My Website Now &rarr;</a></section>
+<script data-sitesnap-experience>(function(){var o=document.getElementById("sitesnap-design-notes"),b=document.querySelector(".sitesnap-preview-cta"),c=document.querySelector(".sitesnap-design-notes-close");function set(v){o.dataset.open=v?"true":"false";if(v)c.focus();else b.focus()}b.addEventListener("click",function(){set(true)});c.addEventListener("click",function(){set(false)});o.addEventListener("click",function(e){if(e.target===o)set(false)});document.addEventListener("keydown",function(e){if(e.key==="Escape"&&o.dataset.open==="true")set(false)});var sections=[].slice.call(document.querySelectorAll("section")).filter(function(x){return x.id!=="finalize-section"});sections.slice(1).forEach(function(x){x.classList.add("sitesnap-reveal")});if("IntersectionObserver" in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("sitesnap-visible");io.unobserve(e.target)}})},{threshold:.08});sections.slice(1).forEach(function(x){io.observe(x)})}else{sections.forEach(function(x){x.classList.add("sitesnap-visible")})}var hero=sections[0]&&sections[0].querySelector("img");if(hero)hero.classList.add("sitesnap-hero-image")})();</script>
 ${tracker}`;
   return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${block}\n</body>`) : `${html}\n${block}`;
 }
@@ -152,12 +250,13 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   const facts = rawFacts(raw.fields || {});
   facts.businessName ||= text(jobFields["Business Name"]);
   if (!facts.businessName) throw new Error("Business name is missing");
+  const siteFacts = publicFacts(facts, config.firstSketch.testRecipient);
 
   const research = await tavily.search(`Official website, portfolio, customer reviews and professional assets for ${facts.businessName} (${facts.category}) in ${facts.address || `${facts.city}, ${facts.state}`}. Prefer official sources and direct image links.`);
   const stock = await pexels.search([facts.category, facts.city, facts.state].filter(Boolean).join(", "), (id.charCodeAt(id.length - 1) % 8) + 1);
   const brief = safeJson(await sketchBrief.generate({
     system: briefSystem(),
-    user: `VERIFIED_CRM:\n${JSON.stringify(facts)}\n\nRESEARCH:\n${researchText(research)}\n\nCreate the strict website brief.`,
+    user: `VERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nRESEARCH:\n${researchText(research)}\n\nCreate the strict website brief.`,
     maxTokens: 4096,
     temperature: 0.3,
     json: true
@@ -165,17 +264,22 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   const images = [...new Set([...(research.images || []), ...pexelsImages(stock)])].filter((url) => /^https:\/\//i.test(url)).slice(0, 30);
   const claudeOutput = cleanHtml(await sketchHtml.generate({
     system: htmlSystem(),
-    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(facts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website.`,
+    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website.`,
     maxTokens: 10000,
     temperature: 0.4
   }));
   const geminiOutput = cleanHtml(await sketchAudit.generate({
     system: auditSystem(),
-    user: `CLAUDE_HTML:\n${claudeOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(facts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nRepair and finalize the HTML.`,
+    user: `CLAUDE_HTML:\n${claudeOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nRepair and finalize the HTML.`,
     maxTokens: 14000,
     temperature: 0.2
   }));
-  const finalHtml = injectSiteSnapControls(geminiOutput, id, facts, { trackOpen: !options.testMode });
+  const finalHtml = injectSiteSnapControls(geminiOutput, id, siteFacts, {
+    trackOpen: !options.testMode,
+    testMode: Boolean(options.testMode),
+    testSecret: process.env.LOCAL_TELEGRAM_RELAY_SECRET || "",
+    suppressedEmails: [config.firstSketch.testRecipient]
+  });
   const payload = deploymentPayload(finalHtml);
   const deployment = await vercelDelivery.deployHtml(finalHtml, config.vercelDelivery.projectName);
   if (!deployment.id || !deployment.url) throw new Error("Vercel did not return a deployment ID and URL");

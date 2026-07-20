@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { config } from "../server/config.js";
-import { runFirstSketch } from "../server/first-sketch.js";
+import { runFirstSketch, verifyTestOpenToken } from "../server/first-sketch.js";
+
+process.env.LOCAL_TELEGRAM_RELAY_SECRET ||= "test-relay-secret";
 
 function dependencies(overrides = {}) {
   const calls = { updates: [], mail: [], telegram: [], deployments: [] };
@@ -45,10 +47,37 @@ test("04 test mode deploys and emails only the approved inbox without Airtable w
   assert.equal(deps.calls.mail.length, 1);
   assert.equal(deps.calls.mail[0].to, "levy.dave.1@gmail.com");
   assert.match(deps.calls.mail[0].subject, /^\[SiteSnap 04 Test\]/);
-  assert.doesNotMatch(deps.calls.deployments[0], /sitesnap-open-tracker/);
+  assert.match(deps.calls.deployments[0], /sitesnap-open-tracker/);
+  assert.match(deps.calls.deployments[0], /data-sitesnap-test="true"/);
+  const trackerMatch = deps.calls.deployments[0].match(/e=(\d+),t="([a-f0-9]+)"/);
+  assert.ok(trackerMatch);
+  assert.equal(verifyTestOpenToken({
+    secret: process.env.LOCAL_TELEGRAM_RELAY_SECRET,
+    recordId: "recABCDEFGHIJKLMN",
+    businessName: "Acme Roofing",
+    expiresAt: Number(trackerMatch[1]),
+    token: trackerMatch[2]
+  }), true);
   assert.match(deps.calls.deployments[0], /id="contact"/);
-  assert.match(deps.calls.deployments[0], /Personalize This Sketch/);
+  assert.match(deps.calls.deployments[0], /Why this sketch/);
+  assert.match(deps.calls.deployments[0], /id="finalize-section"/);
+  assert.match(deps.calls.deployments[0], /tel:2125550199/);
+  assert.doesNotMatch(deps.calls.deployments[0], /tel:\+1/);
   assert.match(deps.calls.mail[0].html, /finalize\?record_id=recABCDEFGHIJKLMN/);
+});
+
+test("04 never publishes the internal test recipient as business contact data", async () => {
+  const deps = dependencies();
+  deps.airtable.getRecordFromTable = async () => ({ id: "recNOPQRSTUVWXYZ1", fields: {
+    "Business Name": "Acme Roofing", Category: "Roofing", Phone: "+1 (212) 555-0199",
+    Address: "1 Main St", City: "New York", State: "NY", Email: "levy.dave.1@gmail.com"
+  } });
+  deps.sketchHtml.generate = async () => '<!doctype html><html><head></head><body><img alt="Acme logo" class="w-9 h-9 rounded-full object-cover"><a href="mailto:levy.dave.1@gmail.com">levy.dave.1@gmail.com</a><template id="sitesnap-category-note">Built for roof customers.</template></body></html>';
+  deps.sketchAudit.generate = deps.sketchHtml.generate;
+  await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  assert.doesNotMatch(deps.calls.deployments[0], /levy\.dave\.1@gmail\.com/);
+  assert.doesNotMatch(deps.calls.deployments[0], /rounded-full object-cover/);
+  assert.match(deps.calls.deployments[0], /sitesnap-brand-logo object-contain/);
 });
 
 test("04 live mode mirrors the Make fields and notifies after deployment", async () => {
