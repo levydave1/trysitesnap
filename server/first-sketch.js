@@ -431,7 +431,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     briefFallbackUsed = true;
     brief = fallbackBriefJson(siteFacts);
   }
-  const images = [...new Set([...(research.images || []), ...pexelsImages(stock)])].filter((url) => /^https:\/\//i.test(url)).slice(0, 30);
+  const images = [...new Set([...pexelsImages(stock), ...(research.images || [])])].filter((url) => /^https:\/\//i.test(url)).slice(0, 30);
   let htmlProviderFailed = false;
   let claudeOutput = "";
   try {

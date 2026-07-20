@@ -61,7 +61,6 @@ test("04 test mode deploys and emails only the approved inbox without Airtable w
   }), true);
   assert.match(deps.calls.deployments[0], /id="contact"/);
   assert.match(deps.calls.deployments[0], /google\.com\/maps/);
-  assert.match(deps.calls.deployments[0], /google\.com\/maps/);
   assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
   assert.match(deps.calls.deployments[0], /Why this sketch/);
   assert.match(deps.calls.deployments[0], /id="finalize-section"/);
@@ -147,6 +146,7 @@ test("04 deploys a complete deterministic fallback when the repair remains trunc
   assert.equal(result.fallbackUsed, true);
   assert.match(deps.calls.deployments[0], /<!doctype html>/i);
   assert.match(deps.calls.deployments[0], /google\.com\/maps/);
+  assert.match(deps.calls.deployments[0], /https:\/\/images\.example\/roof\.jpg/);
   assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
 });
 
