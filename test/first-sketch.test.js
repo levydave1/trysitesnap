@@ -82,6 +82,7 @@ test("04 never publishes the internal test recipient as business contact data", 
   assert.doesNotMatch(deps.calls.deployments[0], /levy\.dave\.1@gmail\.com/);
   assert.doesNotMatch(deps.calls.deployments[0], /rounded-full object-cover/);
   assert.match(deps.calls.deployments[0], /sitesnap-brand-logo object-contain/);
+  assert.match(deps.calls.deployments[0], /onerror="this\.remove\(\)"/);
 });
 
 test("04 replaces fake generated forms with a real map and separates the logo header", async () => {
