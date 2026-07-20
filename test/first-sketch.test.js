@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { config } from "../server/config.js";
-import { runFirstSketch, verifyTestOpenToken } from "../server/first-sketch.js";
+import { repairFirstSketchTest, runFirstSketch, verifyTestOpenToken } from "../server/first-sketch.js";
 
 process.env.LOCAL_TELEGRAM_RELAY_SECRET ||= "test-relay-secret";
 
@@ -96,6 +96,27 @@ test("04 replaces fake generated forms with a real map and separates the logo he
   assert.match(html, /class="bg-dark sitesnap-brand-header"/);
   assert.match(html, /data-sitesnap-map/);
   assert.match(html, /Map for Acme Roofing/);
+});
+
+test("04 repair mode safely republishes an existing preview without Airtable writes", async () => {
+  const deps = dependencies({
+    async fetchHtml() {
+      return '<!doctype html><html><head></head><body><header><img alt="Acme logo"></header><section id="contact"><form onsubmit="alert(1)"><input><button>Send</button></form></section><style data-sitesnap-preview>.old{}</style><script data-sitesnap-open-tracker>old()</script></body></html>';
+    }
+  });
+  const result = await repairFirstSketchTest(deps, {
+    recordId: "recABCDEFGHIJKLMN",
+    sourceUrl: "https://old-preview.vercel.app"
+  });
+  assert.equal(result.repaired, true);
+  assert.equal(result.airtableUpdated, false);
+  assert.equal(deps.calls.updates.length, 0);
+  assert.equal(deps.calls.mail[0].to, "levy.dave.1@gmail.com");
+  assert.match(deps.calls.mail[0].subject, /^\[SiteSnap 04 Test — Corrected\]/);
+  assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
+  assert.doesNotMatch(deps.calls.deployments[0], /old\(\)/);
+  assert.match(deps.calls.deployments[0], /data-sitesnap-map/);
+  assert.match(deps.calls.deployments[0], /sitesnap-brand-header/);
 });
 
 test("04 retries the audit when model HTML contains an unclosed quoted tag", async () => {

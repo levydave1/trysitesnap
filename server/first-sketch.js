@@ -271,6 +271,13 @@ function deploymentPayload(html) {
   });
 }
 
+function stripInjectedSiteSnapControls(rawHtml) {
+  return cleanHtml(rawHtml).replace(
+    /<style\b[^>]*data-sitesnap-preview[^>]*>[\s\S]*?<script\b[^>]*data-sitesnap-open-tracker[^>]*>[\s\S]*?<\/script>\s*/gi,
+    ""
+  );
+}
+
 function sketchEmail({ businessName, url, recordId, testMode, corrected = false }) {
   const notice = testMode
     ? `<div style="background:#fff4cc;border:1px solid #e4c34d;padding:14px 16px;margin-bottom:24px"><strong>SiteSnap scenario 04 test</strong><br>This message was redirected to the approved test inbox and was not sent to the customer.</div>`
@@ -413,6 +420,62 @@ export async function resendFirstSketchTestEmail(dependencies, input = {}) {
   const email = sketchEmail({ businessName, url: parsed.toString(), recordId: id, testMode: true, corrected: true });
   await dependencies.mail.send({ to: dependencies.config.firstSketch.testRecipient, ...email });
   return { success: true, testMode: true, emailOnly: true, recordId: id, businessName, recipient: dependencies.config.firstSketch.testRecipient, draftUrl: parsed.toString() };
+}
+
+export async function repairFirstSketchTest(dependencies, input = {}) {
+  const id = text(input.recordId);
+  if (!recordIdPattern.test(id)) throw new Error("Invalid Airtable record ID");
+  const parsed = new URL(text(input.sourceUrl));
+  if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".vercel.app")) {
+    throw new Error("Invalid preview URL");
+  }
+  const { airtable, vercelDelivery, mail, config } = dependencies;
+  if (!mail) throw new Error("Mail relay is not configured");
+  const job = await airtable.getRecord(id);
+  const jobFields = job.fields || {};
+  const businessId = text(jobFields["Business ID"]);
+  if (!recordIdPattern.test(businessId)) throw new Error("Generation Job has no valid Raw Outscraper record ID");
+  const raw = await airtable.getRecordFromTable(config.airtable.rawOutscraperTableId, businessId);
+  const facts = rawFacts(raw.fields || {});
+  facts.businessName ||= text(jobFields["Business Name"]);
+  if (!facts.businessName) throw new Error("Business name is missing");
+  const sourceHtml = dependencies.fetchHtml
+    ? await dependencies.fetchHtml(parsed.href)
+    : await (async () => {
+        const response = await fetch(parsed.href, { signal: AbortSignal.timeout(30000) });
+        if (!response.ok) throw new Error(`Could not load preview HTML (${response.status})`);
+        return response.text();
+      })();
+  const siteFacts = publicFacts(facts, config.firstSketch.testRecipient);
+  const finalHtml = injectSiteSnapControls(stripInjectedSiteSnapControls(sourceHtml), id, siteFacts, {
+    trackOpen: false,
+    testMode: true,
+    testSecret: process.env.LOCAL_TELEGRAM_RELAY_SECRET || "",
+    suppressedEmails: [config.firstSketch.testRecipient]
+  });
+  const deployment = await vercelDelivery.deployHtml(finalHtml, config.vercelDelivery.projectName);
+  if (!deployment.id || !deployment.url) throw new Error("Vercel did not return a deployment ID and URL");
+  await vercelDelivery.waitUntilReady(deployment.id, { attempts: 45, intervalMs: 1500 });
+  const draftUrl = `https://${text(deployment.url).replace(/^https?:\/\//, "")}`;
+  const recipient = config.firstSketch.testRecipient;
+  await mail.send({
+    to: recipient,
+    ...sketchEmail({ businessName: facts.businessName, url: draftUrl, recordId: id, testMode: true, corrected: true })
+  });
+  return {
+    success: true,
+    repaired: true,
+    testMode: true,
+    recordId: id,
+    rawRecordId: businessId,
+    businessName: facts.businessName,
+    recipient,
+    emailRedirected: true,
+    draftUrl,
+    deploymentId: deployment.id,
+    airtableUpdated: false,
+    notificationSent: false
+  };
 }
 
 export async function runFirstSketchQueue(dependencies, options = {}) {

@@ -1,4 +1,4 @@
-import { resendFirstSketchTestEmail, runFirstSketch, runFirstSketchQueue, verifyTestOpenToken } from "../server/first-sketch.js";
+import { repairFirstSketchTest, resendFirstSketchTestEmail, runFirstSketch, runFirstSketchQueue, verifyTestOpenToken } from "../server/first-sketch.js";
 import { createRuntimeDependencies } from "../server/runtime.js";
 
 function authorized(request) {
@@ -68,7 +68,12 @@ export default async function firstSketchHandler(request, response) {
       vercelDelivery: true,
       notifications: true
     });
-    const result = testMode && request.body?.email_only === true
+    const result = testMode && request.body?.repair_url
+      ? await repairFirstSketchTest(dependencies, {
+          recordId: request.body?.record_id,
+          sourceUrl: request.body?.repair_url
+        })
+      : testMode && request.body?.email_only === true
       ? await resendFirstSketchTestEmail(dependencies, {
           recordId: request.body?.record_id,
           businessName: request.body?.business_name,
