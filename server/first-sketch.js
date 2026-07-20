@@ -84,13 +84,18 @@ function pexelsImages(pexels) {
   return (pexels.photos || []).map((photo) => photo.src?.large || photo.src?.landscape).filter(Boolean);
 }
 
-function injectSiteSnapControls(rawHtml, recordId, businessName) {
+function injectSiteSnapControls(rawHtml, recordId, facts, { trackOpen = true } = {}) {
   const html = cleanHtml(rawHtml);
   const category = html.match(/<template id="sitesnap-category-note">\s*([\s\S]*?)\s*<\/template>/i)?.[1] || "This design was tailored to the business category, local audience and verified brand cues.";
+  const location = [facts.address, facts.city, facts.state].filter(Boolean).join(", ");
+  const phoneHref = facts.phone.replace(/\D/g, "");
+  const contact = /id=["']contact["']/i.test(html) ? "" : `<section id="contact" style="padding:72px 20px;background:#f8fafc;color:#0f172a;font-family:Inter,system-ui,sans-serif"><div style="max-width:900px;margin:auto;text-align:center"><p style="font-weight:800;color:#0070f3;text-transform:uppercase;letter-spacing:.14em">Contact</p><h2 style="font-size:clamp(30px,5vw,48px);margin:8px 0 18px">Ready to talk?</h2>${location ? `<p style="font-size:18px">${escapeHtml(location)}</p>` : ""}<div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:28px">${phoneHref ? `<a href="tel:+1${escapeHtml(phoneHref.replace(/^1/, ""))}" style="background:#0070f3;color:#fff;padding:15px 24px;border-radius:999px;text-decoration:none;font-weight:800">Call ${escapeHtml(facts.phone)}</a>` : ""}${facts.email ? `<a href="mailto:${escapeHtml(facts.email)}" style="border:2px solid #0f172a;color:#0f172a;padding:13px 24px;border-radius:999px;text-decoration:none;font-weight:800">Email Us</a>` : ""}</div>${location ? `<iframe title="Map for ${escapeHtml(facts.businessName)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="width:100%;height:320px;border:0;border-radius:24px;margin-top:36px" src="https://www.google.com/maps?q=${encodeURIComponent(location)}&output=embed"></iframe>` : ""}</div></section>`;
+  const tracker = trackOpen ? `<script data-sitesnap-open-tracker>(function(){var r=${JSON.stringify(recordId)},k="sitesnap-opened:"+r;if(localStorage.getItem(k))return;fetch("https://trysitesnap.com/api/3b7f5316669d40c19e243c38f67b52ec",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record_id:r,business_name:${JSON.stringify(facts.businessName)},opened_at:new Date().toISOString()}),keepalive:true}).then(function(x){if(x.ok)localStorage.setItem(k,"1")}).catch(function(){})})();</script>` : "";
   const block = `<style data-sitesnap-preview>.sitesnap-preview-cta{position:fixed;right:20px;bottom:20px;z-index:9999;background:#0070f3;color:#fff;border-radius:999px;padding:13px 20px;text-decoration:none;font:800 14px/1.2 Inter,system-ui,sans-serif;box-shadow:0 10px 28px rgba(0,0,0,.28)}.sitesnap-preview-note{max-width:900px;margin:0 auto;padding:28px 20px;color:#334155;font:500 14px/1.6 Inter,system-ui,sans-serif}</style>
+${contact}
 <div class="sitesnap-preview-note" data-sitesnap-design-note>${escapeHtml(category)}</div>
 <a class="sitesnap-preview-cta" href="https://trysitesnap.com/finalize?record_id=${encodeURIComponent(recordId)}" target="_blank" rel="noopener noreferrer">Personalize This Sketch →</a>
-<script data-sitesnap-open-tracker>(function(){var r=${JSON.stringify(recordId)},k="sitesnap-opened:"+r;if(localStorage.getItem(k))return;fetch("https://trysitesnap.com/api/3b7f5316669d40c19e243c38f67b52ec",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record_id:r,business_name:${JSON.stringify(businessName)},opened_at:new Date().toISOString()}),keepalive:true}).then(function(x){if(x.ok)localStorage.setItem(k,"1")}).catch(function(){})})();</script>`;
+${tracker}`;
   return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${block}\n</body>`) : `${html}\n${block}`;
 }
 
@@ -102,15 +107,15 @@ function deploymentPayload(html) {
   });
 }
 
-function sketchEmail({ businessName, url, testMode }) {
+function sketchEmail({ businessName, url, recordId, testMode, corrected = false }) {
   const notice = testMode
     ? `<div style="background:#fff4cc;border:1px solid #e4c34d;padding:14px 16px;margin-bottom:24px"><strong>SiteSnap scenario 04 test</strong><br>This message was redirected to the approved test inbox and was not sent to the customer.</div>`
     : "";
   return {
-    subject: `${testMode ? "[SiteSnap 04 Test] " : ""}Hi ${businessName}, your site sketch is here!`,
+    subject: `${testMode ? `[SiteSnap 04 Test${corrected ? " — Corrected" : ""}] ` : ""}Hi ${businessName}, your site sketch is here!`,
     html: `<div dir="ltr" style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:24px;overflow:hidden;color:#0f172a">
       <div style="background:#000;padding:30px 20px;text-align:center;color:#fff"><div style="font-size:10px;font-weight:900;letter-spacing:.25em;text-transform:uppercase">SiteSnap • Pure Simplicity</div><h1 style="font-size:24px">Your Website Sketch is Ready!</h1></div>
-      <div style="padding:36px 30px;line-height:1.65">${notice}<p style="font-size:18px;font-weight:800">Hi ${escapeHtml(businessName)},</p><p>Exciting news! We generated the initial draft of your website. This first sketch shows the design, structure and mobile experience prepared for your business.</p><div style="text-align:center;margin:36px 0"><a href="${escapeHtml(url)}" style="display:inline-block;background:#0070f3;color:#fff;padding:17px 32px;border-radius:999px;text-decoration:none;font-weight:900">View Your Site Draft →</a></div><div style="border:3px solid #000;padding:24px;border-radius:24px;background:#f8fafc"><strong>What’s next?</strong><p>Review the draft, then request revisions or continue to finalize your website.</p><a href="https://trysitesnap.com/finalize" style="color:#0070f3;font-weight:800">Personalize this sketch →</a></div></div>
+      <div style="padding:36px 30px;line-height:1.65">${notice}<p style="font-size:18px;font-weight:800">Hi ${escapeHtml(businessName)},</p><p>Exciting news! We generated the initial draft of your website. This first sketch shows the design, structure and mobile experience prepared for your business.</p><div style="text-align:center;margin:36px 0"><a href="${escapeHtml(url)}" style="display:inline-block;background:#0070f3;color:#fff;padding:17px 32px;border-radius:999px;text-decoration:none;font-weight:900">View Your Site Draft →</a></div><div style="border:3px solid #000;padding:24px;border-radius:24px;background:#f8fafc"><strong>What’s next?</strong><p>Review the draft, then request revisions or continue to finalize your website.</p><a href="https://trysitesnap.com/finalize?record_id=${encodeURIComponent(recordId)}" style="color:#0070f3;font-weight:800">Personalize this sketch →</a></div></div>
       <div style="background:#f8fafc;padding:24px;text-align:center;font-size:10px;color:#64748b">2026 SiteSnap • Pure Simplicity</div>
     </div>`
   };
@@ -170,7 +175,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     maxTokens: 14000,
     temperature: 0.2
   }));
-  const finalHtml = injectSiteSnapControls(geminiOutput, id, facts.businessName);
+  const finalHtml = injectSiteSnapControls(geminiOutput, id, facts, { trackOpen: !options.testMode });
   const payload = deploymentPayload(finalHtml);
   const deployment = await vercelDelivery.deployHtml(finalHtml, config.vercelDelivery.projectName);
   if (!deployment.id || !deployment.url) throw new Error("Vercel did not return a deployment ID and URL");
@@ -198,7 +203,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
 
   const recipient = options.testMode ? config.firstSketch.testRecipient : facts.email;
   if (!recipient) throw new Error("No email recipient is available");
-  const email = sketchEmail({ businessName: facts.businessName, url: draftUrl, testMode: options.testMode });
+  const email = sketchEmail({ businessName: facts.businessName, url: draftUrl, recordId: id, testMode: options.testMode });
   await mail.send({ to: recipient, ...email });
   if (!options.testMode) {
     await telegram?.send(`נשלחה סקיצה\n${facts.businessName}\n${facts.category}\n${[facts.city, facts.state].filter(Boolean).join(", ")}\n${draftUrl}`);
@@ -215,6 +220,19 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     airtableUpdated: !options.testMode,
     notificationSent: !options.testMode && Boolean(telegram)
   };
+}
+
+export async function resendFirstSketchTestEmail(dependencies, input = {}) {
+  const id = text(input.recordId);
+  if (!recordIdPattern.test(id)) throw new Error("Invalid Airtable record ID");
+  const businessName = text(input.businessName);
+  if (!businessName || businessName.length > 200) throw new Error("Invalid business name");
+  const parsed = new URL(text(input.draftUrl));
+  if (parsed.protocol !== "https:" || !parsed.hostname.endsWith(".vercel.app")) throw new Error("Invalid preview URL");
+  if (!dependencies.mail) throw new Error("Mail relay is not configured");
+  const email = sketchEmail({ businessName, url: parsed.toString(), recordId: id, testMode: true, corrected: true });
+  await dependencies.mail.send({ to: dependencies.config.firstSketch.testRecipient, ...email });
+  return { success: true, testMode: true, emailOnly: true, recordId: id, businessName, recipient: dependencies.config.firstSketch.testRecipient, draftUrl: parsed.toString() };
 }
 
 export async function runFirstSketchQueue(dependencies, options = {}) {

@@ -1,4 +1,4 @@
-import { runFirstSketch, runFirstSketchQueue } from "../server/first-sketch.js";
+import { resendFirstSketchTestEmail, runFirstSketch, runFirstSketchQueue } from "../server/first-sketch.js";
 import { createRuntimeDependencies } from "../server/runtime.js";
 
 function authorized(request) {
@@ -26,9 +26,15 @@ export default async function firstSketchHandler(request, response) {
       vercelDelivery: true,
       notifications: true
     });
-    const result = request.body?.record_id
-      ? await runFirstSketch(request.body.record_id, dependencies, { testMode })
-      : await runFirstSketchQueue(dependencies, { cutoverAt: process.env.SCENARIO_04_CUTOVER_AT });
+    const result = testMode && request.body?.email_only === true
+      ? await resendFirstSketchTestEmail(dependencies, {
+          recordId: request.body?.record_id,
+          businessName: request.body?.business_name,
+          draftUrl: request.body?.draft_url
+        })
+      : request.body?.record_id
+        ? await runFirstSketch(request.body.record_id, dependencies, { testMode })
+        : await runFirstSketchQueue(dependencies, { cutoverAt: process.env.SCENARIO_04_CUTOVER_AT });
     console.log(JSON.stringify({ event: "scenario_04_completed", ...result }));
     return response.status(200).json(result);
   } catch (error) {
