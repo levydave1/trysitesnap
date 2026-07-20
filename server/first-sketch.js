@@ -321,6 +321,21 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
 
   const job = await airtable.getRecord(id);
   const jobFields = job.fields || {};
+  const existingDraft = text(jobFields["Draft Site URL"]);
+  if (!options.testMode && existingDraft) {
+    return {
+      success: true,
+      duplicate: true,
+      testMode: false,
+      recordId: id,
+      businessName: text(jobFields["Business Name"], "Customer"),
+      recipient: text(jobFields["Customer Email"]),
+      emailRedirected: false,
+      draftUrl: /^https?:\/\//i.test(existingDraft) ? existingDraft : `https://${existingDraft}`,
+      airtableUpdated: false,
+      notificationSent: false
+    };
+  }
   const businessId = text(jobFields["Business ID"]);
   if (!recordIdPattern.test(businessId)) throw new Error("Generation Job has no valid Raw Outscraper record ID");
   const raw = await airtable.getRecordFromTable(config.airtable.rawOutscraperTableId, businessId);
@@ -329,8 +344,10 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   if (!facts.businessName) throw new Error("Business name is missing");
   const siteFacts = publicFacts(facts, config.firstSketch.testRecipient);
 
-  const research = await tavily.search(`Official website, portfolio, customer reviews and professional assets for ${facts.businessName} (${facts.category}) in ${facts.address || `${facts.city}, ${facts.state}`}. Prefer official sources and direct image links.`);
-  const stock = await pexels.search([facts.category, facts.city, facts.state].filter(Boolean).join(", "), (id.charCodeAt(id.length - 1) % 8) + 1);
+  const [research, stock] = await Promise.all([
+    tavily.search(`Official website, portfolio, customer reviews and professional assets for ${facts.businessName} (${facts.category}) in ${facts.address || `${facts.city}, ${facts.state}`}. Prefer official sources and direct image links.`),
+    pexels.search([facts.category, facts.city, facts.state].filter(Boolean).join(", "), (id.charCodeAt(id.length - 1) % 8) + 1)
+  ]);
   const brief = safeJson(await sketchBrief.generate({
     system: briefSystem(),
     user: `VERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nRESEARCH:\n${researchText(research)}\n\nCreate the strict website brief.`,
@@ -345,21 +362,27 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     maxTokens: 10000,
     temperature: 0.4
   }));
-  let geminiOutput = cleanHtml(await sketchAudit.generate({
-    system: auditSystem(),
-    user: `CLAUDE_HTML:\n${claudeOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nRepair and finalize the HTML.`,
-    maxTokens: 14000,
-    temperature: 0.2
-  }));
+  let geminiOutput = claudeOutput;
   let structureError = htmlStructureError(geminiOutput);
+  let auditUsed = false;
   if (structureError) {
+    auditUsed = true;
     geminiOutput = cleanHtml(await sketchAudit.generate({
       system: auditSystem(),
-      user: `MALFORMED_HTML:\n${geminiOutput}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe previous repair is structurally invalid (${structureError}). Return a complete, valid HTML document. Close every quote and tag, preserve the intended page, and do not truncate the response.`,
+      user: `MALFORMED_HTML:\n${geminiOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe generated website is structurally invalid (${structureError}). Return a complete, valid HTML document. Close every quote and tag, preserve the intended page, remove unsupported content, and do not truncate the response.`,
       maxTokens: 16000,
       temperature: 0.1
     }));
     structureError = htmlStructureError(geminiOutput);
+    if (structureError) {
+      geminiOutput = cleanHtml(await sketchAudit.generate({
+        system: auditSystem(),
+        user: `SECOND_REPAIR_HTML:\n${geminiOutput}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nThe first repair is still invalid (${structureError}). Return one shorter, complete HTML document. Close every quote and tag and do not truncate the response.`,
+        maxTokens: 12000,
+        temperature: 0
+      }));
+      structureError = htmlStructureError(geminiOutput);
+    }
   }
   if (structureError) throw new Error(`The audited website HTML is malformed: ${structureError}`);
   const finalHtml = injectSiteSnapControls(geminiOutput, id, siteFacts, {
@@ -408,6 +431,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     emailRedirected,
     draftUrl,
     deploymentId: deployment.id,
+    auditUsed,
     airtableUpdated: !options.testMode,
     notificationSent: false
   };

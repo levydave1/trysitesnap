@@ -41,6 +41,7 @@ test("04 test mode deploys and emails only the approved inbox without Airtable w
   const deps = dependencies();
   const result = await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
   assert.equal(result.recipient, "levy.dave.1@gmail.com");
+  assert.equal(result.auditUsed, false);
   assert.equal(result.airtableUpdated, false);
   assert.equal(deps.calls.updates.length, 0);
   assert.equal(deps.calls.telegram.length, 0);
@@ -126,6 +127,7 @@ test("04 repair mode safely republishes an existing preview without Airtable wri
 test("04 retries the audit when model HTML contains an unclosed quoted tag", async () => {
   const deps = dependencies();
   let auditCalls = 0;
+  deps.sketchHtml.generate = async () => '<!doctype html><html><head></head><body><p class="broken</body></html>';
   deps.sketchAudit.generate = async () => {
     auditCalls += 1;
     if (auditCalls === 1) {
@@ -146,9 +148,26 @@ test("04 live mode mirrors the Make fields and notifies after deployment", async
   assert.equal(deps.calls.updates.length, 1);
   const update = deps.calls.updates[0].fields;
   assert.equal(update[config.firstSketch.fields.customerEmail], "customer@example.com");
+  assert.equal(update[config.firstSketch.fields.geminiOutput], update[config.firstSketch.fields.claudeOutput]);
   assert.equal(update[config.firstSketch.fields.draftSiteUrl], "preview.vercel.app");
   assert.match(update[config.firstSketch.fields.htmlTake1], /"index.html"/);
   assert.equal(deps.calls.mail[0].to, "customer@example.com");
   assert.equal(deps.calls.telegram.length, 0);
   assert.match(deps.calls.deployments[0], /sitesnap-open-tracker/);
+});
+
+test("04 live retry returns an existing draft without regenerating or emailing", async () => {
+  const deps = dependencies();
+  deps.airtable.getRecord = async () => ({ id: "recABCDEFGHIJKLMN", fields: {
+    "Business ID": "recNOPQRSTUVWXYZ1",
+    "Business Name": "Acme Roofing",
+    "Customer Email": "customer@example.com",
+    "Draft Site URL": "existing-preview.vercel.app"
+  } });
+  const result = await runFirstSketch("recABCDEFGHIJKLMN", deps);
+  assert.equal(result.duplicate, true);
+  assert.equal(result.draftUrl, "https://existing-preview.vercel.app");
+  assert.equal(deps.calls.deployments.length, 0);
+  assert.equal(deps.calls.updates.length, 0);
+  assert.equal(deps.calls.mail.length, 0);
 });
