@@ -59,8 +59,12 @@ test("04 test mode deploys and emails only the approved inbox without Airtable w
     token: trackerMatch[2]
   }), true);
   assert.match(deps.calls.deployments[0], /id="contact"/);
+  assert.match(deps.calls.deployments[0], /data-sitesnap-map/);
+  assert.match(deps.calls.deployments[0], /google\.com\/maps/);
+  assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
   assert.match(deps.calls.deployments[0], /Why this sketch/);
   assert.match(deps.calls.deployments[0], /id="finalize-section"/);
+  assert.match(deps.calls.deployments[0], /sitesnap-pattern-dots/);
   assert.match(deps.calls.deployments[0], /tel:2125550199/);
   assert.doesNotMatch(deps.calls.deployments[0], /tel:\+1/);
   assert.match(deps.calls.mail[0].html, /finalize\?record_id=recABCDEFGHIJKLMN/);
@@ -78,6 +82,20 @@ test("04 never publishes the internal test recipient as business contact data", 
   assert.doesNotMatch(deps.calls.deployments[0], /levy\.dave\.1@gmail\.com/);
   assert.doesNotMatch(deps.calls.deployments[0], /rounded-full object-cover/);
   assert.match(deps.calls.deployments[0], /sitesnap-brand-logo object-contain/);
+});
+
+test("04 replaces fake generated forms with a real map and separates the logo header", async () => {
+  const deps = dependencies();
+  const generated = '<!doctype html><html><head></head><body><header class="bg-dark"><img alt="Acme logo"></header><section id="contact"><div><form onsubmit="alert(1)"><input required><button type="submit">Send</button></form></div></section></body></html>';
+  deps.sketchHtml.generate = async () => generated;
+  deps.sketchAudit.generate = async () => generated;
+  await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  const html = deps.calls.deployments[0];
+  assert.doesNotMatch(html, /<form\b/i);
+  assert.doesNotMatch(html, /onsubmit=/i);
+  assert.match(html, /class="bg-dark sitesnap-brand-header"/);
+  assert.match(html, /data-sitesnap-map/);
+  assert.match(html, /Map for Acme Roofing/);
 });
 
 test("04 retries the audit when model HTML contains an unclosed quoted tag", async () => {
