@@ -141,7 +141,7 @@ function screenshotUrl(accessKey, target, page2 = false) {
 export async function runFirstSketch(recordId, dependencies, options = {}) {
   const id = text(recordId);
   if (!recordIdPattern.test(id)) throw new Error("Invalid Airtable record ID");
-  const { airtable, tavily, pexels, sketchBrief, sketchHtml, sketchAudit, vercelDelivery, mail, telegram, config } = dependencies;
+  const { airtable, tavily, pexels, sketchBrief, sketchHtml, sketchAudit, vercelDelivery, mail, config } = dependencies;
   if (!mail) throw new Error("Mail relay is not configured");
 
   const job = await airtable.getRecord(id);
@@ -201,13 +201,11 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     await airtable.updateRecord(id, update);
   }
 
-  const recipient = options.testMode ? config.firstSketch.testRecipient : facts.email;
+  const emailRedirected = Boolean(options.testMode || options.redirectEmail);
+  const recipient = emailRedirected ? config.firstSketch.testRecipient : facts.email;
   if (!recipient) throw new Error("No email recipient is available");
-  const email = sketchEmail({ businessName: facts.businessName, url: draftUrl, recordId: id, testMode: options.testMode });
+  const email = sketchEmail({ businessName: facts.businessName, url: draftUrl, recordId: id, testMode: emailRedirected });
   await mail.send({ to: recipient, ...email });
-  if (!options.testMode) {
-    await telegram?.send(`נשלחה סקיצה\n${facts.businessName}\n${facts.category}\n${[facts.city, facts.state].filter(Boolean).join(", ")}\n${draftUrl}`);
-  }
   return {
     success: true,
     testMode: Boolean(options.testMode),
@@ -215,10 +213,11 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     rawRecordId: businessId,
     businessName: facts.businessName,
     recipient,
+    emailRedirected,
     draftUrl,
     deploymentId: deployment.id,
     airtableUpdated: !options.testMode,
-    notificationSent: !options.testMode && Boolean(telegram)
+    notificationSent: false
   };
 }
 

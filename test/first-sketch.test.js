@@ -61,6 +61,6 @@ test("04 live mode mirrors the Make fields and notifies after deployment", async
   assert.equal(update[config.firstSketch.fields.draftSiteUrl], "preview.vercel.app");
   assert.match(update[config.firstSketch.fields.htmlTake1], /"index.html"/);
   assert.equal(deps.calls.mail[0].to, "customer@example.com");
-  assert.equal(deps.calls.telegram.length, 1);
+  assert.equal(deps.calls.telegram.length, 0);
   assert.match(deps.calls.deployments[0], /sitesnap-open-tracker/);
 });
