@@ -80,6 +80,22 @@ test("04 never publishes the internal test recipient as business contact data", 
   assert.match(deps.calls.deployments[0], /sitesnap-brand-logo object-contain/);
 });
 
+test("04 retries the audit when model HTML contains an unclosed quoted tag", async () => {
+  const deps = dependencies();
+  let auditCalls = 0;
+  deps.sketchAudit.generate = async () => {
+    auditCalls += 1;
+    if (auditCalls === 1) {
+      return '<!doctype html><html><head></head><body><p class="broken</body></html>';
+    }
+    return '<!doctype html><html><head></head><body><h1>Repaired</h1></body></html>';
+  };
+  await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  assert.equal(auditCalls, 2);
+  assert.match(deps.calls.deployments[0], /<h1>Repaired<\/h1>/);
+  assert.match(deps.calls.deployments[0], /data-sitesnap-preview/);
+});
+
 test("04 live mode mirrors the Make fields and notifies after deployment", async () => {
   const deps = dependencies();
   const result = await runFirstSketch("recABCDEFGHIJKLMN", deps);

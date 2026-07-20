@@ -15,6 +15,49 @@ function cleanHtml(value) {
   return html;
 }
 
+function htmlStructureError(html) {
+  const lower = html.toLowerCase();
+  if (lower.lastIndexOf("</body>") < lower.indexOf("<body")) return "missing closing body tag";
+  let index = 0;
+  while (index < html.length) {
+    const start = html.indexOf("<", index);
+    if (start < 0) break;
+    if (html.startsWith("<!--", start)) {
+      const end = html.indexOf("-->", start + 4);
+      if (end < 0) return "unclosed HTML comment";
+      index = end + 3;
+      continue;
+    }
+    if (!/[A-Za-z!/?]/.test(html[start + 1] || "")) {
+      index = start + 1;
+      continue;
+    }
+    let quote = "";
+    let end = start + 1;
+    for (; end < html.length; end += 1) {
+      const character = html[end];
+      if (quote) {
+        if (character === quote) quote = "";
+        else if (character === "<") return "an HTML tag contains an unclosed quoted attribute";
+      } else if (character === '"' || character === "'") {
+        quote = character;
+      } else if (character === ">") {
+        break;
+      }
+    }
+    if (end >= html.length) return "an HTML tag is not closed";
+    const tag = html.slice(start, end + 1).match(/^<\s*(script|style)\b/i)?.[1]?.toLowerCase();
+    if (tag) {
+      const close = lower.indexOf(`</${tag}>`, end + 1);
+      if (close < 0) return `missing closing ${tag} tag`;
+      index = close + tag.length + 3;
+    } else {
+      index = end + 1;
+    }
+  }
+  return "";
+}
+
 function safeJson(value) {
   const normalized = text(value).replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   JSON.parse(normalized);
@@ -268,12 +311,23 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     maxTokens: 10000,
     temperature: 0.4
   }));
-  const geminiOutput = cleanHtml(await sketchAudit.generate({
+  let geminiOutput = cleanHtml(await sketchAudit.generate({
     system: auditSystem(),
     user: `CLAUDE_HTML:\n${claudeOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nRepair and finalize the HTML.`,
     maxTokens: 14000,
     temperature: 0.2
   }));
+  let structureError = htmlStructureError(geminiOutput);
+  if (structureError) {
+    geminiOutput = cleanHtml(await sketchAudit.generate({
+      system: auditSystem(),
+      user: `MALFORMED_HTML:\n${geminiOutput}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe previous repair is structurally invalid (${structureError}). Return a complete, valid HTML document. Close every quote and tag, preserve the intended page, and do not truncate the response.`,
+      maxTokens: 16000,
+      temperature: 0.1
+    }));
+    structureError = htmlStructureError(geminiOutput);
+  }
+  if (structureError) throw new Error(`The audited website HTML is malformed: ${structureError}`);
   const finalHtml = injectSiteSnapControls(geminiOutput, id, siteFacts, {
     trackOpen: !options.testMode,
     testMode: Boolean(options.testMode),
