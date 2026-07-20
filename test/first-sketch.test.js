@@ -124,24 +124,21 @@ test("04 repair mode safely republishes an existing preview without Airtable wri
   assert.match(deps.calls.deployments[0], /sitesnap-brand-header/);
 });
 
-test("04 repairs a truncated model document and retries one malformed repair", async () => {
+test("04 repairs a truncated model document once", async () => {
   const deps = dependencies();
   let auditCalls = 0;
   deps.sketchHtml.generate = async () => '<!doctype html><html><head></head><body><main>truncated';
   deps.sketchAudit.generate = async () => {
     auditCalls += 1;
-    if (auditCalls === 1) {
-      return '<!doctype html><html><head></head><body><p class="broken</body></html>';
-    }
     return '<!doctype html><html><head></head><body><h1>Repaired</h1></body></html>';
   };
   await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
-  assert.equal(auditCalls, 2);
+  assert.equal(auditCalls, 1);
   assert.match(deps.calls.deployments[0], /<h1>Repaired<\/h1>/);
   assert.match(deps.calls.deployments[0], /data-sitesnap-preview/);
 });
 
-test("04 deploys a complete deterministic fallback when both repairs remain truncated", async () => {
+test("04 deploys a complete deterministic fallback when the repair remains truncated", async () => {
   const deps = dependencies();
   deps.sketchHtml.generate = async () => "<html><body><main>truncated";
   deps.sketchAudit.generate = async () => "<html><body><main>still truncated";

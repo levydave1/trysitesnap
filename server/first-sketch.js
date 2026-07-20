@@ -406,8 +406,8 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   const images = [...new Set([...(research.images || []), ...pexelsImages(stock)])].filter((url) => /^https:\/\//i.test(url)).slice(0, 30);
   const claudeOutput = stripHtml(await runStage("html", timings, () => sketchHtml.generate({
     system: htmlSystem(),
-    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website. Keep it polished but concise: 5-7 sections and under 4,800 output tokens. Finish the entire document including closing body and html tags before adding optional details.`,
-    maxTokens: 5500,
+    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website. HARD LIMIT: exactly 5 polished sections, no code comments, and under 3,200 output tokens. Finish the entire document including closing body and html tags before adding optional details.`,
+    maxTokens: 4000,
     temperature: 0.4
   })));
   let geminiOutput = claudeOutput;
@@ -418,20 +418,11 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     auditUsed = true;
     geminiOutput = stripHtml(await runStage("html_repair_1", timings, () => sketchAudit.generate({
       system: auditSystem(),
-      user: `MALFORMED_HTML:\n${geminiOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe generated website is structurally invalid (${structureError}). Return a complete, valid HTML document. Close every quote and tag, preserve the intended page, remove unsupported content, and do not truncate the response.`,
-      maxTokens: 6000,
+      user: `MALFORMED_HTML:\n${geminiOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe generated website is structurally invalid (${structureError}). Return a shorter complete HTML document under 3,500 tokens. Close every quote and tag, preserve the intended page, remove unsupported content, and do not truncate the response.`,
+      maxTokens: 4500,
       temperature: 0.1
     })));
     structureError = htmlStructureError(geminiOutput);
-    if (structureError) {
-      geminiOutput = stripHtml(await runStage("html_repair_2", timings, () => sketchAudit.generate({
-        system: auditSystem(),
-        user: `SECOND_REPAIR_HTML:\n${geminiOutput}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nThe first repair is still invalid (${structureError}). Return one shorter, complete HTML document. Close every quote and tag and do not truncate the response.`,
-        maxTokens: 5000,
-        temperature: 0
-      })));
-      structureError = htmlStructureError(geminiOutput);
-    }
   }
   if (structureError) {
     fallbackUsed = true;
