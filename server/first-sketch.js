@@ -131,6 +131,9 @@ function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
   if (phone.digits) {
     html = html.replace(/href\s*=\s*(["'])tel:[^"']*\1/gi, `href="tel:${phone.digits}"`);
   }
+  if (mapInserted) {
+    html = html.replace(/Request\s+(?:a\s+)?Free\s+Quote/gi, "Find Us");
+  }
   for (const email of suppressedEmails.map(text).filter(Boolean)) {
     const escaped = regexEscape(email);
     html = html
@@ -239,9 +242,10 @@ ${tracker}`;
   void legacyBlock;
   const finalizeUrl = `https://trysitesnap.com/finalize?record_id=${encodeURIComponent(recordId)}&business_name=${encodeURIComponent(facts.businessName)}`;
   const block = `<style data-sitesnap-preview>
-.sitesnap-brand-logo{object-fit:contain!important;border-radius:4px!important;background:transparent!important}
+.sitesnap-brand-logo{object-fit:contain!important;border-radius:8px!important;background:rgba(255,255,255,.96)!important;padding:4px!important;filter:drop-shadow(0 1px 2px rgba(15,23,42,.2))}
 .sitesnap-brand-header{background:#f8fafc!important;color:#0f172a!important;border-bottom:1px solid #cbd5e1!important;box-shadow:0 8px 24px rgba(15,23,42,.12)!important}
-.sitesnap-brand-header nav a:not([href^="tel:"]){color:#1e293b!important}.sitesnap-brand-header button{color:#1e293b!important}.sitesnap-brand-header .sitesnap-brand-logo{filter:drop-shadow(0 1px 1px rgba(15,23,42,.18))}
+.sitesnap-brand-header nav a:not([href^="tel:"]){color:#1e293b!important}.sitesnap-brand-header button{color:#1e293b!important}
+footer:not([data-sitesnap-footer]){background:#062f26!important;color:#f8fafc!important;border-top:1px solid rgba(255,255,255,.14)!important}footer:not([data-sitesnap-footer]) h1,footer:not([data-sitesnap-footer]) h2,footer:not([data-sitesnap-footer]) h3,footer:not([data-sitesnap-footer]) h4,footer:not([data-sitesnap-footer]) strong,footer:not([data-sitesnap-footer]) a:not([href^="tel:"]){color:#fff!important}footer:not([data-sitesnap-footer]) p,footer:not([data-sitesnap-footer]) span,footer:not([data-sitesnap-footer]) li{color:#dbe7e2!important}footer:not([data-sitesnap-footer]) a[href^="tel:"]{color:#f59e0b!important}footer:not([data-sitesnap-footer]) [class*="border-"]{border-color:rgba(255,255,255,.16)!important}
 .sitesnap-inline-map{width:100%;min-height:360px;overflow:hidden;border-radius:24px;box-shadow:0 18px 48px rgba(15,23,42,.14)}.sitesnap-inline-map iframe{display:block;width:100%;height:100%;min-height:360px;border:0}
 .sitesnap-location-section{padding:72px 20px;background:#f8fafc;color:#0f172a;font-family:Inter,system-ui,sans-serif}.sitesnap-location-section>div{max-width:1100px;margin:auto;text-align:center}.sitesnap-location-section p{margin:0;color:#0070f3;font-weight:800;text-transform:uppercase;letter-spacing:.14em}.sitesnap-location-section h2{margin:8px 0 8px;font-size:clamp(30px,5vw,48px)}.sitesnap-location-section address{margin-bottom:28px;font-style:normal;font-size:18px}.sitesnap-location-section iframe{display:block;width:100%;height:360px;border:0;border-radius:24px;box-shadow:0 18px 48px rgba(15,23,42,.14)}
 .sitesnap-pattern-dots{background-image:radial-gradient(rgba(15,23,42,.09) 1.2px,transparent 1.2px)!important;background-size:22px 22px!important}.sitesnap-pattern-radial{background-image:radial-gradient(circle at 100% 0%,rgba(14,165,233,.16),transparent 42%),radial-gradient(circle at 0% 100%,rgba(16,185,129,.12),transparent 38%)!important}.sitesnap-pattern-grid{background-image:linear-gradient(rgba(15,23,42,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(15,23,42,.055) 1px,transparent 1px)!important;background-size:32px 32px!important}

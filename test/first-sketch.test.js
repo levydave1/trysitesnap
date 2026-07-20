@@ -86,7 +86,7 @@ test("04 never publishes the internal test recipient as business contact data", 
 
 test("04 replaces fake generated forms with a real map and separates the logo header", async () => {
   const deps = dependencies();
-  const generated = '<!doctype html><html><head></head><body><header class="bg-dark"><img alt="Acme logo"></header><section id="contact"><div><form onsubmit="alert(1)"><input required><button type="submit">Send</button></form></div></section></body></html>';
+  const generated = '<!doctype html><html><head></head><body><header class="bg-dark"><img alt="Acme logo"></header><section id="contact"><div><h3>Request a Free Quote</h3><form onsubmit="alert(1)"><input required><button type="submit">Send</button></form></div></section></body></html>';
   deps.sketchHtml.generate = async () => generated;
   deps.sketchAudit.generate = async () => generated;
   await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
@@ -96,6 +96,9 @@ test("04 replaces fake generated forms with a real map and separates the logo he
   assert.match(html, /class="bg-dark sitesnap-brand-header"/);
   assert.match(html, /data-sitesnap-map/);
   assert.match(html, /Map for Acme Roofing/);
+  assert.match(html, />Find Us<\/h3>/);
+  assert.doesNotMatch(html, /Request a Free Quote/);
+  assert.match(html, /footer:not\(\[data-sitesnap-footer\]\).*color:#f8fafc!important/);
 });
 
 test("04 repair mode safely republishes an existing preview without Airtable writes", async () => {
