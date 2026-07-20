@@ -275,6 +275,19 @@ function deploymentPayload(html) {
   });
 }
 
+async function runStage(stage, timings, task) {
+  const startedAt = Date.now();
+  try {
+    return await task();
+  } catch (error) {
+    if (!error.code) error.code = `SCENARIO_04_${stage.toUpperCase()}_FAILED`;
+    error.stage = stage;
+    throw error;
+  } finally {
+    timings[stage] = Date.now() - startedAt;
+  }
+}
+
 function stripInjectedSiteSnapControls(rawHtml) {
   return cleanHtml(rawHtml).replace(
     /<style\b[^>]*data-sitesnap-preview[^>]*>[\s\S]*?<script\b[^>]*data-sitesnap-open-tracker[^>]*>[\s\S]*?<\/script>\s*/gi,
@@ -318,8 +331,9 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   if (!recordIdPattern.test(id)) throw new Error("Invalid Airtable record ID");
   const { airtable, tavily, pexels, sketchBrief, sketchHtml, sketchAudit, vercelDelivery, mail, config } = dependencies;
   if (!mail) throw new Error("Mail relay is not configured");
+  const timings = {};
 
-  const job = await airtable.getRecord(id);
+  const job = await runStage("airtable_job", timings, () => airtable.getRecord(id));
   const jobFields = job.fields || {};
   const existingDraft = text(jobFields["Draft Site URL"]);
   if (!options.testMode && existingDraft) {
@@ -338,49 +352,49 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   }
   const businessId = text(jobFields["Business ID"]);
   if (!recordIdPattern.test(businessId)) throw new Error("Generation Job has no valid Raw Outscraper record ID");
-  const raw = await airtable.getRecordFromTable(config.airtable.rawOutscraperTableId, businessId);
+  const raw = await runStage("airtable_business", timings, () => airtable.getRecordFromTable(config.airtable.rawOutscraperTableId, businessId));
   const facts = rawFacts(raw.fields || {});
   facts.businessName ||= text(jobFields["Business Name"]);
   if (!facts.businessName) throw new Error("Business name is missing");
   const siteFacts = publicFacts(facts, config.firstSketch.testRecipient);
 
-  const [research, stock] = await Promise.all([
+  const [research, stock] = await runStage("research", timings, () => Promise.all([
     tavily.search(`Official website, portfolio, customer reviews and professional assets for ${facts.businessName} (${facts.category}) in ${facts.address || `${facts.city}, ${facts.state}`}. Prefer official sources and direct image links.`),
     pexels.search([facts.category, facts.city, facts.state].filter(Boolean).join(", "), (id.charCodeAt(id.length - 1) % 8) + 1)
-  ]);
-  const brief = safeJson(await sketchBrief.generate({
+  ]));
+  const brief = safeJson(await runStage("brief", timings, () => sketchBrief.generate({
     system: briefSystem(),
     user: `VERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nRESEARCH:\n${researchText(research)}\n\nCreate the strict website brief.`,
     maxTokens: 4096,
     temperature: 0.3,
     json: true
-  }));
+  })));
   const images = [...new Set([...(research.images || []), ...pexelsImages(stock)])].filter((url) => /^https:\/\//i.test(url)).slice(0, 30);
-  const claudeOutput = cleanHtml(await sketchHtml.generate({
+  const claudeOutput = cleanHtml(await runStage("html", timings, () => sketchHtml.generate({
     system: htmlSystem(),
-    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website.`,
-    maxTokens: 10000,
+    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website. Keep it comprehensive but under 6,500 output tokens.`,
+    maxTokens: 7000,
     temperature: 0.4
-  }));
+  })));
   let geminiOutput = claudeOutput;
   let structureError = htmlStructureError(geminiOutput);
   let auditUsed = false;
   if (structureError) {
     auditUsed = true;
-    geminiOutput = cleanHtml(await sketchAudit.generate({
+    geminiOutput = cleanHtml(await runStage("html_repair_1", timings, () => sketchAudit.generate({
       system: auditSystem(),
       user: `MALFORMED_HTML:\n${geminiOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nThe generated website is structurally invalid (${structureError}). Return a complete, valid HTML document. Close every quote and tag, preserve the intended page, remove unsupported content, and do not truncate the response.`,
-      maxTokens: 16000,
+      maxTokens: 8000,
       temperature: 0.1
-    }));
+    })));
     structureError = htmlStructureError(geminiOutput);
     if (structureError) {
-      geminiOutput = cleanHtml(await sketchAudit.generate({
+      geminiOutput = cleanHtml(await runStage("html_repair_2", timings, () => sketchAudit.generate({
         system: auditSystem(),
         user: `SECOND_REPAIR_HTML:\n${geminiOutput}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nThe first repair is still invalid (${structureError}). Return one shorter, complete HTML document. Close every quote and tag and do not truncate the response.`,
-        maxTokens: 12000,
+        maxTokens: 6500,
         temperature: 0
-      }));
+      })));
       structureError = htmlStructureError(geminiOutput);
     }
   }
@@ -392,9 +406,9 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     suppressedEmails: [config.firstSketch.testRecipient]
   });
   const payload = deploymentPayload(finalHtml);
-  const deployment = await vercelDelivery.deployHtml(finalHtml, config.vercelDelivery.projectName);
+  const deployment = await runStage("deploy", timings, () => vercelDelivery.deployHtml(finalHtml, config.vercelDelivery.projectName));
   if (!deployment.id || !deployment.url) throw new Error("Vercel did not return a deployment ID and URL");
-  await vercelDelivery.waitUntilReady(deployment.id, { attempts: 45, intervalMs: 1500 });
+  await runStage("deploy_ready", timings, () => vercelDelivery.waitUntilReady(deployment.id, { attempts: 45, intervalMs: 1500 }));
   const draftUrl = `https://${text(deployment.url).replace(/^https?:\/\//, "")}`;
 
   if (!options.testMode) {
@@ -413,14 +427,14 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     if (newSite) update[fields.newSite] = [{ url: newSite }];
     if (newSitePage2) update[fields.newSitePage2] = [{ url: newSitePage2 }];
     if (oldSite) update[fields.oldSite] = [{ url: oldSite }];
-    await airtable.updateRecord(id, update);
+    await runStage("airtable_update", timings, () => airtable.updateRecord(id, update));
   }
 
   const emailRedirected = Boolean(options.testMode || options.redirectEmail);
   const recipient = emailRedirected ? config.firstSketch.testRecipient : facts.email;
   if (!recipient) throw new Error("No email recipient is available");
   const email = sketchEmail({ businessName: facts.businessName, url: draftUrl, recordId: id, testMode: emailRedirected });
-  await mail.send({ to: recipient, ...email });
+  await runStage("email", timings, () => mail.send({ to: recipient, ...email }));
   return {
     success: true,
     testMode: Boolean(options.testMode),
@@ -432,6 +446,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     draftUrl,
     deploymentId: deployment.id,
     auditUsed,
+    timings,
     airtableUpdated: !options.testMode,
     notificationSent: false
   };

@@ -69,17 +69,20 @@ export function createRuntimeDependencies(needs = {}) {
     dependencies.sketchBrief = createGeminiTextClient({
       apiKey: process.env.GEMINI_API_KEY,
       model: config.firstSketch.briefModel,
-      timeoutMs: 90000
+      timeoutMs: 75000,
+      attempts: 1
     });
     dependencies.sketchHtml = createClaudeTextClient({
       apiKey: process.env.ANTHROPIC_API_KEY,
       model: config.firstSketch.htmlModel,
-      timeoutMs: 180000
+      timeoutMs: 150000,
+      attempts: 1
     });
     dependencies.sketchAudit = createGeminiTextClient({
       apiKey: process.env.GEMINI_API_KEY,
       model: config.firstSketch.auditModel,
-      timeoutMs: 180000
+      timeoutMs: 120000,
+      attempts: 1
     });
   }
   if (needs.vercelDelivery) {

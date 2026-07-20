@@ -94,6 +94,10 @@ export default async function firstSketchHandler(request, response) {
       message: String(error.message || "").slice(0, 300),
       upstreamStatus: error.upstreamStatus || null
     }));
-    return response.status(500).json({ success: false, code: error.code || "SCENARIO_04_FAILED" });
+    return response.status(500).json({
+      success: false,
+      code: error.code || "SCENARIO_04_FAILED",
+      ...(request.body?.test === true && error.stage ? { stage: error.stage } : {})
+    });
   }
 }

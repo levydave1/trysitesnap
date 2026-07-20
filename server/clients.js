@@ -324,7 +324,7 @@ export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch
   };
 }
 
-export function createClaudeTextClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+export function createClaudeTextClient({ apiKey, model, timeoutMs, attempts = 3, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
   return {
     async generate({ system, user, maxTokens = 10000, temperature = 0.4 }) {
@@ -342,13 +342,13 @@ export function createClaudeTextClient({ apiKey, model, timeoutMs, fetchImpl = f
           system,
           messages: [{ role: "user", content: user }]
         })
-      }, { timeoutMs, fetchImpl, attempts: 3 });
+      }, { timeoutMs, fetchImpl, attempts });
       return payload.content?.filter((part) => part.type === "text").map((part) => part.text || "").join("") || "";
     }
   };
 }
 
-export function createGeminiTextClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+export function createGeminiTextClient({ apiKey, model, timeoutMs, attempts = 4, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   return {
@@ -365,7 +365,7 @@ export function createGeminiTextClient({ apiKey, model, timeoutMs, fetchImpl = f
             ...(json ? { responseMimeType: "application/json" } : {})
           }
         })
-      }, { timeoutMs, fetchImpl, attempts: 3 });
+      }, { timeoutMs, fetchImpl, attempts });
       return payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
     }
   };
