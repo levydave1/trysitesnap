@@ -1,11 +1,15 @@
 import {
   createAirtableClient,
   createClaudeClient,
+  createClaudeTextClient,
   createCloudflareClient,
   createGeminiClient,
+  createGeminiTextClient,
   createInstantlyClient,
   createMailRelayClient,
   createOutscraperClient,
+  createPexelsClient,
+  createTavilyClient,
   createTelegramClient,
   createVercelDeliveryClient
 } from "./clients.js";
@@ -51,6 +55,31 @@ export function createRuntimeDependencies(needs = {}) {
     dependencies.instantly = createInstantlyClient({
       apiKey: process.env.INSTANTLY_API_KEY,
       timeoutMs: 30000
+    });
+  }
+  if (needs.firstSketch) {
+    dependencies.tavily = createTavilyClient({
+      apiKey: process.env.TAVILY_API_KEY,
+      timeoutMs: 45000
+    });
+    dependencies.pexels = createPexelsClient({
+      apiKey: process.env.PEXELS_API_KEY,
+      timeoutMs: config.upstreamTimeoutMs
+    });
+    dependencies.sketchBrief = createGeminiTextClient({
+      apiKey: process.env.GEMINI_API_KEY,
+      model: config.firstSketch.briefModel,
+      timeoutMs: 90000
+    });
+    dependencies.sketchHtml = createClaudeTextClient({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: config.firstSketch.htmlModel,
+      timeoutMs: 180000
+    });
+    dependencies.sketchAudit = createGeminiTextClient({
+      apiKey: process.env.GEMINI_API_KEY,
+      model: config.firstSketch.auditModel,
+      timeoutMs: 180000
     });
   }
   if (needs.vercelDelivery) {

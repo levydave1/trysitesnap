@@ -324,6 +324,94 @@ export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch
   };
 }
 
+export function createClaudeTextClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
+  return {
+    async generate({ system, user, maxTokens = 10000, temperature = 0.4 }) {
+      const payload = await retryingJson("claude", "https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "anthropic-version": "2023-06-01",
+          "x-api-key": apiKey
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: maxTokens,
+          temperature,
+          system,
+          messages: [{ role: "user", content: user }]
+        })
+      }, { timeoutMs, fetchImpl, attempts: 3 });
+      return payload.content?.filter((part) => part.type === "text").map((part) => part.text || "").join("") || "";
+    }
+  };
+}
+
+export function createGeminiTextClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  return {
+    async generate({ system, user, maxTokens = 10000, temperature = 0.3, json = false }) {
+      const payload = await retryingJson("gemini", endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: system }] },
+          contents: [{ role: "user", parts: [{ text: user }] }],
+          generationConfig: {
+            temperature,
+            maxOutputTokens: maxTokens,
+            ...(json ? { responseMimeType: "application/json" } : {})
+          }
+        })
+      }, { timeoutMs, fetchImpl, attempts: 3 });
+      return payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
+    }
+  };
+}
+
+export function createTavilyClient({ apiKey, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("TAVILY_API_KEY is not configured");
+  return {
+    async search(query) {
+      const { payload } = await requestJson("tavily", "https://api.tavily.com/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          api_key: apiKey,
+          query,
+          search_depth: "advanced",
+          max_results: 10,
+          include_images: true,
+          include_answer: true,
+          include_raw_content: true
+        }),
+        signal: AbortSignal.timeout(timeoutMs)
+      }, { fetchImpl });
+      return payload;
+    }
+  };
+}
+
+export function createPexelsClient({ apiKey, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("PEXELS_API_KEY is not configured");
+  return {
+    async search(query, page = 1) {
+      const url = new URL("https://api.pexels.com/v1/search");
+      url.searchParams.set("query", query);
+      url.searchParams.set("per_page", "15");
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("orientation", "landscape");
+      const { payload } = await requestJson("pexels", url, {
+        headers: { Authorization: apiKey },
+        signal: AbortSignal.timeout(timeoutMs)
+      }, { fetchImpl });
+      return payload;
+    }
+  };
+}
+
 export function createInstantlyClient({ apiKey, timeoutMs, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("INSTANTLY_API_KEY is not configured");
   const headers = { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" };

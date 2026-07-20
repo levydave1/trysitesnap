@@ -1,0 +1,232 @@
+const recordIdPattern = /^rec[a-zA-Z0-9]{14}$/;
+
+function text(value, fallback = "") {
+  if (Array.isArray(value)) return text(value[0], fallback);
+  return String(value ?? fallback).trim();
+}
+
+function cleanHtml(value) {
+  const html = text(value).replace(/^```html\s*/i, "").replace(/\s*```$/i, "");
+  if (!/<html[\s>]/i.test(html) || !/<body[\s>]/i.test(html)) {
+    throw new Error("The model did not return a complete HTML document");
+  }
+  return html;
+}
+
+function safeJson(value) {
+  const normalized = text(value).replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  JSON.parse(normalized);
+  return normalized;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function rawFacts(fields) {
+  return {
+    businessName: text(fields["Business Name"]),
+    category: text(fields.Category || fields.Type),
+    phone: text(fields.Phone),
+    website: text(fields.Website),
+    address: text(fields.Address || fields["Submitted Address"]),
+    city: text(fields.City),
+    state: text(fields.State),
+    country: text(fields.Country),
+    rating: text(fields.Rating),
+    reviews: text(fields["Reviews Count"] || fields.Reviews),
+    email: text(fields.Email),
+    logo: text(fields.Logo || fields["Logo URL"] || fields.logo),
+    about: text(fields.About || fields.Description),
+    workingHours: fields["Working Hours"] || fields["Working Hours JSON"] || fields["Working hours"] || ""
+  };
+}
+
+function briefSystem() {
+  return `You are a senior brand strategist and website brief writer for American local businesses.
+Create a strict JSON brief for a modern, high-converting single-page website. Never invent facts, reviews, ratings, services, licenses, guarantees, awards or business hours. Use verified CRM facts first and research only as supporting context.
+
+Choose one industry-appropriate design archetype, palette, font pair and hero layout. Avoid repetitive black/gold luxury, amber/orange CTAs and generic corporate blue unless the business clearly calls for them. Prefer a clear, accessible, mobile-first design.
+
+Return JSON only with exactly these keys:
+{"BUSINESS_NAME":"","INDUSTRY":"","PHONE":"","ADDRESS":"","CITY_COUNTRY":"","TAGLINE":"","ABOUT_US":"","SERVICES":[],"TESTIMONIALS":[],"SOCIAL_PROOF_INSTRUCTIONS":"","imagesArray":[],"DESIGN_ARCHETYPE":"","PALETTE_ID":"","RECOMMENDED_COLORS":[],"PRIMARY_COLOR":"","ACCENT_COLOR":"","BACKGROUND_COLOR":"","TEXT_COLOR":"","FONT_PAIR":"","LAYOUT_VARIANT":"","HERO_STYLE":"","SECTION_STYLE":"","IMAGE_TREATMENT":"","AVOID_COLORS":[],"CLAUDE_DESIGN_INSTRUCTIONS":""}`;
+}
+
+function htmlSystem() {
+  return `You are an elite front-end developer, UX designer and marketing copywriter. Generate one complete, polished HTML landing page for the supplied local business using Tailwind CSS CDN and Lucide icons.
+
+Return raw HTML only. The page must feel custom-built, be responsive and accessible, and include header, hero, trust proof, services, about, reviews only when supported, contact and footer. Use only supplied facts and image URLs. Never invent claims, testimonials, ratings, licenses, awards, guarantees or hours. Use tel: links and internal anchors; do not link visitors back to the old business website. Do not use tiny body text. Include a valid viewport meta tag and initialize Lucide once.
+
+In the contact section include a Google Maps iframe only when an address exists. Keep the primary CTA as Call Now when a phone exists. Include this hidden audit note near the end: <template id="sitesnap-category-note">A short, factual explanation of the design choices for this business category.</template>`;
+}
+
+function auditSystem() {
+  return `You are a senior HTML QA engineer. Repair the supplied HTML with minimal changes. Preserve its design, copy, structure, colors and section order. Return one complete raw HTML document only.
+
+Fix incomplete tags, invalid links, contrast/accessibility problems, broken image URLs, mobile overflow and missing Lucide initialization. Remove unsupported claims and placeholder content. Never invent facts. Keep only supplied image URLs. Ensure phone links match the verified phone and a valid map iframe exists only when an address exists. Preserve the hidden sitesnap-category-note template.`;
+}
+
+function researchText(research) {
+  const results = (research.results || []).slice(0, 10).map((item) => ({
+    title: item.title,
+    url: item.url,
+    content: text(item.content || item.raw_content).slice(0, 4500)
+  }));
+  return JSON.stringify({ answer: research.answer || "", images: research.images || [], results }).slice(0, 48000);
+}
+
+function pexelsImages(pexels) {
+  return (pexels.photos || []).map((photo) => photo.src?.large || photo.src?.landscape).filter(Boolean);
+}
+
+function injectSiteSnapControls(rawHtml, recordId, businessName) {
+  const html = cleanHtml(rawHtml);
+  const category = html.match(/<template id="sitesnap-category-note">\s*([\s\S]*?)\s*<\/template>/i)?.[1] || "This design was tailored to the business category, local audience and verified brand cues.";
+  const block = `<style data-sitesnap-preview>.sitesnap-preview-cta{position:fixed;right:20px;bottom:20px;z-index:9999;background:#0070f3;color:#fff;border-radius:999px;padding:13px 20px;text-decoration:none;font:800 14px/1.2 Inter,system-ui,sans-serif;box-shadow:0 10px 28px rgba(0,0,0,.28)}.sitesnap-preview-note{max-width:900px;margin:0 auto;padding:28px 20px;color:#334155;font:500 14px/1.6 Inter,system-ui,sans-serif}</style>
+<div class="sitesnap-preview-note" data-sitesnap-design-note>${escapeHtml(category)}</div>
+<a class="sitesnap-preview-cta" href="https://trysitesnap.com/finalize?record_id=${encodeURIComponent(recordId)}" target="_blank" rel="noopener noreferrer">Personalize This Sketch →</a>
+<script data-sitesnap-open-tracker>(function(){var r=${JSON.stringify(recordId)},k="sitesnap-opened:"+r;if(localStorage.getItem(k))return;fetch("https://trysitesnap.com/api/3b7f5316669d40c19e243c38f67b52ec",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({record_id:r,business_name:${JSON.stringify(businessName)},opened_at:new Date().toISOString()}),keepalive:true}).then(function(x){if(x.ok)localStorage.setItem(k,"1")}).catch(function(){})})();</script>`;
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${block}\n</body>`) : `${html}\n${block}`;
+}
+
+function deploymentPayload(html) {
+  return JSON.stringify({
+    name: "corp-preview",
+    files: [{ file: "index.html", data: html }],
+    projectSettings: { framework: null }
+  });
+}
+
+function sketchEmail({ businessName, url, testMode }) {
+  const notice = testMode
+    ? `<div style="background:#fff4cc;border:1px solid #e4c34d;padding:14px 16px;margin-bottom:24px"><strong>SiteSnap scenario 04 test</strong><br>This message was redirected to the approved test inbox and was not sent to the customer.</div>`
+    : "";
+  return {
+    subject: `${testMode ? "[SiteSnap 04 Test] " : ""}Hi ${businessName}, your site sketch is here!`,
+    html: `<div dir="ltr" style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:24px;overflow:hidden;color:#0f172a">
+      <div style="background:#000;padding:30px 20px;text-align:center;color:#fff"><div style="font-size:10px;font-weight:900;letter-spacing:.25em;text-transform:uppercase">SiteSnap • Pure Simplicity</div><h1 style="font-size:24px">Your Website Sketch is Ready!</h1></div>
+      <div style="padding:36px 30px;line-height:1.65">${notice}<p style="font-size:18px;font-weight:800">Hi ${escapeHtml(businessName)},</p><p>Exciting news! We generated the initial draft of your website. This first sketch shows the design, structure and mobile experience prepared for your business.</p><div style="text-align:center;margin:36px 0"><a href="${escapeHtml(url)}" style="display:inline-block;background:#0070f3;color:#fff;padding:17px 32px;border-radius:999px;text-decoration:none;font-weight:900">View Your Site Draft →</a></div><div style="border:3px solid #000;padding:24px;border-radius:24px;background:#f8fafc"><strong>What’s next?</strong><p>Review the draft, then request revisions or continue to finalize your website.</p><a href="https://trysitesnap.com/finalize" style="color:#0070f3;font-weight:800">Personalize this sketch →</a></div></div>
+      <div style="background:#f8fafc;padding:24px;text-align:center;font-size:10px;color:#64748b">2026 SiteSnap • Pure Simplicity</div>
+    </div>`
+  };
+}
+
+function screenshotUrl(accessKey, target, page2 = false) {
+  if (!accessKey || !target) return "";
+  const url = new URL("https://api.screenshotone.com/take");
+  url.searchParams.set("access_key", accessKey);
+  url.searchParams.set("url", target);
+  url.searchParams.set("viewport_width", "375");
+  url.searchParams.set("viewport_height", "812");
+  url.searchParams.set("device_scale_factor", "3");
+  url.searchParams.set("block_cookie_banners", "true");
+  url.searchParams.set("block_chats", "true");
+  if (page2) {
+    url.searchParams.set("delay", "3");
+    url.searchParams.set("scripts", "window.scrollTo(0,650)");
+  }
+  return url.toString();
+}
+
+export async function runFirstSketch(recordId, dependencies, options = {}) {
+  const id = text(recordId);
+  if (!recordIdPattern.test(id)) throw new Error("Invalid Airtable record ID");
+  const { airtable, tavily, pexels, sketchBrief, sketchHtml, sketchAudit, vercelDelivery, mail, telegram, config } = dependencies;
+  if (!mail) throw new Error("Mail relay is not configured");
+
+  const job = await airtable.getRecord(id);
+  const jobFields = job.fields || {};
+  const businessId = text(jobFields["Business ID"]);
+  if (!recordIdPattern.test(businessId)) throw new Error("Generation Job has no valid Raw Outscraper record ID");
+  const raw = await airtable.getRecordFromTable(config.airtable.rawOutscraperTableId, businessId);
+  const facts = rawFacts(raw.fields || {});
+  facts.businessName ||= text(jobFields["Business Name"]);
+  if (!facts.businessName) throw new Error("Business name is missing");
+
+  const research = await tavily.search(`Official website, portfolio, customer reviews and professional assets for ${facts.businessName} (${facts.category}) in ${facts.address || `${facts.city}, ${facts.state}`}. Prefer official sources and direct image links.`);
+  const stock = await pexels.search([facts.category, facts.city, facts.state].filter(Boolean).join(", "), (id.charCodeAt(id.length - 1) % 8) + 1);
+  const brief = safeJson(await sketchBrief.generate({
+    system: briefSystem(),
+    user: `VERIFIED_CRM:\n${JSON.stringify(facts)}\n\nRESEARCH:\n${researchText(research)}\n\nCreate the strict website brief.`,
+    maxTokens: 4096,
+    temperature: 0.3,
+    json: true
+  }));
+  const images = [...new Set([...(research.images || []), ...pexelsImages(stock)])].filter((url) => /^https:\/\//i.test(url)).slice(0, 30);
+  const claudeOutput = cleanHtml(await sketchHtml.generate({
+    system: htmlSystem(),
+    user: `WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(facts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website.`,
+    maxTokens: 10000,
+    temperature: 0.4
+  }));
+  const geminiOutput = cleanHtml(await sketchAudit.generate({
+    system: auditSystem(),
+    user: `CLAUDE_HTML:\n${claudeOutput}\n\nWEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(facts)}\n\nALLOWED_IMAGES:\n${JSON.stringify(images)}\n\nRepair and finalize the HTML.`,
+    maxTokens: 14000,
+    temperature: 0.2
+  }));
+  const finalHtml = injectSiteSnapControls(geminiOutput, id, facts.businessName);
+  const payload = deploymentPayload(finalHtml);
+  const deployment = await vercelDelivery.deployHtml(finalHtml, config.vercelDelivery.projectName);
+  if (!deployment.id || !deployment.url) throw new Error("Vercel did not return a deployment ID and URL");
+  await vercelDelivery.waitUntilReady(deployment.id, { attempts: 45, intervalMs: 1500 });
+  const draftUrl = `https://${text(deployment.url).replace(/^https?:\/\//, "")}`;
+
+  if (!options.testMode) {
+    const fields = config.firstSketch.fields;
+    const update = {
+      [fields.customerEmail]: facts.email,
+      [fields.geminiOutput]: geminiOutput,
+      [fields.claudeOutput]: claudeOutput,
+      [fields.draftSiteUrl]: text(deployment.url),
+      [fields.htmlTake1]: payload,
+      [fields.researchBrief]: brief
+    };
+    const newSite = screenshotUrl(process.env.SCREENSHOTONE_ACCESS_KEY, draftUrl);
+    const newSitePage2 = screenshotUrl(process.env.SCREENSHOTONE_ACCESS_KEY, draftUrl, true);
+    const oldSite = screenshotUrl(process.env.SCREENSHOTONE_ACCESS_KEY, facts.website);
+    if (newSite) update[fields.newSite] = [{ url: newSite }];
+    if (newSitePage2) update[fields.newSitePage2] = [{ url: newSitePage2 }];
+    if (oldSite) update[fields.oldSite] = [{ url: oldSite }];
+    await airtable.updateRecord(id, update);
+  }
+
+  const recipient = options.testMode ? config.firstSketch.testRecipient : facts.email;
+  if (!recipient) throw new Error("No email recipient is available");
+  const email = sketchEmail({ businessName: facts.businessName, url: draftUrl, testMode: options.testMode });
+  await mail.send({ to: recipient, ...email });
+  if (!options.testMode) {
+    await telegram?.send(`נשלחה סקיצה\n${facts.businessName}\n${facts.category}\n${[facts.city, facts.state].filter(Boolean).join(", ")}\n${draftUrl}`);
+  }
+  return {
+    success: true,
+    testMode: Boolean(options.testMode),
+    recordId: id,
+    rawRecordId: businessId,
+    businessName: facts.businessName,
+    recipient,
+    draftUrl,
+    deploymentId: deployment.id,
+    airtableUpdated: !options.testMode,
+    notificationSent: !options.testMode && Boolean(telegram)
+  };
+}
+
+export async function runFirstSketchQueue(dependencies, options = {}) {
+  const cutover = text(options.cutoverAt);
+  if (!cutover || !Number.isFinite(Date.parse(cutover))) throw new Error("SCENARIO_04_CUTOVER_AT is not configured");
+  const formula = `AND({Business Name}!="",{Draft Site URL}="",IS_AFTER(CREATED_TIME(),'${cutover}'))`;
+  const records = await dependencies.airtable.listRecords(dependencies.config.airtable.tableId, {
+    filterByFormula: formula,
+    maxRecords: 20,
+    sort: [{ field: "Created At", direction: "asc" }]
+  });
+  const candidate = records.find((record) => recordIdPattern.test(text(record.fields?.["Business ID"])));
+  if (!candidate) return { success: true, processed: 0 };
+  return { processed: 1, ...(await runFirstSketch(candidate.id, dependencies)) };
+}

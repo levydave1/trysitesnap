@@ -97,6 +97,23 @@ export const config = Object.freeze({
     geminiModel: "gemini-3.1-flash-lite",
     claudeModel: "claude-sonnet-4-6"
   },
+  firstSketch: {
+    briefModel: "gemini-3-flash-preview",
+    htmlModel: "claude-sonnet-4-6",
+    auditModel: "gemini-3.5-flash",
+    testRecipient: "levy.dave.1@gmail.com",
+    fields: {
+      customerEmail: "fld05Dw3vwFAXFPu9",
+      newSitePage2: "fld1Mxl6tZaAhDQBP",
+      geminiOutput: "fld3tKWCGhkCvgOq3",
+      claudeOutput: "fldErFxka5TpewgRa",
+      draftSiteUrl: "fldY4hvv7SwEwuXKA",
+      newSite: "fldjILXRl7hozRqqV",
+      htmlTake1: "fldmXR5YhqsYpaHfy",
+      oldSite: "fldp85XXvchHksv4x",
+      researchBrief: "fldqgsiGPzAMABnUW"
+    }
+  },
   outscraper: {
     endpoint: "https://api.outscraper.cloud/google-maps-search",
     limit: 1,
