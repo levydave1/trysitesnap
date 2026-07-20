@@ -131,7 +131,7 @@ function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
   if (phone.digits) {
     html = html.replace(/href\s*=\s*(["'])tel:[^"']*\1/gi, `href="tel:${phone.digits}"`);
   }
-  if (mapInserted) {
+  if (mapInserted || /data-sitesnap-map/i.test(html)) {
     html = html.replace(/Request\s+(?:a\s+)?Free\s+Quote/gi, "Find Us");
   }
   for (const email of suppressedEmails.map(text).filter(Boolean)) {

@@ -104,7 +104,7 @@ test("04 replaces fake generated forms with a real map and separates the logo he
 test("04 repair mode safely republishes an existing preview without Airtable writes", async () => {
   const deps = dependencies({
     async fetchHtml() {
-      return '<!doctype html><html><head></head><body><header><img alt="Acme logo"></header><section id="contact"><form onsubmit="alert(1)"><input><button>Send</button></form></section><style data-sitesnap-preview>.old{}</style><script data-sitesnap-open-tracker>old()</script></body></html>';
+      return '<!doctype html><html><head></head><body><header><img alt="Acme logo"></header><section id="contact"><h3>Request a Free Quote</h3><div data-sitesnap-map><iframe src="https://www.google.com/maps?q=Acme&output=embed"></iframe></div></section><style data-sitesnap-preview>.old{}</style><script data-sitesnap-open-tracker>old()</script></body></html>';
     }
   });
   const result = await repairFirstSketchTest(deps, {
@@ -119,6 +119,7 @@ test("04 repair mode safely republishes an existing preview without Airtable wri
   assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
   assert.doesNotMatch(deps.calls.deployments[0], /old\(\)/);
   assert.match(deps.calls.deployments[0], /data-sitesnap-map/);
+  assert.match(deps.calls.deployments[0], />Find Us<\/h3>/);
   assert.match(deps.calls.deployments[0], /sitesnap-brand-header/);
 });
 
