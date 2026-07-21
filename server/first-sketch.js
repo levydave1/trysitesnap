@@ -171,6 +171,12 @@ function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
     .replace(/\bfont-700\b/g, "font-bold")
     .replace(/\bcol-span-2\s+md:col-span-1\b/g, "md:col-span-1")
     .replace(/\[ICON_([A-Z0-9_]+)\]/g, (_match, token) => `<i data-lucide="${lucideIconName(token)}" aria-hidden="true"></i>`);
+  const verifiedClaims = [facts.about, facts.description].map(text).filter(Boolean).join(" ");
+  if (!/\blicen[cs]ed\b/i.test(verifiedClaims) || !/\binsured\b/i.test(verifiedClaims)) {
+    html = html.replace(/\b(?:properly\s+)?licensed\s*(?:&(?:amp;)?|and)\s*insured(?:\s+(?:Georgia\s+)?contractor)?\b/gi, (claim) => (
+      /contractor/i.test(claim) ? "professional roofing contractor" : "Professional Service"
+    ));
+  }
   if (/\bdata-lucide\s*=/i.test(html)) {
     if (!/<script\b[^>]*src=["'][^"']*lucide[^"']*["']/i.test(html)) {
       html = html.replace(/<\/head>/i, '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script></head>');
