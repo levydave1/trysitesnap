@@ -179,6 +179,22 @@ test("04 preserves the Make service/mobile rules and gives both generation stage
   assert.match(prompts.audit.system, /two per row on mobile/i);
 });
 
+test("04 deterministically replaces icon placeholders and repairs mobile overflow classes", async () => {
+  const deps = dependencies();
+  const generated = '<!doctype html><html><head></head><body><section id="services"><div class="overflow-x-auto"><article class="min-w-85vw"><div class="flex"><span>[ICON_STORM]</span><h3 class="font-700">Storm Repair</h3></div></article></div></section></body></html>';
+  deps.sketchHtml.generate = async () => generated;
+  deps.sketchAudit.generate = async () => generated;
+  await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  const html = deps.calls.deployments[0];
+  assert.doesNotMatch(html, /\[ICON_STORM\]/);
+  assert.match(html, /data-lucide="cloud-lightning"/);
+  assert.match(html, /lucide@latest/);
+  assert.match(html, /lucide\.createIcons\(\)/);
+  assert.match(html, /min-w-\[85vw\]/);
+  assert.doesNotMatch(html, /\bfont-700\b/);
+  assert.match(html, /html,body\{max-width:100%;overflow-x:hidden\}/);
+});
+
 test("04 still deploys when every optional research and AI provider fails", async () => {
   const deps = dependencies();
   deps.tavily.search = async () => { throw new Error("tavily unavailable"); };

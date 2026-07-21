@@ -103,6 +103,20 @@ function regexEscape(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function lucideIconName(token) {
+  const key = String(token || "").toUpperCase();
+  const icons = {
+    PHONE: "phone", LOCATION: "map-pin", MAP_PIN: "map-pin", MAP: "map-pin",
+    STAR: "star", CHECK: "check", SERVICE: "list-checks", HEART: "heart",
+    CLOCK: "clock", MAIL: "mail", USER: "user", SHIELD: "shield-check",
+    HOME: "house", HOUSE: "house", BUILDING: "building-2", CALENDAR: "calendar-check",
+    TRUCK: "truck", TOOL: "wrench", FOOD: "utensils", PET: "paw-print",
+    BEAUTY: "sparkles", STORM: "cloud-lightning", ALERT: "triangle-alert",
+    DROPLET: "droplets", SPARKLE: "sparkles", SPARKLES: "sparkles"
+  };
+  return icons[key] || "circle-check";
+}
+
 function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
   const phone = localUsPhone(facts.phone);
   const location = text(facts.address) || [facts.city, facts.state].filter(Boolean).join(", ");
@@ -151,6 +165,18 @@ function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
     html = html
       .replace(new RegExp(`<a\\b[^>]*href\\s*=\\s*["']mailto:${escaped}[^"']*["'][^>]*>[\\s\\S]*?<\\/a>`, "gi"), "")
       .replace(new RegExp(escaped, "gi"), "");
+  }
+  html = html
+    .replace(/\bmin-w-85vw\b/g, "min-w-[85vw]")
+    .replace(/\bfont-700\b/g, "font-bold")
+    .replace(/\[ICON_([A-Z0-9_]+)\]/g, (_match, token) => `<i data-lucide="${lucideIconName(token)}" aria-hidden="true"></i>`);
+  if (/\bdata-lucide\s*=/i.test(html)) {
+    if (!/<script\b[^>]*src=["'][^"']*lucide[^"']*["']/i.test(html)) {
+      html = html.replace(/<\/head>/i, '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script></head>');
+    }
+    if (!/lucide\.createIcons\s*\(/i.test(html)) {
+      html = html.replace(/<\/body>/i, '<script>if(window.lucide){lucide.createIcons();}</script></body>');
+    }
   }
   return html;
 }
@@ -376,6 +402,7 @@ ${anchorNavigation}`;
   void legacyBlock;
   const finalizeUrl = `https://trysitesnap.com/finalize?record_id=${encodeURIComponent(recordId)}&business_name=${encodeURIComponent(facts.businessName)}`;
   const block = `<style data-sitesnap-preview>
+html,body{max-width:100%;overflow-x:hidden}
 .sitesnap-brand-logo{object-fit:contain!important;border-radius:8px!important;background:rgba(255,255,255,.96)!important;padding:4px!important;filter:drop-shadow(0 1px 2px rgba(15,23,42,.2))}
 .sitesnap-brand-header{background:#f8fafc!important;color:#0f172a!important;border-bottom:1px solid #cbd5e1!important;box-shadow:0 8px 24px rgba(15,23,42,.12)!important}
 .sitesnap-brand-header nav a:not([href^="tel:"]){color:#1e293b!important}.sitesnap-brand-header button{color:#1e293b!important}
