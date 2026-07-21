@@ -181,7 +181,7 @@ test("04 preserves the Make service/mobile rules and gives both generation stage
 
 test("04 deterministically replaces icon placeholders and repairs mobile overflow classes", async () => {
   const deps = dependencies();
-  const generated = '<!doctype html><html><head></head><body><section id="services"><div class="overflow-x-auto"><article class="min-w-85vw"><div class="flex"><span>[ICON_STORM]</span><h3 class="font-700">Storm Repair</h3></div></article></div></section></body></html>';
+  const generated = '<!doctype html><html><head></head><body><section id="services"><div class="overflow-x-auto"><article class="min-w-85vw col-span-2 md:col-span-1"><div class="flex"><span>[ICON_STORM]</span><h3 class="font-700">Storm Repair</h3></div></article></div></section></body></html>';
   deps.sketchHtml.generate = async () => generated;
   deps.sketchAudit.generate = async () => generated;
   await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
@@ -191,6 +191,7 @@ test("04 deterministically replaces icon placeholders and repairs mobile overflo
   assert.match(html, /lucide@latest/);
   assert.match(html, /lucide\.createIcons\(\)/);
   assert.match(html, /min-w-\[85vw\]/);
+  assert.doesNotMatch(html, /\bcol-span-2\s+md:col-span-1\b/);
   assert.doesNotMatch(html, /\bfont-700\b/);
   assert.match(html, /html,body\{max-width:100%;overflow-x:hidden\}/);
 });

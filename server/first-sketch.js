@@ -169,6 +169,7 @@ function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
   html = html
     .replace(/\bmin-w-85vw\b/g, "min-w-[85vw]")
     .replace(/\bfont-700\b/g, "font-bold")
+    .replace(/\bcol-span-2\s+md:col-span-1\b/g, "md:col-span-1")
     .replace(/\[ICON_([A-Z0-9_]+)\]/g, (_match, token) => `<i data-lucide="${lucideIconName(token)}" aria-hidden="true"></i>`);
   if (/\bdata-lucide\s*=/i.test(html)) {
     if (!/<script\b[^>]*src=["'][^"']*lucide[^"']*["']/i.test(html)) {
