@@ -194,6 +194,7 @@ test("04 deterministically replaces icon placeholders and repairs mobile overflo
   assert.doesNotMatch(html, /\bcol-span-2\s+md:col-span-1\b/);
   assert.doesNotMatch(html, /\bfont-700\b/);
   assert.match(html, /html,body\{max-width:100%;overflow-x:hidden\}/);
+  assert.match(html, /sitesnap-brand-header>div>:first-child/);
 });
 
 test("04 still deploys when every optional research and AI provider fails", async () => {
