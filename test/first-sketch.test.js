@@ -41,7 +41,7 @@ test("04 test mode deploys and emails only the approved inbox without Airtable w
   const deps = dependencies();
   const result = await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
   assert.equal(result.recipient, "levy.dave.1@gmail.com");
-  assert.equal(result.auditUsed, false);
+  assert.equal(result.auditUsed, true);
   assert.equal(result.airtableUpdated, false);
   assert.equal(deps.calls.updates.length, 0);
   assert.equal(deps.calls.telegram.length, 0);
@@ -150,6 +150,33 @@ test("04 deploys a complete deterministic fallback when the repair remains trunc
   assert.match(deps.calls.deployments[0], /google\.com\/maps/);
   assert.match(deps.calls.deployments[0], /https:\/\/images\.example\/roof\.jpg/);
   assert.doesNotMatch(deps.calls.deployments[0], /<form\b/i);
+  assert.match(deps.calls.deployments[0], /class="compact-grid"/);
+  assert.match(deps.calls.deployments[0], /class="service-head"/);
+  assert.match(deps.calls.deployments[0], /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(deps.calls.deployments[0], /class="step-head"/);
+  assert.match(deps.calls.deployments[0], /aspect-ratio:4\/3/);
+});
+
+test("04 preserves the Make service/mobile rules and gives both generation stages enough output budget", async () => {
+  const prompts = {};
+  const deps = dependencies();
+  deps.sketchHtml.generate = async (prompt) => {
+    prompts.html = prompt;
+    return '<!doctype html><html><head></head><body><section id="services"></section></body></html>';
+  };
+  deps.sketchAudit.generate = async (prompt) => {
+    prompts.audit = prompt;
+    return '<!doctype html><html><head></head><body><section id="services"></section></body></html>';
+  };
+  await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  assert.equal(prompts.html.maxTokens, 10000);
+  assert.equal(prompts.audit.maxTokens, 10000);
+  assert.match(prompts.html.system, /icon \+ title on the same horizontal row/i);
+  assert.match(prompts.html.system, /two columns \(grid-cols-2\)/i);
+  assert.match(prompts.html.system, /visible foreground photo card/i);
+  assert.match(prompts.html.system, /exactly-three-step Process/i);
+  assert.match(prompts.audit.system, /SERVICES MOBILE QA IS MANDATORY/);
+  assert.match(prompts.audit.system, /two per row on mobile/i);
 });
 
 test("04 still deploys when every optional research and AI provider fails", async () => {
