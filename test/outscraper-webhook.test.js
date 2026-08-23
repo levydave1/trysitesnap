@@ -64,6 +64,22 @@ test("Airtable mapping preserves the fields used by scenarios 02 and 04", () => 
   assert.equal(fields["Source System"], "outscraper");
 });
 
+test("Airtable mapping converts Outscraper boolean strings to checkbox values", () => {
+  const fields = airtableFieldsForLead(lead({
+    verified: "true",
+    area_service: "false",
+    website_has_gtm: "1",
+    website_has_fb_pixel: "0",
+    "company_insights.is_public": "yes"
+  }));
+
+  assert.equal(fields.Verified, true);
+  assert.equal(fields["Area Service"], false);
+  assert.equal(fields["Website Has GTM"], true);
+  assert.equal(fields["Website Has FB Pixel"], false);
+  assert.equal(fields["Is Public Company"], true);
+});
+
 test("completed Outscraper request imports in Airtable batches and reports the count", async () => {
   const batches = [];
   const rows = Array.from({ length: 13 }, (_, index) => lead({

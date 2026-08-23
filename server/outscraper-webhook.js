@@ -2,6 +2,14 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 const acceptedEmailStatuses = new Set(["RECEIVING", "VALID", "DELIVERABLE"]);
 
+const booleanFields = new Set([
+  "verified",
+  "area_service",
+  "website_has_gtm",
+  "website_has_fb_pixel",
+  "company_insights.is_public"
+]);
+
 const fieldMap = Object.freeze({
   query: "Outscraper Query",
   name: "Business Name",
@@ -117,6 +125,15 @@ function stableValue(value) {
   return JSON.stringify(value);
 }
 
+function airtableValue(source, value) {
+  if (!booleanFields.has(source)) return stableValue(value);
+  if (typeof value === "boolean") return value;
+  const normalized = text(value).toLowerCase();
+  if (["true", "1", "yes"].includes(normalized)) return true;
+  if (["false", "0", "no"].includes(normalized)) return false;
+  return undefined;
+}
+
 function walkResults(value, output) {
   if (Array.isArray(value)) {
     for (const item of value) walkResults(item, output);
@@ -198,7 +215,7 @@ export function airtableFieldsForLead(row, { runName, now = new Date() } = {}) {
     "Raw Row JSON": JSON.stringify(row)
   };
   for (const [source, target] of Object.entries(fieldMap)) {
-    const value = stableValue(row[source]);
+    const value = airtableValue(source, row[source]);
     if (value !== undefined) fields[target] = value;
   }
   return fields;
