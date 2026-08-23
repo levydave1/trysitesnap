@@ -129,7 +129,9 @@ function airtableValue(source, value) {
     "company_insights.is_public",
     "cid",
     "reviews_id",
-    "postal_code"
+    "postal_code",
+    "latitude",
+    "longitude"
   ].includes(source) && typeof value === "number") {
     return String(value);
   }
