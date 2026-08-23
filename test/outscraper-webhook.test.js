@@ -64,7 +64,7 @@ test("Airtable mapping preserves the fields used by scenarios 02 and 04", () => 
   assert.equal(fields["Source System"], "outscraper");
 });
 
-test("Airtable mapping keeps numeric flags and preserves incompatible verified data in raw JSON", () => {
+test("Airtable mapping keeps numeric flags and stringifies Airtable text booleans", () => {
   const fields = airtableFieldsForLead(lead({
     verified: true,
     area_service: false,
@@ -73,8 +73,8 @@ test("Airtable mapping keeps numeric flags and preserves incompatible verified d
     "company_insights.is_public": 1
   }));
 
-  assert.equal("Verified" in fields, false);
-  assert.equal(fields["Area Service"], false);
+  assert.equal(fields.Verified, "true");
+  assert.equal(fields["Area Service"], "false");
   assert.equal(fields["Website Has GTM"], 1);
   assert.equal(fields["Website Has FB Pixel"], 0);
   assert.equal(fields["Is Public Company"], 1);

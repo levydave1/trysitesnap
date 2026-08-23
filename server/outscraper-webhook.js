@@ -10,6 +10,7 @@ const fieldMap = Object.freeze({
   type: "Type",
   subtypes: "Subtypes",
   business_status: "Business Status",
+  verified: "Verified",
   area_service: "Area Service",
   email: "Email",
   "email.emails_validator.status": "Email Validation Status",
@@ -116,6 +117,13 @@ function stableValue(value) {
   return JSON.stringify(value);
 }
 
+function airtableValue(source, value) {
+  if (["verified", "area_service"].includes(source) && typeof value === "boolean") {
+    return String(value);
+  }
+  return stableValue(value);
+}
+
 function walkResults(value, output) {
   if (Array.isArray(value)) {
     for (const item of value) walkResults(item, output);
@@ -197,7 +205,7 @@ export function airtableFieldsForLead(row, { runName, now = new Date() } = {}) {
     "Raw Row JSON": JSON.stringify(row)
   };
   for (const [source, target] of Object.entries(fieldMap)) {
-    const value = stableValue(row[source]);
+    const value = airtableValue(source, row[source]);
     if (value !== undefined) fields[target] = value;
   }
   return fields;
