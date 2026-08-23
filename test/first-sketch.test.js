@@ -17,7 +17,9 @@ function dependencies(overrides = {}) {
       async getRecordFromTable() {
         return { id: "recNOPQRSTUVWXYZ1", fields: {
           "Business Name": "Acme Roofing", Category: "Roofing", Phone: "2125550199",
-          Address: "1 Main St", City: "New York", State: "NY", Email: "customer@example.com"
+          Address: "1 Main St", City: "New York", State: "NY", Email: "customer@example.com",
+          "Company Facebook": "https://facebook.com/acme-roofing",
+          "Booking Appointment Link": "https://calendly.com/acme-roofing"
         } };
       },
       async updateRecord(id, fields) { calls.updates.push({ id, fields }); }
@@ -160,6 +162,10 @@ test("04 deploys a complete deterministic fallback when the repair remains trunc
 test("04 preserves the Make service/mobile rules and gives both generation stages enough output budget", async () => {
   const prompts = {};
   const deps = dependencies();
+  deps.sketchBrief.generate = async (prompt) => {
+    prompts.brief = prompt;
+    return JSON.stringify({ BUSINESS_NAME: "Acme Roofing" });
+  };
   deps.sketchHtml.generate = async (prompt) => {
     prompts.html = prompt;
     return '<!doctype html><html><head></head><body><section id="services"></section></body></html>';
@@ -177,6 +183,12 @@ test("04 preserves the Make service/mobile rules and gives both generation stage
   assert.match(prompts.html.system, /exactly-three-step Process/i);
   assert.match(prompts.audit.system, /SERVICES MOBILE QA IS MANDATORY/);
   assert.match(prompts.audit.system, /two per row on mobile/i);
+  assert.match(prompts.audit.system, /accessible left\/right mobile controls/i);
+  assert.match(prompts.brief.system, /BOLD_INDUSTRIAL/);
+  assert.match(prompts.brief.system, /editorial_hero/);
+  assert.match(prompts.brief.system, /rounded_corner_photos/);
+  assert.match(prompts.html.user, /https:\/\/facebook\.com\/acme-roofing/);
+  assert.match(prompts.html.user, /https:\/\/calendly\.com\/acme-roofing/);
 });
 
 test("04 deterministically replaces icon placeholders and repairs mobile overflow classes", async () => {
@@ -197,6 +209,9 @@ test("04 deterministically replaces icon placeholders and repairs mobile overflo
   assert.match(html, /Professional Service/);
   assert.match(html, /html,body\{max-width:100%;overflow-x:hidden\}/);
   assert.match(html, /sitesnap-brand-header>div>:first-child/);
+  assert.match(html, /sitesnap-compact-grid/);
+  assert.match(html, /sitesnap-service-head/);
+  assert.match(html, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
 });
 
 test("04 still deploys when every optional research and AI provider fails", async () => {
