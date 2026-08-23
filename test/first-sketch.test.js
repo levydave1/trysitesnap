@@ -232,6 +232,7 @@ test("04 deterministically replaces icon placeholders and repairs mobile overflo
   assert.match(html, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
   assert.match(html, /querySelectorAll\("article,div,li"\)/);
   assert.match(html, /data-sitesnap-extra-service/);
+  assert.match(html, /data-sitesnap-extra-service="hidden"\]\{display:none!important\}/);
   assert.match(html, /sitesnapImageRepair/);
   assert.match(html, /naturalWidth>=240/);
 });
