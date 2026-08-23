@@ -119,7 +119,9 @@ export const config = Object.freeze({
     limit: 1,
     language: "en",
     region: "US",
-    timeoutMs: 25000
+    timeoutMs: 25000,
+    dailyMinLeads: 100,
+    dailyMaxLeads: 120
   },
   stripe: {
     webhookToleranceSeconds: 300,

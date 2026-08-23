@@ -8,6 +8,9 @@
     "api/b066e90394264c16ad9ee7e09d682844-website-leads.js": {
       "maxDuration": 60
     },
+    "api/6f09f89b1e644c79ae3aa7210f8f2ff7-outscraper-results.js": {
+      "maxDuration": 300
+    },
     "api/02-export-email-to-instantly.js": {
       "maxDuration": 300
     },

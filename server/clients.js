@@ -150,6 +150,7 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
         records.push(...(Array.isArray(payload.records) ? payload.records : []));
         offset = payload.offset || "";
         if (options.maxRecords && records.length >= options.maxRecords) break;
+        if (offset) await new Promise((resolve) => setTimeout(resolve, 225));
       } while (offset);
       return options.maxRecords ? records.slice(0, options.maxRecords) : records;
     },
@@ -198,6 +199,32 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
         );
       }
       return payload;
+    },
+    async createRecords(targetTableId, records) {
+      if (!Array.isArray(records) || records.length < 1 || records.length > 10) {
+        throw new Error("Airtable batch must contain between 1 and 10 records");
+      }
+      const response = await fetchImpl(
+        `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(targetTableId)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ records: records.map((fields) => ({ fields })), typecast: false }),
+          signal: AbortSignal.timeout(timeoutMs)
+        }
+      );
+      const payload = await readJson(response);
+      if (!response.ok) {
+        throw upstreamError(
+          "airtable",
+          response.status,
+          payload.error?.message || payload.error?.type || payload.raw || ""
+        );
+      }
+      return Array.isArray(payload.records) ? payload.records : [];
     }
   };
 }
@@ -232,6 +259,29 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
         );
       }
       return firstOutscraperPlace(payload);
+    },
+    async getRequestResults(resultsLocation) {
+      const url = new URL(resultsLocation);
+      const allowedHosts = new Set(["api.outscraper.cloud", "api.outscraper.com"]);
+      if (url.protocol !== "https:" || !allowedHosts.has(url.hostname)) {
+        const error = new Error("Invalid Outscraper results URL");
+        error.status = 400;
+        throw error;
+      }
+      url.searchParams.set("flat", "true");
+      const response = await fetchImpl(url, {
+        headers: { "X-API-KEY": apiKey },
+        signal: AbortSignal.timeout(Math.max(timeoutMs, 60000))
+      });
+      const payload = await readJson(response);
+      if (!response.ok) {
+        throw upstreamError(
+          "outscraper",
+          response.status,
+          payload.errorMessage || payload.error?.message || payload.error || payload.raw || ""
+        );
+      }
+      return payload;
     }
   };
 }
