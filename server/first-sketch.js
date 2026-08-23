@@ -607,7 +607,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     claudeOutput = stripHtml(await runStage("html", timings, () => sketchHtml.generate({
       system: htmlSystem(),
       user: `ORIGINAL_JSON / WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nPEXELS_IMAGES_AND_BUSINESS_RESEARCH_IMAGES:\n${JSON.stringify(images)}\n\nGenerate the complete website and preserve every required section and mobile rule. If length becomes a concern, shorten copy and decorative details before omitting any required structure. Finish the document through </html>.`,
-      maxTokens: 10000,
+      maxTokens: 16000,
       temperature: 0.4
     })));
   } catch {
@@ -615,6 +615,10 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   }
   let geminiOutput = claudeOutput;
   let structureError = htmlStructureError(geminiOutput);
+  const sourceStructureError = structureError;
+  const sourceHtmlLength = claudeOutput.length;
+  let auditStructureError = "";
+  let auditHtmlLength = 0;
   let auditUsed = false;
   let fallbackUsed = false;
   let repairProviderFailed = false;
@@ -624,10 +628,11 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
       const auditedOutput = stripHtml(await runStage("html_audit", timings, () => sketchAudit.generate({
         system: auditSystem(),
         user: `CLAUDE_HTML:\n${claudeOutput}\n\nORIGINAL_JSON / WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nPEXELS_ARRAY_AND_BUSINESS_PICS:\n${JSON.stringify(images)}\n\nPerform the full minimal QA pass. The source structure status is: ${structureError || "complete"}. Preserve the design, repair every listed desktop/mobile requirement, and return the complete final HTML through </html>.`,
-        maxTokens: 10000,
+        maxTokens: 16000,
         temperature: 0.1
       })));
-      const auditStructureError = htmlStructureError(auditedOutput);
+      auditHtmlLength = auditedOutput.length;
+      auditStructureError = htmlStructureError(auditedOutput);
       if (!auditStructureError) {
         geminiOutput = auditedOutput;
         structureError = "";
@@ -707,6 +712,12 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     briefFallbackUsed,
     htmlProviderFailed,
     repairProviderFailed,
+    ...(options.testMode ? {
+      sourceStructureError,
+      auditStructureError,
+      sourceHtmlLength,
+      auditHtmlLength
+    } : {}),
     timings,
     airtableUpdated: !options.testMode,
     notificationSent: false

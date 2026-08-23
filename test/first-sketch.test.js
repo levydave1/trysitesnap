@@ -148,6 +148,10 @@ test("04 deploys a complete deterministic fallback when the repair remains trunc
   const result = await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
   assert.equal(result.auditUsed, true);
   assert.equal(result.fallbackUsed, true);
+  assert.equal(result.sourceStructureError, "missing closing body tag");
+  assert.equal(result.auditStructureError, "missing closing body tag");
+  assert.ok(result.sourceHtmlLength > 0);
+  assert.ok(result.auditHtmlLength > 0);
   assert.match(deps.calls.deployments[0], /<!doctype html>/i);
   assert.match(deps.calls.deployments[0], /google\.com\/maps/);
   assert.match(deps.calls.deployments[0], /https:\/\/images\.example\/roof\.jpg/);
@@ -175,8 +179,8 @@ test("04 preserves the Make service/mobile rules and gives both generation stage
     return '<!doctype html><html><head></head><body><section id="services"></section></body></html>';
   };
   await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
-  assert.equal(prompts.html.maxTokens, 10000);
-  assert.equal(prompts.audit.maxTokens, 10000);
+  assert.equal(prompts.html.maxTokens, 16000);
+  assert.equal(prompts.audit.maxTokens, 16000);
   assert.match(prompts.html.system, /icon \+ title on the same horizontal row/i);
   assert.match(prompts.html.system, /two columns \(grid-cols-2\)/i);
   assert.match(prompts.html.system, /visible foreground photo card/i);
