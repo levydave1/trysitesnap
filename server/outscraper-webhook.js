@@ -246,7 +246,8 @@ export async function processOutscraperWebhook(event, dependencies, options = {}
   for (let index = 0; index < records.length; index += 10) {
     created.push(...await dependencies.airtable.createRecords(
       dependencies.config.airtable.rawOutscraperTableId,
-      records.slice(index, index + 10)
+      records.slice(index, index + 10),
+      { typecast: true }
     ));
     if (index + 10 < records.length) await new Promise((resolve) => setTimeout(resolve, 225));
   }

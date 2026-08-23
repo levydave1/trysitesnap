@@ -200,7 +200,7 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
       }
       return payload;
     },
-    async createRecords(targetTableId, records) {
+    async createRecords(targetTableId, records, options = {}) {
       if (!Array.isArray(records) || records.length < 1 || records.length > 10) {
         throw new Error("Airtable batch must contain between 1 and 10 records");
       }
@@ -212,7 +212,10 @@ export function createAirtableClient({ baseId, tableId, accessToken, timeoutMs, 
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({ records: records.map((fields) => ({ fields })), typecast: false }),
+          body: JSON.stringify({
+            records: records.map((fields) => ({ fields })),
+            typecast: Boolean(options.typecast)
+          }),
           signal: AbortSignal.timeout(timeoutMs)
         }
       );

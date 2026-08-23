@@ -111,8 +111,9 @@ test("completed Outscraper request imports in Airtable batches and reports the c
     outscraper: { async getRequestResults() { return { data: rows }; } },
     airtable: {
       async listRecords() { return []; },
-      async createRecords(tableId, fields) {
+      async createRecords(tableId, fields, options) {
         assert.equal(tableId, config.airtable.rawOutscraperTableId);
+        assert.deepEqual(options, { typecast: true });
         batches.push(fields);
         return fields.map((_, index) => ({ id: `rec-${batches.length}-${index}` }));
       }
