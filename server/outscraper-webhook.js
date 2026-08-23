@@ -128,7 +128,8 @@ function airtableValue(source, value) {
     "website_has_fb_pixel",
     "company_insights.is_public",
     "cid",
-    "reviews_id"
+    "reviews_id",
+    "postal_code"
   ].includes(source) && typeof value === "number") {
     return String(value);
   }

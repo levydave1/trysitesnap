@@ -74,6 +74,7 @@ test("Airtable mapping keeps numeric flags and stringifies Airtable text boolean
     company_phone: 18656610178,
     contact_phone: 12025550123,
     reviews_id: 9093339701000000000,
+    postal_code: 37931,
     place_id: "safe-place-id"
   }));
 
@@ -85,6 +86,7 @@ test("Airtable mapping keeps numeric flags and stringifies Airtable text boolean
   assert.equal(fields["Company Phone"], "18656610178");
   assert.equal(fields["Contact Phone"], "12025550123");
   assert.equal(typeof fields["Reviews ID"], "string");
+  assert.equal(fields["Postal Code"], "37931");
   assert.equal(fields["Dedup Key"], "safe-place-id");
   assert.equal(JSON.parse(fields["Raw Row JSON"]).verified, true);
 });
