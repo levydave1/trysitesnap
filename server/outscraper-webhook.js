@@ -121,7 +121,15 @@ function airtableValue(source, value) {
   if (["verified", "area_service"].includes(source) && typeof value === "boolean") {
     return String(value);
   }
-  if (["company_phone", "contact_phone"].includes(source) && typeof value === "number") {
+  if ([
+    "company_phone",
+    "contact_phone",
+    "website_has_gtm",
+    "website_has_fb_pixel",
+    "company_insights.is_public",
+    "cid",
+    "reviews_id"
+  ].includes(source) && typeof value === "number") {
     return String(value);
   }
   return stableValue(value);
@@ -181,7 +189,7 @@ export function selectLeadRows(payload, existingRecords = [], maxLeads = 120) {
     const email = normalizedEmail(row.email);
     const status = text(row["email.emails_validator.status"]).toUpperCase();
     const businessStatus = text(row.business_status).toUpperCase();
-    const businessId = text(row.cid || row.google_id || row.place_id);
+    const businessId = text(row.place_id || row.google_id || row.cid);
     if (!text(row.name) || !text(row.website) || !email || !acceptedEmailStatuses.has(status)) continue;
     if (businessStatus && businessStatus !== "OPERATIONAL") continue;
     if (existingEmails.has(email) || runEmails.has(email)) continue;
@@ -204,7 +212,7 @@ export function airtableFieldsForLead(row, { runName, now = new Date() } = {}) {
     "Source System": "outscraper",
     "Source Run Name": text(runName) || "Outscraper daily",
     "Last Seen At": now.toISOString(),
-    "Dedup Key": text(row.cid || row.google_id || row.place_id || normalizedEmail(row.email)),
+    "Dedup Key": text(row.place_id || row.google_id || row.cid || normalizedEmail(row.email)),
     "Raw Row JSON": JSON.stringify(row)
   };
   for (const [source, target] of Object.entries(fieldMap)) {
