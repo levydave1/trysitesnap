@@ -73,6 +73,30 @@ test("00 Outscraper client uses a synchronous one-result search", async () => {
   assert.equal(request.options.headers["X-API-KEY"], "secret");
 });
 
+test("Outscraper result retrieval accepts the dashboard webhook host and rejects other hosts", async () => {
+  let request;
+  const client = createOutscraperClient({
+    apiKey: "secret",
+    endpoint: "https://api.outscraper.cloud/google-maps-search",
+    timeoutMs: 1000,
+    fetchImpl: async (url, options) => {
+      request = { url: String(url), options };
+      return new Response(JSON.stringify({ data: [{ name: "Webhook result" }] }), { status: 200 });
+    }
+  });
+
+  assert.deepEqual(
+    await client.getRequestResults("https://api.app.outscraper.com/requests/ui-task-id"),
+    { data: [{ name: "Webhook result" }] }
+  );
+  assert.match(request.url, /^https:\/\/api\.app\.outscraper\.com\/requests\/ui-task-id\?flat=true$/);
+  assert.equal(request.options.headers["X-API-KEY"], "secret");
+  await assert.rejects(
+    client.getRequestResults("https://api.app.outscraper.com.evil.example/requests/ui-task-id"),
+    /Invalid Outscraper results URL/
+  );
+});
+
 test("Stripe signatures are verified against the untouched raw body", () => {
   const raw = Buffer.from(JSON.stringify(stripeEvent()));
   const timestamp = 1_700_000_000;

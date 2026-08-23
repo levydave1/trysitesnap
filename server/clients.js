@@ -262,7 +262,11 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
     },
     async getRequestResults(resultsLocation) {
       const url = new URL(resultsLocation);
-      const allowedHosts = new Set(["api.outscraper.cloud", "api.outscraper.com"]);
+      const allowedHosts = new Set([
+        "api.outscraper.cloud",
+        "api.outscraper.com",
+        "api.app.outscraper.com"
+      ]);
       if (url.protocol !== "https:" || !allowedHosts.has(url.hostname)) {
         const error = new Error("Invalid Outscraper results URL");
         error.status = 400;
