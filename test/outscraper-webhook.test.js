@@ -64,20 +64,21 @@ test("Airtable mapping preserves the fields used by scenarios 02 and 04", () => 
   assert.equal(fields["Source System"], "outscraper");
 });
 
-test("Airtable mapping converts Outscraper boolean strings to checkbox values", () => {
+test("Airtable mapping keeps numeric flags and preserves incompatible verified data in raw JSON", () => {
   const fields = airtableFieldsForLead(lead({
-    verified: "true",
-    area_service: "false",
-    website_has_gtm: "1",
-    website_has_fb_pixel: "0",
-    "company_insights.is_public": "yes"
+    verified: true,
+    area_service: false,
+    website_has_gtm: 1,
+    website_has_fb_pixel: 0,
+    "company_insights.is_public": 1
   }));
 
-  assert.equal(fields.Verified, true);
+  assert.equal("Verified" in fields, false);
   assert.equal(fields["Area Service"], false);
-  assert.equal(fields["Website Has GTM"], true);
-  assert.equal(fields["Website Has FB Pixel"], false);
-  assert.equal(fields["Is Public Company"], true);
+  assert.equal(fields["Website Has GTM"], 1);
+  assert.equal(fields["Website Has FB Pixel"], 0);
+  assert.equal(fields["Is Public Company"], 1);
+  assert.equal(JSON.parse(fields["Raw Row JSON"]).verified, true);
 });
 
 test("completed Outscraper request imports in Airtable batches and reports the count", async () => {
