@@ -65,6 +65,23 @@ function htmlStructureError(html) {
   return "";
 }
 
+function completeAuditedDocument(value) {
+  const html = stripHtml(value).trim();
+  const error = htmlStructureError(html);
+  if (!/missing closing (?:body|html) tag/.test(error)) return html;
+  const sectionCount = (html.match(/<section\b/gi) || []).length;
+  const hasRequiredStructure = /<header\b/i.test(html)
+    && /<footer\b/i.test(html)
+    && /id=["']services["']/i.test(html)
+    && /id=["']contact["']/i.test(html)
+    && sectionCount >= 5;
+  if (!hasRequiredStructure) return html;
+  let completed = html;
+  if (!/<\/body>/i.test(completed)) completed += "\n</body>";
+  if (!/<\/html>/i.test(completed)) completed += "\n</html>";
+  return htmlStructureError(completed) ? html : completed;
+}
+
 function safeJson(value) {
   const normalized = text(value).replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   JSON.parse(normalized);
@@ -176,6 +193,16 @@ function normalizeGeneratedHtml(rawHtml, facts, suppressedEmails = []) {
     html = html.replace(/\b(?:properly\s+)?licensed\s*(?:&(?:amp;)?|and)\s*insured(?:\s+(?:Georgia\s+)?contractor)?\b/gi, (claim) => (
       /contractor/i.test(claim) ? "professional roofing contractor" : "Professional Service"
     ));
+  }
+  if (!/\bfree\s+(?:assessment|estimate|consultation)\b/i.test(verifiedClaims)) {
+    html = html
+      .replace(/\bfree\s+(assessment|estimate|consultation)\b/gi, "$1")
+      .replace(/\s*(?:—|-)?\s*(?:at no cost|completely free)\b/gi, "");
+  }
+  if (!/\b(?:guarantee|total satisfaction)\b/i.test(verifiedClaims)) {
+    html = html
+      .replace(/\bguaranteed\s+(?:results?|outcomes?|satisfaction)\b/gi, "quality-focused service")
+      .replace(/\b(?:ensure|guarantee)\s+(?:your\s+)?total satisfaction\b/gi, "follow up after the service");
   }
   if (/\bdata-lucide\s*=/i.test(html)) {
     if (!/<script\b[^>]*src=["'][^"']*lucide[^"']*["']/i.test(html)) {
@@ -445,7 +472,7 @@ footer:not([data-sitesnap-footer]){background:#062f26!important;color:#f8fafc!im
 .sitesnap-design-notes-overlay[data-open="true"]{display:flex}.sitesnap-design-notes-card{position:relative;width:min(620px,100%);max-height:85vh;overflow:auto;border-radius:24px;background:#fff;padding:32px;color:#0f172a;box-shadow:0 25px 70px rgba(0,0,0,.35);font:500 16px/1.65 Inter,system-ui,sans-serif}.sitesnap-design-notes-close{position:absolute;right:14px;top:10px;border:0;background:transparent;font-size:28px;cursor:pointer;min-width:44px;min-height:44px}
 #finalize-section{clear:both;padding:70px 20px;border-top:5px solid #facc15;background:#0070f3;text-align:center;font-family:Inter,system-ui,sans-serif}#finalize-section h2{margin:0 0 18px;color:#facc15;font-size:clamp(32px,6vw,48px);font-weight:900}#finalize-section p{max-width:800px;margin:0 auto 30px;color:#fff;font-size:18px;line-height:1.65}#finalize-section a{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border-radius:999px;background:#facc15;color:#0754b8;padding:14px 28px;text-decoration:none;font-weight:900}
 .sitesnap-reveal{opacity:0;transform:translateY(28px);transition:opacity .9s ease,transform .9s ease}.sitesnap-reveal.sitesnap-visible{opacity:1;transform:none}.sitesnap-hero-image{animation:sitesnap-hero-zoom 12s ease-in-out infinite alternate}@keyframes sitesnap-hero-zoom{from{transform:scale(1)}to{transform:scale(1.045)}}
-@media(max-width:480px){.sitesnap-preview-cta{right:16px;bottom:16px}.sitesnap-design-notes-card{padding:28px 22px}#finalize-section{padding:56px 18px}}
+@media(max-width:480px){.sitesnap-preview-cta{right:16px;bottom:16px;width:50px;height:50px;min-height:50px;padding:0;font-size:0}.sitesnap-preview-cta:before{content:"💡";font-size:21px;line-height:1}.sitesnap-design-notes-card{padding:28px 22px}#finalize-section{padding:56px 18px}}
 @media(prefers-reduced-motion:reduce){.sitesnap-reveal{opacity:1;transform:none;transition:none}.sitesnap-hero-image{animation:none!important}}
 </style>
 ${contact}
@@ -619,21 +646,25 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   const sourceHtmlLength = claudeOutput.length;
   let auditStructureError = "";
   let auditHtmlLength = 0;
+  let auditClosingTagsRecovered = false;
   let auditUsed = false;
   let fallbackUsed = false;
   let repairProviderFailed = false;
   if (!htmlProviderFailed && claudeOutput) {
     auditUsed = true;
     try {
-      const auditedOutput = stripHtml(await runStage("html_audit", timings, () => sketchAudit.generate({
+      const auditedRawOutput = stripHtml(await runStage("html_audit", timings, () => sketchAudit.generate({
         system: auditSystem(),
         user: `CLAUDE_HTML:\n${claudeOutput}\n\nORIGINAL_JSON / WEBSITE_BRIEF:\n${brief}\n\nVERIFIED_CRM:\n${JSON.stringify(siteFacts)}\n\nPEXELS_ARRAY_AND_BUSINESS_PICS:\n${JSON.stringify(images)}\n\nPerform the full minimal QA pass. The source structure status is: ${structureError || "complete"}. Preserve the design, repair every listed desktop/mobile requirement, and return the complete final HTML through </html>.`,
-        maxTokens: 16000,
+        maxTokens: 24000,
         temperature: 0.1
       })));
-      auditHtmlLength = auditedOutput.length;
-      auditStructureError = htmlStructureError(auditedOutput);
-      if (!auditStructureError) {
+      auditHtmlLength = auditedRawOutput.length;
+      auditStructureError = htmlStructureError(auditedRawOutput);
+      const auditedOutput = completeAuditedDocument(auditedRawOutput);
+      const usableAuditError = htmlStructureError(auditedOutput);
+      auditClosingTagsRecovered = !usableAuditError && Boolean(auditStructureError);
+      if (!usableAuditError) {
         geminiOutput = auditedOutput;
         structureError = "";
       } else if (!structureError) {
@@ -641,7 +672,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
         structureError = "";
       } else {
         geminiOutput = auditedOutput;
-        structureError = auditStructureError;
+        structureError = usableAuditError;
       }
     } catch {
       repairProviderFailed = true;
@@ -715,6 +746,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     ...(options.testMode ? {
       sourceStructureError,
       auditStructureError,
+      auditClosingTagsRecovered,
       sourceHtmlLength,
       auditHtmlLength
     } : {}),

@@ -141,6 +141,18 @@ test("04 repairs a truncated model document once", async () => {
   assert.match(deps.calls.deployments[0], /data-sitesnap-preview/);
 });
 
+test("04 safely completes an audited document that only omitted final closing tags", async () => {
+  const deps = dependencies();
+  deps.sketchHtml.generate = async () => '<!doctype html><html><head></head><body><header></header><main><section id="hero"></section><section id="services"></section><section id="process"></section><section id="reviews"></section><section id="contact"></section></main><footer></footer></body></html>';
+  deps.sketchAudit.generate = async () => '<!doctype html><html><head></head><body><header></header><main><section id="hero"><h1>Audited design</h1></section><section id="services"></section><section id="process"></section><section id="reviews"></section><section id="contact"></section></main><footer></footer>';
+  const result = await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
+  assert.equal(result.fallbackUsed, false);
+  assert.equal(result.auditClosingTagsRecovered, true);
+  assert.equal(result.auditStructureError, "missing closing body tag");
+  assert.match(deps.calls.deployments[0], /Audited design/);
+  assert.match(deps.calls.deployments[0], /<\/body>\s*<\/html>/i);
+});
+
 test("04 deploys a complete deterministic fallback when the repair remains truncated", async () => {
   const deps = dependencies();
   deps.sketchHtml.generate = async () => "<html><body><main>truncated";
@@ -180,7 +192,7 @@ test("04 preserves the Make service/mobile rules and gives both generation stage
   };
   await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
   assert.equal(prompts.html.maxTokens, 16000);
-  assert.equal(prompts.audit.maxTokens, 16000);
+  assert.equal(prompts.audit.maxTokens, 24000);
   assert.match(prompts.html.system, /icon \+ title on the same horizontal row/i);
   assert.match(prompts.html.system, /two columns \(grid-cols-2\)/i);
   assert.match(prompts.html.system, /visible foreground photo card/i);
@@ -197,7 +209,7 @@ test("04 preserves the Make service/mobile rules and gives both generation stage
 
 test("04 deterministically replaces icon placeholders and repairs mobile overflow classes", async () => {
   const deps = dependencies();
-  const generated = '<!doctype html><html><head></head><body><header><strong>Licensed &amp; Insured</strong></header><section id="services"><div class="overflow-x-auto"><article class="min-w-85vw col-span-2 md:col-span-1"><div class="flex"><span>[ICON_STORM]</span><h3 class="font-700">Storm Repair</h3></div></article></div></section></body></html>';
+  const generated = '<!doctype html><html><head></head><body><header><strong>Licensed &amp; Insured</strong></header><section id="services"><div class="overflow-x-auto"><article class="min-w-85vw col-span-2 md:col-span-1"><div class="flex"><span>[ICON_STORM]</span><h3 class="font-700">Storm Repair</h3></div><p>Request a Free Assessment — at no cost.</p></article></div></section></body></html>';
   deps.sketchHtml.generate = async () => generated;
   deps.sketchAudit.generate = async () => generated;
   await runFirstSketch("recABCDEFGHIJKLMN", deps, { testMode: true });
@@ -210,6 +222,7 @@ test("04 deterministically replaces icon placeholders and repairs mobile overflo
   assert.doesNotMatch(html, /\bcol-span-2\s+md:col-span-1\b/);
   assert.doesNotMatch(html, /\bfont-700\b/);
   assert.doesNotMatch(html, /Licensed &amp; Insured/i);
+  assert.doesNotMatch(html, /Free Assessment|at no cost/i);
   assert.match(html, /Professional Service/);
   assert.match(html, /html,body\{max-width:100%;overflow-x:hidden\}/);
   assert.match(html, /sitesnap-brand-header>div>:first-child/);
