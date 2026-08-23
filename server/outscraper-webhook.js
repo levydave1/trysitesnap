@@ -121,6 +121,9 @@ function airtableValue(source, value) {
   if (["verified", "area_service"].includes(source) && typeof value === "boolean") {
     return String(value);
   }
+  if (["company_phone", "contact_phone"].includes(source) && typeof value === "number") {
+    return String(value);
+  }
   return stableValue(value);
 }
 

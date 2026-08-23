@@ -70,7 +70,9 @@ test("Airtable mapping keeps numeric flags and stringifies Airtable text boolean
     area_service: false,
     website_has_gtm: 1,
     website_has_fb_pixel: 0,
-    "company_insights.is_public": 1
+    "company_insights.is_public": 1,
+    company_phone: 18656610178,
+    contact_phone: 12025550123
   }));
 
   assert.equal(fields.Verified, "true");
@@ -78,6 +80,8 @@ test("Airtable mapping keeps numeric flags and stringifies Airtable text boolean
   assert.equal(fields["Website Has GTM"], 1);
   assert.equal(fields["Website Has FB Pixel"], 0);
   assert.equal(fields["Is Public Company"], 1);
+  assert.equal(fields["Company Phone"], "18656610178");
+  assert.equal(fields["Contact Phone"], "12025550123");
   assert.equal(JSON.parse(fields["Raw Row JSON"]).verified, true);
 });
 
