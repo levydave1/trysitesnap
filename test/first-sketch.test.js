@@ -200,6 +200,7 @@ test("04 preserves the Make service/mobile rules and gives both generation stage
   assert.match(prompts.audit.system, /SERVICES MOBILE QA IS MANDATORY/);
   assert.match(prompts.audit.system, /two per row on mobile/i);
   assert.match(prompts.audit.system, /accessible left\/right mobile controls/i);
+  assert.match(prompts.audit.system, /exactly 4 or exactly 6/i);
   assert.match(prompts.brief.system, /BOLD_INDUSTRIAL/);
   assert.match(prompts.brief.system, /editorial_hero/);
   assert.match(prompts.brief.system, /rounded_corner_photos/);
@@ -229,6 +230,10 @@ test("04 deterministically replaces icon placeholders and repairs mobile overflo
   assert.match(html, /sitesnap-compact-grid/);
   assert.match(html, /sitesnap-service-head/);
   assert.match(html, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+  assert.match(html, /querySelectorAll\("article,div,li"\)/);
+  assert.match(html, /data-sitesnap-extra-service/);
+  assert.match(html, /sitesnapImageRepair/);
+  assert.match(html, /naturalWidth>=240/);
 });
 
 test("04 still deploys when every optional research and AI provider fails", async () => {
