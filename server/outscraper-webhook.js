@@ -164,6 +164,7 @@ export function verifyOutscraperWebhook(rawBody, signatureHeader, apiKey) {
   if (candidate.length !== expected.length || !timingSafeEqual(candidate, expected)) {
     const error = new Error("Invalid Outscraper signature");
     error.status = 400;
+    error.code = "INVALID_OUTSCRAPER_SIGNATURE";
     throw error;
   }
   try {
@@ -171,8 +172,33 @@ export function verifyOutscraperWebhook(rawBody, signatureHeader, apiKey) {
   } catch {
     const error = new Error("Invalid Outscraper JSON payload");
     error.status = 400;
+    error.code = "INVALID_OUTSCRAPER_JSON";
     throw error;
   }
+}
+
+function normalizeWebhookEvent(input) {
+  let event = input;
+  while (Array.isArray(event) && event.length === 1) event = event[0];
+  if (!event || typeof event !== "object" || Array.isArray(event)) return {};
+  for (const key of ["event", "payload", "request"]) {
+    const nested = event[key];
+    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+      event = { ...event, ...nested };
+    }
+  }
+  return event;
+}
+
+function resultsLocation(event) {
+  return text(
+    event?.results_location
+    || event?.resultsLocation
+    || event?.result_location
+    || event?.resultLocation
+    || event?.result_url
+    || event?.resultUrl
+  );
 }
 
 export function selectLeadRows(payload, existingRecords = [], maxLeads = 120) {
@@ -226,15 +252,21 @@ export function airtableFieldsForLead(row, { runName, now = new Date() } = {}) {
 }
 
 export async function processOutscraperWebhook(event, dependencies, options = {}) {
+  event = normalizeWebhookEvent(event);
   const status = text(event?.status).toUpperCase();
   if (status !== "SUCCESS") return { success: true, skipped: true, reason: status || "MISSING_STATUS" };
-  if (!event?.results_location) {
+  const location = resultsLocation(event);
+  const embeddedResults = event?.data ?? event?.results;
+  if (!location && embeddedResults === undefined) {
     const error = new Error("Outscraper webhook has no results location");
-    error.status = 400;
+    error.status = 502;
+    error.code = "OUTSCRAPER_RESULTS_MISSING";
     throw error;
   }
   const maxLeads = Math.min(120, Math.max(1, Number(options.maxLeads || dependencies.config.outscraper.dailyMaxLeads || 120)));
-  const payload = await dependencies.outscraper.getRequestResults(event.results_location);
+  const payload = embeddedResults === undefined
+    ? await dependencies.outscraper.getRequestResults(location)
+    : { data: embeddedResults };
   const existing = await dependencies.airtable.listRecords(dependencies.config.airtable.rawOutscraperTableId, {
     fields: ["CID", "Google ID", "Place ID", "Email"]
   });

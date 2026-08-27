@@ -97,6 +97,28 @@ test("Outscraper result retrieval accepts the dashboard webhook host and rejects
   );
 });
 
+test("Outscraper result retrieval accepts provider API subdomains and retries without flat", async () => {
+  const requests = [];
+  const client = createOutscraperClient({
+    apiKey: "secret",
+    endpoint: "https://api.outscraper.cloud/google-maps-search",
+    timeoutMs: 1000,
+    fetchImpl: async (url) => {
+      requests.push(String(url));
+      if (requests.length === 1) return new Response(JSON.stringify({ error: "flat is unsupported" }), { status: 400 });
+      return new Response(JSON.stringify({ data: [{ name: "Recovered result" }] }), { status: 200 });
+    }
+  });
+
+  assert.deepEqual(
+    await client.getRequestResults("https://api.app.outscraper.cloud/requests/ui-task-id"),
+    { data: [{ name: "Recovered result" }] }
+  );
+  assert.equal(requests.length, 2);
+  assert.match(requests[0], /flat=true/);
+  assert.doesNotMatch(requests[1], /flat=/);
+});
+
 test("Stripe signatures are verified against the untouched raw body", () => {
   const raw = Buffer.from(JSON.stringify(stripeEvent()));
   const timestamp = 1_700_000_000;

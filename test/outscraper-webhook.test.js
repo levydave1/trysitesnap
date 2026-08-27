@@ -124,3 +124,28 @@ test("completed Outscraper request imports in Airtable batches and reports the c
   assert.equal(result.created, 13);
   assert.equal(result.belowTarget, true);
 });
+
+test("completed webhook accepts dashboard aliases and embedded results", async () => {
+  const created = [];
+  const result = await processOutscraperWebhook({
+    payload: {
+      id: "request-embedded",
+      status: "success",
+      results: [lead({ cid: "embedded-1", email: "embedded@example.com" })]
+    }
+  }, {
+    config,
+    outscraper: { async getRequestResults() { throw new Error("should not fetch embedded results"); } },
+    airtable: {
+      async listRecords() { return []; },
+      async createRecords(_tableId, fields) {
+        created.push(...fields);
+        return fields.map((_, index) => ({ id: `rec-${index}` }));
+      }
+    },
+    telegram: null
+  });
+
+  assert.equal(result.created, 1);
+  assert.equal(created[0].Email, "embedded@example.com");
+});

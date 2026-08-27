@@ -241,6 +241,21 @@ function firstOutscraperPlace(payload) {
 
 export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("OUTSCRAPER_API_KEY is not configured");
+  function validResultsHost(hostname) {
+    const host = String(hostname || "").toLowerCase();
+    return host === "api.outscraper.com"
+      || host === "api.outscraper.cloud"
+      || (host.startsWith("api.") && (host.endsWith(".outscraper.com") || host.endsWith(".outscraper.cloud")));
+  }
+
+  async function fetchOutscraperResults(url) {
+    const response = await fetchImpl(url, {
+      headers: { "X-API-KEY": apiKey },
+      signal: AbortSignal.timeout(Math.max(timeoutMs, 60000))
+    });
+    return { response, payload: await readJson(response) };
+  }
+
   return {
     async searchPlace({ query, limit = 1, language = "en", region = "US" }) {
       const url = new URL(endpoint);
@@ -265,22 +280,23 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
     },
     async getRequestResults(resultsLocation) {
       const url = new URL(resultsLocation);
-      const allowedHosts = new Set([
-        "api.outscraper.cloud",
-        "api.outscraper.com",
-        "api.app.outscraper.com"
-      ]);
-      if (url.protocol !== "https:" || !allowedHosts.has(url.hostname)) {
+      if (url.protocol !== "https:" || !validResultsHost(url.hostname)) {
         const error = new Error("Invalid Outscraper results URL");
-        error.status = 400;
+        error.status = 502;
+        error.code = "OUTSCRAPER_RESULTS_URL_REJECTED";
         throw error;
       }
+
+      const originalUrl = new URL(url);
       url.searchParams.set("flat", "true");
-      const response = await fetchImpl(url, {
-        headers: { "X-API-KEY": apiKey },
-        signal: AbortSignal.timeout(Math.max(timeoutMs, 60000))
-      });
-      const payload = await readJson(response);
+      let { response, payload } = await fetchOutscraperResults(url);
+
+      // Dashboard-generated task URLs have not always accepted the API-only
+      // `flat` option. Retry the provider URL unchanged before treating the
+      // request as failed.
+      if (!response.ok && [400, 404, 422].includes(response.status) && !originalUrl.searchParams.has("flat")) {
+        ({ response, payload } = await fetchOutscraperResults(originalUrl));
+      }
       if (!response.ok) {
         throw upstreamError(
           "outscraper",

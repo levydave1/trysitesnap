@@ -23,13 +23,23 @@ export default async function handler(request, response) {
     const result = await processOutscraperWebhook(event, dependencies);
     return response.status(200).json({ received: true, result });
   } catch (error) {
-    const status = Number(error.status) || 500;
+    const permanentRequestError = ["INVALID_OUTSCRAPER_SIGNATURE", "INVALID_OUTSCRAPER_JSON"].includes(error.code);
+    const status = permanentRequestError ? 400 : 503;
     console.error(JSON.stringify({
       event: "outscraper_webhook_failed",
       status,
       code: error.code || "INTERNAL_ERROR",
       message: String(error.message || "").slice(0, 300)
     }));
-    return response.status(status).json({ received: false, code: status === 400 ? "INVALID_WEBHOOK" : "PROCESSING_FAILED" });
+    try {
+      const dependencies = createRuntimeDependencies({ notifications: true });
+      await dependencies.telegram?.send(`⚠️ Outscraper webhook failed\n${error.code || "PROCESSING_FAILED"}\nHTTP ${status}`);
+    } catch (notificationError) {
+      console.error(JSON.stringify({
+        event: "outscraper_webhook_failure_notification_failed",
+        message: String(notificationError?.message || "").slice(0, 200)
+      }));
+    }
+    return response.status(status).json({ received: false, code: permanentRequestError ? "INVALID_WEBHOOK" : "PROCESSING_FAILED" });
   }
 }
