@@ -23,10 +23,8 @@ export async function emailExportHandler(request, response) {
 
   const flow = normalizeEmailFlow(request.body?.flow || process.env.EMAIL_EXPORT_FLOW);
   const dependencies = createRuntimeDependencies({ airtable: true, outscraper: true, emailExport: true, emailFlow: flow, notifications: true });
-  if (request.method === "GET" && !isLocalNoon(new Date(), dependencies.config.emailExport.timezone)) {
-    return response.status(200).json({ success: true, skipped: true, reason: "outside_local_noon" });
-  }
   try {
+    const localNoon = isLocalNoon(new Date(), dependencies.config.emailExport.timezone);
     if (request.method === "GET" || request.body?.recover_outscraper === true) {
       const recovery = await recoverLatestOutscraperImport(dependencies, { notify: true });
       console.log(JSON.stringify({
@@ -35,6 +33,15 @@ export async function emailExportHandler(request, response) {
         inspected: recovery.inspected,
         created: recovery.result?.created || 0
       }));
+      if (request.method === "GET" && !localNoon) {
+        return response.status(200).json({
+          success: true,
+          recoveryOnly: true,
+          recovered: recovery.recovered,
+          inspected: recovery.inspected,
+          created: recovery.result?.created || 0
+        });
+      }
     }
     const configuredLimit = number(process.env.EMAIL_EXPORT_MAX_RECORDS, dependencies.config.emailExport.maxRecords);
     const result = await processEmailExportBatch(dependencies, {
