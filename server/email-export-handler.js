@@ -13,6 +13,10 @@ function number(value, fallback) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+export function isForceExportRequest(request) {
+  return request.query?.force_export === "1" || /[?&]force_export=1(?:&|$)/.test(request.url || "");
+}
+
 export async function emailExportHandler(request, response) {
   response.setHeader("Cache-Control", "no-store");
   response.setHeader("X-Content-Type-Options", "nosniff");
@@ -36,6 +40,7 @@ export async function emailExportHandler(request, response) {
     const flow = normalizeEmailFlow(request.body?.flow || process.env.EMAIL_EXPORT_FLOW);
     const dependencies = createRuntimeDependencies({ airtable: true, outscraper: true, emailExport: true, emailFlow: flow, notifications: true });
     const localNoon = isLocalNoon(new Date(), dependencies.config.emailExport.timezone);
+    const forceExportRequested = isForceExportRequest(request);
     if (request.method === "GET" || request.body?.recover_outscraper === true) {
       const recovery = await recoverLatestOutscraperImport(dependencies, { notify: true });
       console.log(JSON.stringify({
@@ -44,7 +49,7 @@ export async function emailExportHandler(request, response) {
         inspected: recovery.inspected,
         created: recovery.result?.created || 0
       }));
-      if (request.method === "GET" && !localNoon) {
+      if (request.method === "GET" && !localNoon && !forceExportRequested) {
         return response.status(200).json({
           success: true,
           recoveryOnly: true,
@@ -56,7 +61,7 @@ export async function emailExportHandler(request, response) {
     }
     const configuredLimit = number(process.env.EMAIL_EXPORT_MAX_RECORDS, dependencies.config.emailExport.maxRecords);
     const result = await processEmailExportBatch(dependencies, {
-      maxRecords: number(request.body?.max_records, configuredLimit),
+      maxRecords: number(request.body?.max_records ?? request.query?.max_records, configuredLimit),
       recordId: request.body?.record_id || undefined,
       flow,
       notify: request.body?.notify !== false
