@@ -1,5 +1,6 @@
 import { processEmailExportBatch, isLocalNoon, normalizeEmailFlow } from "./email-export.js";
 import { recoverLatestOutscraperImport } from "./outscraper-webhook.js";
+import { runOutscraperWatchdog } from "./outscraper-watchdog.js";
 import { createRuntimeDependencies } from "./runtime.js";
 
 function authorized(request) {
@@ -21,9 +22,17 @@ export async function emailExportHandler(request, response) {
   }
   if (!authorized(request)) return response.status(401).json({ success: false, code: "UNAUTHORIZED" });
 
-  const flow = normalizeEmailFlow(request.body?.flow || process.env.EMAIL_EXPORT_FLOW);
-  const dependencies = createRuntimeDependencies({ airtable: true, outscraper: true, emailExport: true, emailFlow: flow, notifications: true });
   try {
+    const watchdogRequested = request.query?.watchdog === "1" || /[?&]watchdog=1(?:&|$)/.test(request.url || "");
+    if (watchdogRequested) {
+      const watchdogDependencies = createRuntimeDependencies({ airtable: true, outscraper: true, notifications: true });
+      const result = await runOutscraperWatchdog(request, watchdogDependencies);
+      console.log(JSON.stringify({ event: "outscraper_watchdog_completed", ...result }));
+      return response.status(200).json(result);
+    }
+
+    const flow = normalizeEmailFlow(request.body?.flow || process.env.EMAIL_EXPORT_FLOW);
+    const dependencies = createRuntimeDependencies({ airtable: true, outscraper: true, emailExport: true, emailFlow: flow, notifications: true });
     const localNoon = isLocalNoon(new Date(), dependencies.config.emailExport.timezone);
     if (request.method === "GET" || request.body?.recover_outscraper === true) {
       const recovery = await recoverLatestOutscraperImport(dependencies, { notify: true });

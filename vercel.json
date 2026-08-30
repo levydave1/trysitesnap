@@ -20,9 +20,6 @@
     "api/02-email-preview-test.js": {
       "maxDuration": 300
     },
-    "api/outscraper-watchdog.js": {
-      "maxDuration": 300
-    },
     "api/04-first-sketch.js": {
       "maxDuration": 300
     }
@@ -37,7 +34,7 @@
       "schedule": "0 10 * * *"
     },
     {
-      "path": "/api/outscraper-watchdog",
+      "path": "/api/02-export-email-to-instantly-winter?watchdog=1",
       "schedule": "0 11 * * *"
     }
   ]
