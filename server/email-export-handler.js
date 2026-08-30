@@ -26,7 +26,9 @@ export async function emailExportHandler(request, response) {
     const watchdogRequested = request.query?.watchdog === "1" || /[?&]watchdog=1(?:&|$)/.test(request.url || "");
     if (watchdogRequested) {
       const watchdogDependencies = createRuntimeDependencies({ airtable: true, outscraper: true, notifications: true });
-      const result = await runOutscraperWatchdog(request, watchdogDependencies);
+      const result = await runOutscraperWatchdog(request, watchdogDependencies, {
+        backfillRequestId: request.query?.backfill
+      });
       console.log(JSON.stringify({ event: "outscraper_watchdog_completed", ...result }));
       return response.status(200).json(result);
     }

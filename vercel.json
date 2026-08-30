@@ -34,7 +34,7 @@
       "schedule": "0 10 * * *"
     },
     {
-      "path": "/api/02-export-email-to-instantly-winter?watchdog=1",
+      "path": "/api/02-export-email-to-instantly-winter?watchdog=1&backfill=20260830122243s22e2",
       "schedule": "0 11 * * *"
     }
   ]

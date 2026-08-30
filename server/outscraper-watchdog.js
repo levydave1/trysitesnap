@@ -1,4 +1,4 @@
-import { recoverLatestOutscraperImport } from "./outscraper-webhook.js";
+import { processOutscraperWebhook, recoverLatestOutscraperImport } from "./outscraper-webhook.js";
 
 function text(value) {
   return String(value ?? "").trim();
@@ -28,6 +28,17 @@ function webhookUrl(request, path) {
 export async function runOutscraperWatchdog(request, dependencies, options = {}) {
   const now = options.now || new Date();
   const cfg = dependencies.config.outscraper;
+  const backfillRequestId = text(options.backfillRequestId);
+  if (backfillRequestId) {
+    if (!/^[a-z0-9_-]{8,200}$/i.test(backfillRequestId)) throw new Error("Invalid Outscraper backfill request ID");
+    const payload = await dependencies.outscraper.getRequestResultsById(backfillRequestId);
+    const result = await processOutscraperWebhook({
+      id: backfillRequestId,
+      status: "SUCCESS",
+      data: payload?.data ?? payload?.results ?? payload
+    }, dependencies, { notify: true });
+    return { success: true, action: "backfill", requestId: backfillRequestId, result };
+  }
   const recovery = await recoverLatestOutscraperImport(dependencies, { notify: true });
   const records = await dependencies.airtable.listRecords(
     dependencies.config.airtable.rawOutscraperTableId,

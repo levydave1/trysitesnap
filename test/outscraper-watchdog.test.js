@@ -60,3 +60,32 @@ test("watchdog starts the matching regional fallback when the scheduled import i
   assert.equal(submitted.totalLimit, 240);
   assert.equal(submitted.webhook, `https://project.example${config.outscraper.webhookPath}`);
 });
+
+test("watchdog can backfill one known UI task by request ID", async () => {
+  const created = [];
+  const result = await runOutscraperWatchdog({ headers: { host: "project.example" } }, dependencies({
+    outscraper: {
+      async getRequestResultsById(id) {
+        assert.equal(id, "20260830122243s22e2");
+        return { status: "Success", data: [{
+          name: "Backfill Business",
+          website: "https://backfill.example",
+          email: "owner@backfill.example",
+          cid: "backfill-1",
+          business_status: "OPERATIONAL",
+          "email.emails_validator.status": "RECEIVING"
+        }] };
+      }
+    },
+    airtable: {
+      async listRecords() { return []; },
+      async createRecords(_tableId, fields) {
+        created.push(...fields);
+        return fields.map((_, index) => ({ id: `rec-backfill-${index}` }));
+      }
+    }
+  }), { now: new Date("2026-08-30T11:00:00Z"), backfillRequestId: "20260830122243s22e2" });
+  assert.equal(result.action, "backfill");
+  assert.equal(result.result.created, 1);
+  assert.equal(created[0].Email, "owner@backfill.example");
+});
