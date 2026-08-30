@@ -63,10 +63,15 @@ test("watchdog starts the matching regional fallback when the scheduled import i
 
 test("watchdog can backfill one known UI task by request ID", async () => {
   const created = [];
+  const resultUrl = "https://s3.us-east-005.backblazeb2.com/shared-data-files/results/2026/08/30/result.xlsx";
   const result = await runOutscraperWatchdog({ headers: { host: "project.example" } }, dependencies({
+    config: {
+      ...config,
+      outscraper: { ...config.outscraper, manualBackfillResults: { "20260830122243s22e2": resultUrl } }
+    },
     outscraper: {
       async getRequestResults(url) {
-        assert.equal(url, config.outscraper.manualBackfillResults["20260830122243s22e2"]);
+        assert.equal(url, resultUrl);
         return { status: "Success", data: [{
           name: "Backfill Business",
           website: "https://backfill.example",
