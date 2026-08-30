@@ -65,8 +65,8 @@ test("watchdog can backfill one known UI task by request ID", async () => {
   const created = [];
   const result = await runOutscraperWatchdog({ headers: { host: "project.example" } }, dependencies({
     outscraper: {
-      async getRequestResultsById(id) {
-        assert.equal(id, "20260830122243s22e2");
+      async getRequestResults(url) {
+        assert.equal(url, config.outscraper.manualBackfillResults["20260830122243s22e2"]);
         return { status: "Success", data: [{
           name: "Backfill Business",
           website: "https://backfill.example",
@@ -75,6 +75,9 @@ test("watchdog can backfill one known UI task by request ID", async () => {
           business_status: "OPERATIONAL",
           "email.emails_validator.status": "RECEIVING"
         }] };
+      },
+      async getRequestResultsById(id) {
+        throw new Error(`unexpected request lookup ${id}`);
       }
     },
     airtable: {

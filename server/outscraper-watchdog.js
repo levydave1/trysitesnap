@@ -31,7 +31,10 @@ export async function runOutscraperWatchdog(request, dependencies, options = {})
   const backfillRequestId = text(options.backfillRequestId);
   if (backfillRequestId) {
     if (!/^[a-z0-9_-]{8,200}$/i.test(backfillRequestId)) throw new Error("Invalid Outscraper backfill request ID");
-    const payload = await dependencies.outscraper.getRequestResultsById(backfillRequestId);
+    const manualLocation = cfg.manualBackfillResults?.[backfillRequestId];
+    const payload = manualLocation
+      ? await dependencies.outscraper.getRequestResults(manualLocation)
+      : await dependencies.outscraper.getRequestResultsById(backfillRequestId);
     const result = await processOutscraperWebhook({
       id: backfillRequestId,
       status: "SUCCESS",

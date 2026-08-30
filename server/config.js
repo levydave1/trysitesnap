@@ -145,6 +145,9 @@ export const config = Object.freeze({
       Fri: { title: "SiteSnap Daily Thu Central-Texas", states: ["TX", "OK", "LA", "AR", "MO"] },
       Sat: { title: "SiteSnap Daily Fri Southwest", states: ["AZ", "CO", "UT", "NV", "NM"] }
     },
+    manualBackfillResults: {
+      "20260830122243s22e2": "https://s3.us-east-005.backblazeb2.com/shared-data-files/results/2026/08/30/Outscraper-20260830122243s22e2_roofing_contractor_%2B7.xlsx"
+    },
     webhookPath: "/api/6f09f89b1e644c79ae3aa7210f8f2ff7-outscraper-results"
   },
   stripe: {
