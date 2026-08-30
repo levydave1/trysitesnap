@@ -190,6 +190,41 @@ test("02 ignores malformed source emails before applying the batch limit", async
   assert.equal(isValidLeadEmail("owner+test@example.com"), true);
 });
 
+test("02 skips an email already documented as sent and continues to the next lead", async () => {
+  const tf = config.airtable.emailThreadFields;
+  const createdEmails = [];
+  const result = await processEmailExportBatch({
+    config: { ...config, emailExport: { ...config.emailExport, maxRecords: 1 } },
+    airtable: {
+      async listRecords(tableId) {
+        if (tableId === config.airtable.emailThreadsTableId) {
+          return [{ fields: {
+            [tf.rawBusinessRecord]: "recEarlierBusiness",
+            [tf.recipientEmail]: "duplicate@example.com",
+            [tf.status]: "sent"
+          } }];
+        }
+        return [
+          { id: "recDuplicateBusiness", createdTime: "2026-01-01T00:00:00Z", fields: { Email: "duplicate@example.com" } },
+          { id: "recFreshBusiness", createdTime: "2026-01-02T00:00:00Z", fields: { Email: "fresh@example.com" } }
+        ];
+      },
+      async createRecord() { return { id: "recThread" }; }
+    },
+    claude: { async writeEmail() { return { subject: "Quick idea", body: "Short email" }; } },
+    instantly: {
+      async createLead(payload) { createdEmails.push(payload.email); return { id: "lead-fresh" }; },
+      async listLeads() { return { items: [] }; }
+    },
+    telegram: { async send() {} }
+  });
+
+  assert.equal(result.candidates, 1);
+  assert.equal(result.exported, 1);
+  assert.equal(result.skipped, 1);
+  assert.deepEqual(createdEmails, ["fresh@example.com"]);
+});
+
 test("02 reports the exact failed stage and upstream status without losing the candidate", async () => {
   const tf = config.airtable.emailThreadFields;
   const messages = [];

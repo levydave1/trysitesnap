@@ -132,27 +132,41 @@ export async function processEmailExportBatch(dependencies, options = {}) {
   ));
 
   const threads = await airtable.listRecords(config.airtable.emailThreadsTableId, {
-    fields: [threadFields.rawBusinessRecord, threadFields.status],
+    fields: [threadFields.rawBusinessRecord, threadFields.recipientEmail, threadFields.status],
     returnFieldsByFieldId: true
   });
   const completed = new Set();
+  const completedEmails = new Set();
   let rawLinkUsesArray = true;
   for (const thread of threads) {
     const value = thread.fields?.[threadFields.rawBusinessRecord];
     if (value !== undefined) rawLinkUsesArray = Array.isArray(value);
     if (clean(thread.fields?.[threadFields.status]).toLowerCase() === "sent") {
       for (const id of linkedIds(value)) completed.add(id);
+      const recipientEmail = clean(thread.fields?.[threadFields.recipientEmail]).toLowerCase();
+      if (isValidLeadEmail(recipientEmail)) completedEmails.add(recipientEmail);
     }
   }
 
   const rawRecords = options.recordId
     ? [await airtable.getRecordFromTable(config.airtable.rawOutscraperTableId, options.recordId)]
     : await airtable.listRecords(config.airtable.rawOutscraperTableId, { fields: rawFieldNames });
-  const candidates = rawRecords
-    .filter((record) => record?.id && !completed.has(record.id))
-    .sort((a, b) => String(a.createdTime || "").localeCompare(String(b.createdTime || "")))
-    .filter((record) => isValidLeadEmail(leadFromEmailRecord(record).email))
-    .slice(0, maxRecords);
+  const candidates = [];
+  const seenEmails = new Set(completedEmails);
+  let skippedDuplicates = 0;
+  for (const record of rawRecords
+    .filter((item) => item?.id && !completed.has(item.id))
+    .sort((a, b) => String(a.createdTime || "").localeCompare(String(b.createdTime || "")))) {
+    const email = leadFromEmailRecord(record).email;
+    if (!isValidLeadEmail(email)) continue;
+    if (seenEmails.has(email)) {
+      skippedDuplicates += 1;
+      continue;
+    }
+    seenEmails.add(email);
+    candidates.push(record);
+    if (candidates.length >= maxRecords) break;
+  }
 
   const results = await mapConcurrent(candidates, options.concurrency || config.emailExport.concurrency, async (record) => {
     const lead = leadFromEmailRecord(record);
@@ -226,7 +240,7 @@ export async function processEmailExportBatch(dependencies, options = {}) {
     flow: normalizeEmailFlow(options.flow),
     candidates: candidates.length,
     exported: results.filter((item) => item.status === "exported").length,
-    skipped: results.filter((item) => item.status === "skipped").length,
+    skipped: skippedDuplicates + results.filter((item) => item.status === "skipped").length,
     failed: results.filter((item) => item.status === "failed").length,
     results
   };
