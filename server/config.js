@@ -121,7 +121,31 @@ export const config = Object.freeze({
     region: "US",
     timeoutMs: 25000,
     dailyMinLeads: 100,
-    dailyMaxLeads: 120
+    dailyMaxLeads: 120,
+    watchdogLookbackHours: 20,
+    fallbackTotalLimit: 240,
+    fallbackPerQueryLimit: 15,
+    fallbackSkipPlaces: 20,
+    fallbackCategories: [
+      "Roofing contractor",
+      "Plumber",
+      "HVAC contractor",
+      "Electrician",
+      "Landscaper",
+      "Pest control",
+      "Garage door repair",
+      "Home remodeler"
+    ],
+    fallbackRegionsByLocalWeekday: {
+      Sun: { title: "SiteSnap Daily Sat West Coast", states: ["CA", "OR", "WA"] },
+      Mon: { title: "SiteSnap Daily Sun South-MidAtlantic", states: ["TN", "KY", "AL", "MS", "MD"] },
+      Tue: { title: "SiteSnap Daily Mon Northeast", states: ["NY", "NJ", "PA", "CT", "MA"] },
+      Wed: { title: "SiteSnap Daily Tue Southeast", states: ["FL", "GA", "NC", "SC", "VA"] },
+      Thu: { title: "SiteSnap Daily Wed Midwest", states: ["OH", "MI", "IN", "IL", "WI"] },
+      Fri: { title: "SiteSnap Daily Thu Central-Texas", states: ["TX", "OK", "LA", "AR", "MO"] },
+      Sat: { title: "SiteSnap Daily Fri Southwest", states: ["AZ", "CO", "UT", "NV", "NM"] }
+    },
+    webhookPath: "/api/6f09f89b1e644c79ae3aa7210f8f2ff7-outscraper-results"
   },
   stripe: {
     webhookToleranceSeconds: 300,

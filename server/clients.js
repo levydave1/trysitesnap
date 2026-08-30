@@ -248,6 +248,30 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
       || (host.startsWith("api.") && (host.endsWith(".outscraper.com") || host.endsWith(".outscraper.cloud")));
   }
 
+  function validResultsFile(url) {
+    const host = String(url.hostname || "").toLowerCase();
+    return /^s3\.[a-z0-9-]+\.backblazeb2\.com$/.test(host)
+      && url.pathname.startsWith("/shared-data-files/results/")
+      && url.pathname.toLowerCase().endsWith(".xlsx");
+  }
+
+  async function fetchOutscraperWorkbook(url) {
+    const response = await fetchImpl(url, {
+      redirect: "error",
+      signal: AbortSignal.timeout(Math.max(timeoutMs, 90000))
+    });
+    if (!response.ok) throw upstreamError("outscraper", response.status, "result workbook download failed");
+    const declaredSize = Number(response.headers.get("content-length") || 0);
+    if (declaredSize > 50 * 1024 * 1024) throw upstreamError("outscraper", 413, "result workbook is too large");
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (bytes.length > 50 * 1024 * 1024) throw upstreamError("outscraper", 413, "result workbook is too large");
+    const XLSX = await import("xlsx");
+    const workbook = XLSX.read(bytes, { type: "buffer", cellDates: false });
+    const firstSheet = workbook.SheetNames[0];
+    const rows = firstSheet ? XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: null, raw: true }) : [];
+    return { status: "Success", data: rows };
+  }
+
   async function fetchOutscraperResults(url, attempts = 3) {
     let last;
     for (let attempt = 0; attempt < attempts; attempt += 1) {
@@ -265,6 +289,7 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
 
   async function getRequestResults(resultsLocation) {
     const url = new URL(resultsLocation);
+    if (url.protocol === "https:" && validResultsFile(url)) return fetchOutscraperWorkbook(url);
     if (url.protocol !== "https:" || !validResultsHost(url.hostname)) {
       const error = new Error("Invalid Outscraper results URL");
       error.status = 502;
@@ -316,14 +341,58 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
       return firstOutscraperPlace(payload);
     },
     getRequestResults,
+    async startGoogleMapsSearch({
+      queries,
+      totalLimit,
+      perQueryLimit = 15,
+      skipPlaces = 20,
+      language = "en",
+      region = "US",
+      enrichments = [],
+      webhook
+    }) {
+      const response = await fetchImpl(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": apiKey
+        },
+        body: JSON.stringify({
+          query: queries,
+          limit: perQueryLimit,
+          totalLimit,
+          skipPlaces,
+          dropDuplicates: true,
+          language,
+          region,
+          enrichment: enrichments,
+          webhook,
+          async: true
+        }),
+        signal: AbortSignal.timeout(timeoutMs)
+      });
+      const payload = await readJson(response);
+      if (!response.ok) {
+        throw upstreamError(
+          "outscraper",
+          response.status,
+          payload.errorMessage || payload.error?.message || payload.error || payload.raw || ""
+        );
+      }
+      return payload;
+    },
     async getRequestResultsById(requestId) {
       const id = String(requestId || "").trim();
       if (!/^[a-z0-9_-]{8,200}$/i.test(id)) throw new Error("Invalid Outscraper request ID");
       return getRequestResults(new URL(`/requests/${encodeURIComponent(id)}`, endpoint).toString());
     },
     async listFinishedRequests({ pageSize = 20, skip = 0 } = {}) {
+      return this.listRequests({ type: "finished", pageSize, skip });
+    },
+    async listRequests({ type = "finished", pageSize = 20, skip = 0 } = {}) {
+      if (!new Set(["active", "finished"]).has(type)) throw new Error("Invalid Outscraper request type");
       const url = new URL("/requests", endpoint);
-      url.searchParams.set("type", "finished");
+      url.searchParams.set("type", type);
       url.searchParams.set("pageSize", String(Math.min(100, Math.max(1, Number(pageSize) || 20))));
       url.searchParams.set("skip", String(Math.max(0, Number(skip) || 0)));
       const { response, payload } = await fetchOutscraperResults(url);

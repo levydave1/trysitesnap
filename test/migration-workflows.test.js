@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
+import * as XLSX from "xlsx";
 import { createCloudflareClient, createOutscraperClient, createVercelDeliveryClient } from "../server/clients.js";
 import { config } from "../server/config.js";
 import { verifyStripeEvent } from "../server/stripe-webhook.js";
@@ -120,6 +121,35 @@ test("Outscraper result retrieval accepts provider API subdomains and retries wi
   assert.doesNotMatch(requests[1], /flat=/);
 });
 
+test("Outscraper result retrieval safely parses the dashboard workbook URL", async () => {
+  let request;
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([{
+    name: "Workbook Business",
+    website: "https://workbook.example",
+    email: "owner@workbook.example"
+  }]), "Results");
+  const bytes = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  const client = createOutscraperClient({
+    apiKey: "secret",
+    endpoint: "https://api.outscraper.cloud/google-maps-search",
+    timeoutMs: 1000,
+    fetchImpl: async (url, options) => {
+      request = { url: String(url), options };
+      return new Response(bytes, { status: 200, headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" } });
+    }
+  });
+  const result = await client.getRequestResults("https://s3.us-east-005.backblazeb2.com/shared-data-files/results/2026/08/30/result.xlsx");
+  assert.equal(result.status, "Success");
+  assert.equal(result.data[0].email, "owner@workbook.example");
+  assert.equal(request.options.headers, undefined);
+  assert.equal(request.options.redirect, "error");
+  await assert.rejects(
+    client.getRequestResults("https://s3.us-east-005.backblazeb2.com/other/result.xlsx"),
+    /Invalid Outscraper results URL/
+  );
+});
+
 test("Outscraper client lists recent finished requests for recovery", async () => {
   let request;
   const client = createOutscraperClient({
@@ -134,6 +164,34 @@ test("Outscraper client lists recent finished requests for recovery", async () =
   assert.deepEqual(await client.listFinishedRequests({ pageSize: 12 }), [{ id: "request-recovery-1", usage: "120" }]);
   assert.match(request.url, /^https:\/\/api\.outscraper\.cloud\/requests\?type=finished&pageSize=12&skip=0$/);
   assert.equal(request.options.headers["X-API-KEY"], "secret");
+});
+
+test("Outscraper client starts an asynchronous enriched fallback and lists active requests", async () => {
+  const requests = [];
+  const client = createOutscraperClient({
+    apiKey: "secret",
+    endpoint: "https://api.outscraper.cloud/google-maps-search",
+    timeoutMs: 1000,
+    fetchImpl: async (url, options) => {
+      requests.push({ url: String(url), options });
+      if (options.method === "POST") return new Response(JSON.stringify({ id: "fallback-1", status: "Pending" }), { status: 202 });
+      return new Response(JSON.stringify([{ id: "active-1" }]), { status: 200 });
+    }
+  });
+  assert.equal((await client.startGoogleMapsSearch({
+    queries: ["Plumber, CA, US"],
+    totalLimit: 240,
+    enrichments: ["contacts_n_leads"],
+    webhook: "https://project.example/api/results"
+  })).id, "fallback-1");
+  const body = JSON.parse(requests[0].options.body);
+  assert.equal(requests[0].options.method, "POST");
+  assert.deepEqual(body.query, ["Plumber, CA, US"]);
+  assert.equal(body.async, true);
+  assert.equal(body.totalLimit, 240);
+  assert.deepEqual(body.enrichment, ["contacts_n_leads"]);
+  assert.deepEqual(await client.listRequests({ type: "active" }), [{ id: "active-1" }]);
+  assert.match(requests[1].url, /type=active/);
 });
 
 test("Stripe signatures are verified against the untouched raw body", () => {

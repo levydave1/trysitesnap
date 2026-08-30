@@ -66,6 +66,15 @@ test("Airtable mapping preserves the fields used by scenarios 02 and 04", () => 
   assert.equal(fields["Source System"], "outscraper");
 });
 
+test("API fallback rows accept site and full_address aliases", () => {
+  const row = lead({ website: undefined, site: "https://fallback.example", address: undefined, full_address: "2 Main St" });
+  const selected = selectLeadRows({ data: [row] }, [], 120);
+  const fields = airtableFieldsForLead(row);
+  assert.equal(selected.selected.length, 1);
+  assert.equal(fields.Website, "https://fallback.example");
+  assert.equal(fields.Address, "2 Main St");
+});
+
 test("Airtable mapping keeps numeric flags and stringifies Airtable text booleans", () => {
   const fields = airtableFieldsForLead(lead({
     verified: true,

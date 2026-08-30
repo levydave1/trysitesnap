@@ -111,6 +111,10 @@ function normalizedEmail(value) {
   return text(value).toLowerCase();
 }
 
+function rowWebsite(row) {
+  return text(row?.website || row?.site);
+}
+
 function stableValue(value) {
   if (value === null || value === undefined || value === "") return undefined;
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
@@ -222,8 +226,8 @@ export function selectLeadRows(payload, existingRecords = [], maxLeads = 120) {
     const status = text(row["email.emails_validator.status"]).toUpperCase();
     const businessStatus = text(row.business_status).toUpperCase();
     const businessId = text(row.place_id || row.google_id || row.cid);
-    if (text(row.name) && text(row.website) && email && status) recognized += 1;
-    if (!text(row.name) || !text(row.website) || !email || !acceptedEmailStatuses.has(status)) continue;
+    if (text(row.name) && rowWebsite(row) && email && status) recognized += 1;
+    if (!text(row.name) || !rowWebsite(row) || !email || !acceptedEmailStatuses.has(status)) continue;
     if (businessStatus && businessStatus !== "OPERATIONAL") continue;
     if (existingEmails.has(email) || runEmails.has(email)) continue;
     if (businessId && (existingBusinessIds.has(businessId) || runBusinesses.has(businessId))) continue;
@@ -252,6 +256,8 @@ export function airtableFieldsForLead(row, { runName, now = new Date() } = {}) {
     const value = airtableValue(source, row[source]);
     if (value !== undefined) fields[target] = value;
   }
+  if (!fields.Website && rowWebsite(row)) fields.Website = rowWebsite(row);
+  if (!fields.Address && text(row.full_address)) fields.Address = text(row.full_address);
   return fields;
 }
 
