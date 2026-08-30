@@ -148,7 +148,9 @@ function walkResults(value, output) {
     output.push(value);
     return;
   }
-  if ("data" in value) walkResults(value.data, output);
+  for (const key of ["data", "results", "items", "value"]) {
+    if (key in value) walkResults(value[key], output);
+  }
 }
 
 export function verifyOutscraperWebhook(rawBody, signatureHeader, apiKey) {
@@ -211,6 +213,7 @@ export function selectLeadRows(payload, existingRecords = [], maxLeads = 120) {
     text(record.fields?.["Place ID"])
   ]).filter(Boolean));
   const selected = [];
+  let recognized = 0;
   const runEmails = new Set();
   const runBusinesses = new Set();
 
@@ -219,6 +222,7 @@ export function selectLeadRows(payload, existingRecords = [], maxLeads = 120) {
     const status = text(row["email.emails_validator.status"]).toUpperCase();
     const businessStatus = text(row.business_status).toUpperCase();
     const businessId = text(row.place_id || row.google_id || row.cid);
+    if (text(row.name) && text(row.website) && email && status) recognized += 1;
     if (!text(row.name) || !text(row.website) || !email || !acceptedEmailStatuses.has(status)) continue;
     if (businessStatus && businessStatus !== "OPERATIONAL") continue;
     if (existingEmails.has(email) || runEmails.has(email)) continue;
@@ -228,7 +232,7 @@ export function selectLeadRows(payload, existingRecords = [], maxLeads = 120) {
     if (businessId) runBusinesses.add(businessId);
     if (selected.length >= maxLeads) break;
   }
-  return { discovered: rows.length, selected };
+  return { discovered: rows.length, recognized, selected };
 }
 
 export function airtableFieldsForLead(row, { runName, now = new Date() } = {}) {
@@ -267,10 +271,18 @@ export async function processOutscraperWebhook(event, dependencies, options = {}
   const payload = embeddedResults === undefined
     ? await dependencies.outscraper.getRequestResults(location)
     : { data: embeddedResults };
-  const existing = await dependencies.airtable.listRecords(dependencies.config.airtable.rawOutscraperTableId, {
-    fields: ["CID", "Google ID", "Place ID", "Email"]
-  });
-  const { discovered, selected } = selectLeadRows(payload, existing, maxLeads);
+  const payloadStatus = text(payload?.status).toUpperCase();
+  if (payloadStatus && payloadStatus !== "SUCCESS") {
+    const error = new Error(`Outscraper results are not ready (${payloadStatus})`);
+    error.status = 503;
+    error.code = "OUTSCRAPER_RESULTS_NOT_READY";
+    throw error;
+  }
+  const existing = options.existingRecords || await dependencies.airtable.listRecords(
+    dependencies.config.airtable.rawOutscraperTableId,
+    { fields: ["CID", "Google ID", "Place ID", "Email"] }
+  );
+  const { discovered, recognized, selected } = selectLeadRows(payload, existing, maxLeads);
   const now = options.now || new Date();
   const runName = `Outscraper daily ${text(event.id).slice(0, 36)}`;
   const records = selected.map((row) => airtableFieldsForLead(row, { runName, now }));
@@ -283,15 +295,25 @@ export async function processOutscraperWebhook(event, dependencies, options = {}
     ));
     if (index + 10 < records.length) await new Promise((resolve) => setTimeout(resolve, 225));
   }
+  existing.push(...selected.map((row, index) => ({
+    id: created[index]?.id || `outscraper-${text(event.id)}-${index}`,
+    fields: {
+      CID: text(row.cid),
+      "Google ID": text(row.google_id),
+      "Place ID": text(row.place_id),
+      Email: normalizedEmail(row.email)
+    }
+  })));
   const result = {
     success: true,
     requestId: text(event.id),
     discovered,
+    recognized,
     eligible: selected.length,
     created: created.length,
     belowTarget: created.length < Number(dependencies.config.outscraper.dailyMinLeads || 100)
   };
-  if (dependencies.telegram) {
+  if (dependencies.telegram && options.notify !== false) {
     const marker = result.belowTarget ? "⚠️" : "✅";
     try {
       await dependencies.telegram.send(`${marker} Outscraper daily\n${result.created} new leads imported to Airtable\n${result.discovered} result rows inspected`);
@@ -300,4 +322,42 @@ export async function processOutscraperWebhook(event, dependencies, options = {}
     }
   }
   return result;
+}
+
+export async function recoverLatestOutscraperImport(dependencies, options = {}) {
+  const maxRequests = Math.min(50, Math.max(1, Number(options.maxRequests) || 10));
+  const requests = await dependencies.outscraper.listFinishedRequests({ pageSize: maxRequests });
+  const existingRecords = await dependencies.airtable.listRecords(
+    dependencies.config.airtable.rawOutscraperTableId,
+    { fields: ["CID", "Google ID", "Place ID", "Email"] }
+  );
+  const inspected = [];
+  for (const request of requests) {
+    const requestId = text(request?.id);
+    if (!requestId) continue;
+    try {
+      const payload = await dependencies.outscraper.getRequestResultsById(requestId);
+      const selection = selectLeadRows(payload, existingRecords, dependencies.config.outscraper.dailyMaxLeads);
+      inspected.push({ requestId, discovered: selection.discovered, recognized: selection.recognized });
+      if (!selection.recognized) continue;
+      const result = await processOutscraperWebhook({
+        id: requestId,
+        status: "SUCCESS",
+        data: payload?.data ?? payload?.results ?? payload
+      }, dependencies, {
+        existingRecords,
+        maxLeads: options.maxLeads,
+        notify: options.notify === true && selection.selected.length > 0
+      });
+      return { success: true, recovered: true, inspected: inspected.length, result };
+    } catch (error) {
+      inspected.push({
+        requestId,
+        code: error.code || "OUTSCRAPER_RECOVERY_REQUEST_FAILED",
+        upstreamStatus: error.upstreamStatus || null
+      });
+      if (error.code === "AIRTABLE_UPSTREAM_ERROR") throw error;
+    }
+  }
+  return { success: true, recovered: false, inspected: inspected.length };
 }

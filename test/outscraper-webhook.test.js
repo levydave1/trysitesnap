@@ -5,6 +5,7 @@ import { config } from "../server/config.js";
 import {
   airtableFieldsForLead,
   processOutscraperWebhook,
+  recoverLatestOutscraperImport,
   selectLeadRows,
   verifyOutscraperWebhook
 } from "../server/outscraper-webhook.js";
@@ -41,6 +42,7 @@ test("lead selection keeps only operational, website, receiving-email businesses
   ]] };
   const result = selectLeadRows(payload, [{ fields: { Email: "old@example.com", CID: "321" } }], 120);
   assert.equal(result.discovered, 6);
+  assert.equal(result.recognized, 6);
   assert.deepEqual(result.selected.map((row) => row.email), ["owner@daily-test.example", "new@example.com"]);
 });
 
@@ -148,4 +150,36 @@ test("completed webhook accepts dashboard aliases and embedded results", async (
 
   assert.equal(result.created, 1);
   assert.equal(created[0].Email, "embedded@example.com");
+});
+
+test("daily recovery skips unrelated requests and imports the latest compatible map task", async () => {
+  const created = [];
+  const fetched = [];
+  const existing = [];
+  const result = await recoverLatestOutscraperImport({
+    config,
+    outscraper: {
+      async listFinishedRequests() { return [{ id: "reels-request" }, { id: "maps-request" }]; },
+      async getRequestResultsById(id) {
+        fetched.push(id);
+        return id === "reels-request"
+          ? { status: "Success", data: [{ name: "A reel", url: "https://video.example" }] }
+          : { status: "Success", data: [lead({ cid: "recovery-1", email: "recovery@example.com" })] };
+      }
+    },
+    airtable: {
+      async listRecords() { return existing; },
+      async createRecords(_tableId, fields) {
+        created.push(...fields);
+        return fields.map((_, index) => ({ id: `rec-recovery-${index}` }));
+      }
+    },
+    telegram: null
+  }, { notify: false });
+
+  assert.deepEqual(fetched, ["reels-request", "maps-request"]);
+  assert.equal(result.recovered, true);
+  assert.equal(result.result.created, 1);
+  assert.equal(created[0].Email, "recovery@example.com");
+  assert.equal(existing.length, 1);
 });

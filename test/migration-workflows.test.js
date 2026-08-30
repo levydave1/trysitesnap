@@ -89,7 +89,7 @@ test("Outscraper result retrieval accepts the dashboard webhook host and rejects
     await client.getRequestResults("https://api.app.outscraper.com/requests/ui-task-id"),
     { data: [{ name: "Webhook result" }] }
   );
-  assert.match(request.url, /^https:\/\/api\.app\.outscraper\.com\/requests\/ui-task-id\?flat=true$/);
+  assert.match(request.url, /^https:\/\/api\.app\.outscraper\.com\/requests\/ui-task-id\?flat=true&convertFileResult=true$/);
   assert.equal(request.options.headers["X-API-KEY"], "secret");
   await assert.rejects(
     client.getRequestResults("https://api.app.outscraper.com.evil.example/requests/ui-task-id"),
@@ -116,7 +116,24 @@ test("Outscraper result retrieval accepts provider API subdomains and retries wi
   );
   assert.equal(requests.length, 2);
   assert.match(requests[0], /flat=true/);
+  assert.match(requests[0], /convertFileResult=true/);
   assert.doesNotMatch(requests[1], /flat=/);
+});
+
+test("Outscraper client lists recent finished requests for recovery", async () => {
+  let request;
+  const client = createOutscraperClient({
+    apiKey: "secret",
+    endpoint: "https://api.outscraper.cloud/google-maps-search",
+    timeoutMs: 1000,
+    fetchImpl: async (url, options) => {
+      request = { url: String(url), options };
+      return new Response(JSON.stringify([{ id: "request-recovery-1", usage: "120" }]), { status: 200 });
+    }
+  });
+  assert.deepEqual(await client.listFinishedRequests({ pageSize: 12 }), [{ id: "request-recovery-1", usage: "120" }]);
+  assert.match(request.url, /^https:\/\/api\.outscraper\.cloud\/requests\?type=finished&pageSize=12&skip=0$/);
+  assert.equal(request.options.headers["X-API-KEY"], "secret");
 });
 
 test("Stripe signatures are verified against the untouched raw body", () => {

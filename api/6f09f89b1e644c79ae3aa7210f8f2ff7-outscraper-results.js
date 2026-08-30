@@ -21,6 +21,13 @@ export default async function handler(request, response) {
     );
     const dependencies = createRuntimeDependencies({ airtable: true, outscraper: true, notifications: true });
     const result = await processOutscraperWebhook(event, dependencies);
+    console.log(JSON.stringify({
+      event: "outscraper_webhook_completed",
+      requestId: result.requestId || null,
+      discovered: result.discovered || 0,
+      recognized: result.recognized || 0,
+      created: result.created || 0
+    }));
     return response.status(200).json({ received: true, result });
   } catch (error) {
     const permanentRequestError = ["INVALID_OUTSCRAPER_SIGNATURE", "INVALID_OUTSCRAPER_JSON"].includes(error.code);
@@ -29,7 +36,9 @@ export default async function handler(request, response) {
       event: "outscraper_webhook_failed",
       status,
       code: error.code || "INTERNAL_ERROR",
-      message: String(error.message || "").slice(0, 300)
+      message: String(error.message || "").slice(0, 300),
+      upstreamStatus: error.upstreamStatus || null,
+      upstreamDetails: String(error.upstreamDetails || "").slice(0, 300)
     }));
     try {
       const dependencies = createRuntimeDependencies({ notifications: true });

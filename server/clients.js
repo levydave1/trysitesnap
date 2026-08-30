@@ -248,12 +248,49 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
       || (host.startsWith("api.") && (host.endsWith(".outscraper.com") || host.endsWith(".outscraper.cloud")));
   }
 
-  async function fetchOutscraperResults(url) {
-    const response = await fetchImpl(url, {
-      headers: { "X-API-KEY": apiKey },
-      signal: AbortSignal.timeout(Math.max(timeoutMs, 60000))
-    });
-    return { response, payload: await readJson(response) };
+  async function fetchOutscraperResults(url, attempts = 3) {
+    let last;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const response = await fetchImpl(url, {
+        headers: { "X-API-KEY": apiKey },
+        signal: AbortSignal.timeout(Math.max(timeoutMs, 90000))
+      });
+      const payload = await readJson(response);
+      last = { response, payload };
+      if (response.ok || (response.status !== 429 && response.status < 500)) return last;
+      if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 750 * (2 ** attempt)));
+    }
+    return last;
+  }
+
+  async function getRequestResults(resultsLocation) {
+    const url = new URL(resultsLocation);
+    if (url.protocol !== "https:" || !validResultsHost(url.hostname)) {
+      const error = new Error("Invalid Outscraper results URL");
+      error.status = 502;
+      error.code = "OUTSCRAPER_RESULTS_URL_REJECTED";
+      throw error;
+    }
+
+    const originalUrl = new URL(url);
+    url.searchParams.set("flat", "true");
+    url.searchParams.set("convertFileResult", "true");
+    let { response, payload } = await fetchOutscraperResults(url);
+
+    // Dashboard-generated task URLs have not always accepted API-only query
+    // options. Retry the provider URL unchanged before treating the request as
+    // failed. UI task results still default to JSON conversion.
+    if (!response.ok && [400, 404, 422].includes(response.status)) {
+      ({ response, payload } = await fetchOutscraperResults(originalUrl));
+    }
+    if (!response.ok) {
+      throw upstreamError(
+        "outscraper",
+        response.status,
+        payload.errorMessage || payload.error?.message || payload.error || payload.raw || ""
+      );
+    }
+    return payload;
   }
 
   return {
@@ -278,25 +315,18 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
       }
       return firstOutscraperPlace(payload);
     },
-    async getRequestResults(resultsLocation) {
-      const url = new URL(resultsLocation);
-      if (url.protocol !== "https:" || !validResultsHost(url.hostname)) {
-        const error = new Error("Invalid Outscraper results URL");
-        error.status = 502;
-        error.code = "OUTSCRAPER_RESULTS_URL_REJECTED";
-        throw error;
-      }
-
-      const originalUrl = new URL(url);
-      url.searchParams.set("flat", "true");
-      let { response, payload } = await fetchOutscraperResults(url);
-
-      // Dashboard-generated task URLs have not always accepted the API-only
-      // `flat` option. Retry the provider URL unchanged before treating the
-      // request as failed.
-      if (!response.ok && [400, 404, 422].includes(response.status) && !originalUrl.searchParams.has("flat")) {
-        ({ response, payload } = await fetchOutscraperResults(originalUrl));
-      }
+    getRequestResults,
+    async getRequestResultsById(requestId) {
+      const id = String(requestId || "").trim();
+      if (!/^[a-z0-9_-]{8,200}$/i.test(id)) throw new Error("Invalid Outscraper request ID");
+      return getRequestResults(new URL(`/requests/${encodeURIComponent(id)}`, endpoint).toString());
+    },
+    async listFinishedRequests({ pageSize = 20, skip = 0 } = {}) {
+      const url = new URL("/requests", endpoint);
+      url.searchParams.set("type", "finished");
+      url.searchParams.set("pageSize", String(Math.min(100, Math.max(1, Number(pageSize) || 20))));
+      url.searchParams.set("skip", String(Math.max(0, Number(skip) || 0)));
+      const { response, payload } = await fetchOutscraperResults(url);
       if (!response.ok) {
         throw upstreamError(
           "outscraper",
@@ -304,7 +334,7 @@ export function createOutscraperClient({ apiKey, endpoint, timeoutMs, fetchImpl 
           payload.errorMessage || payload.error?.message || payload.error || payload.raw || ""
         );
       }
-      return payload;
+      return Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
     }
   };
 }

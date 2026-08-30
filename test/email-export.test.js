@@ -190,6 +190,36 @@ test("02 ignores malformed source emails before applying the batch limit", async
   assert.equal(isValidLeadEmail("owner+test@example.com"), true);
 });
 
+test("02 reports the exact failed stage and upstream status without losing the candidate", async () => {
+  const tf = config.airtable.emailThreadFields;
+  const messages = [];
+  const result = await processEmailExportBatch({
+    config,
+    airtable: {
+      async listRecords(tableId) {
+        if (tableId === config.airtable.emailThreadsTableId) return [];
+        return [{ id: "recWriteDenied", fields: { Email: "lead@example.com", "Business Name": "Diagnostic Lead" } }];
+      },
+      async createRecord() {
+        const error = new Error("Airtable write denied");
+        error.code = "AIRTABLE_UPSTREAM_ERROR";
+        error.upstreamStatus = 403;
+        throw error;
+      }
+    },
+    claude: { async writeEmail() { return { subject: "Quick idea", body: "Short email" }; } },
+    instantly: { async createLead() { return { id: "lead-created" }; } },
+    telegram: { async send(message) { messages.push(message); } }
+  });
+
+  assert.equal(result.failed, 1);
+  assert.equal(result.results[0].stage, "airtable_thread");
+  assert.equal(result.results[0].upstreamStatus, 403);
+  assert.match(messages[0], /airtable_thread\/AIRTABLE_UPSTREAM_ERROR\/403/);
+  assert.doesNotMatch(messages[0], /lead@example\.com/);
+  assert.equal(tf.status, config.airtable.emailThreadFields.status);
+});
+
 test("02 local-noon gate follows Israel daylight saving time", () => {
   assert.equal(isLocalNoon(new Date("2026-07-16T09:30:00Z")), true);
   assert.equal(isLocalNoon(new Date("2026-07-16T10:30:00Z")), false);

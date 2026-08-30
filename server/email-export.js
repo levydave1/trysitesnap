@@ -114,7 +114,13 @@ function summaryMessage(results) {
   const failed = results.filter((item) => item.status === "failed");
   const names = exported.slice(0, 15).map((item) => `- ${item.businessName}`).join("\n");
   const omitted = exported.length > 15 ? `\n- ועוד ${exported.length - 15}` : "";
-  return `נטענו לידים ל-Instantly\nנשלחו: ${exported.length}\nנכשלו: ${failed.length}${names ? `\n${names}${omitted}` : ""}`;
+  const failureCounts = new Map();
+  for (const item of failed) {
+    const key = `${item.stage || "unknown"}/${item.code || "FAILED"}${item.upstreamStatus ? `/${item.upstreamStatus}` : ""}`;
+    failureCounts.set(key, (failureCounts.get(key) || 0) + 1);
+  }
+  const failureDetails = [...failureCounts.entries()].slice(0, 5).map(([key, count]) => `- ${key}: ${count}`).join("\n");
+  return `נטענו לידים ל-Instantly\nנשלחו: ${exported.length}\nנכשלו: ${failed.length}${names ? `\n${names}${omitted}` : ""}${failureDetails ? `\nסיבות:\n${failureDetails}` : ""}`;
 }
 
 export async function processEmailExportBatch(dependencies, options = {}) {
@@ -150,8 +156,10 @@ export async function processEmailExportBatch(dependencies, options = {}) {
 
   const results = await mapConcurrent(candidates, options.concurrency || config.emailExport.concurrency, async (record) => {
     const lead = leadFromEmailRecord(record);
+    let stage = "generate_email";
     try {
       const email = await generateEmailForLead({ gemini, claude }, lead, options.flow);
+      stage = "instantly";
       const instantLead = await ensureInstantlyLead(instantly, {
         campaign: config.emailExport.campaignId,
         email: lead.email,
@@ -173,6 +181,7 @@ export async function processEmailExportBatch(dependencies, options = {}) {
       }, lead.email, config.emailExport.campaignId);
 
       if (!completed.has(record.id)) {
+        stage = "airtable_thread";
         await airtable.createRecord(config.airtable.emailThreadsTableId, {
           [threadFields.subject]: email.subject,
           [threadFields.body]: email.body,
@@ -201,7 +210,9 @@ export async function processEmailExportBatch(dependencies, options = {}) {
         status: "failed",
         recordId: record.id,
         businessName: lead.businessName,
+        stage,
         code: error.code || "EMAIL_EXPORT_FAILED",
+        upstreamStatus: error.upstreamStatus || null,
         message: clean(error.message).slice(0, 240)
       };
     }
