@@ -10,6 +10,11 @@ import {
   verifyOutscraperWebhook
 } from "../server/outscraper-webhook.js";
 
+const activeConfig = {
+  ...config,
+  outscraper: { ...config.outscraper, paused: false }
+};
+
 function lead(overrides = {}) {
   return {
     name: "Daily Test Roofing",
@@ -118,7 +123,7 @@ test("completed Outscraper request imports in Airtable batches and reports the c
     status: "SUCCESS",
     results_location: "https://api.outscraper.cloud/requests/request-batch"
   }, {
-    config,
+    config: activeConfig,
     outscraper: { async getRequestResults() { return { data: rows }; } },
     airtable: {
       async listRecords() { return []; },
@@ -145,7 +150,7 @@ test("completed webhook accepts dashboard aliases and embedded results", async (
       results: [lead({ cid: "embedded-1", email: "embedded@example.com" })]
     }
   }, {
-    config,
+    config: activeConfig,
     outscraper: { async getRequestResults() { throw new Error("should not fetch embedded results"); } },
     airtable: {
       async listRecords() { return []; },
@@ -166,7 +171,7 @@ test("daily recovery skips unrelated requests and imports the latest compatible 
   const fetched = [];
   const existing = [];
   const result = await recoverLatestOutscraperImport({
-    config,
+    config: activeConfig,
     outscraper: {
       async listFinishedRequests() { return [{ id: "reels-request" }, { id: "maps-request" }]; },
       async getRequestResultsById(id) {
@@ -191,4 +196,25 @@ test("daily recovery skips unrelated requests and imports the latest compatible 
   assert.equal(result.result.created, 1);
   assert.equal(created[0].Email, "recovery@example.com");
   assert.equal(existing.length, 1);
+});
+
+test("paused webhook and recovery never read or create lead records", async () => {
+  let calls = 0;
+  const dependencies = {
+    config,
+    outscraper: {
+      async getRequestResults() { calls += 1; return { data: [lead()] }; },
+      async listFinishedRequests() { calls += 1; return []; }
+    },
+    airtable: {
+      async listRecords() { calls += 1; return []; },
+      async createRecords() { calls += 1; return []; }
+    },
+    telegram: null
+  };
+  const webhook = await processOutscraperWebhook({ id: "paused-request", status: "SUCCESS", data: [lead()] }, dependencies);
+  const recovery = await recoverLatestOutscraperImport(dependencies);
+  assert.deepEqual(webhook, { success: true, skipped: true, paused: true, reason: "OUTSCRAPER_PAUSED" });
+  assert.deepEqual(recovery, { success: true, recovered: false, inspected: 0, paused: true });
+  assert.equal(calls, 0);
 });

@@ -262,6 +262,9 @@ export function airtableFieldsForLead(row, { runName, now = new Date() } = {}) {
 }
 
 export async function processOutscraperWebhook(event, dependencies, options = {}) {
+  if (dependencies.config.outscraper.paused === true) {
+    return { success: true, skipped: true, paused: true, reason: "OUTSCRAPER_PAUSED" };
+  }
   event = normalizeWebhookEvent(event);
   const status = text(event?.status).toUpperCase();
   if (status !== "SUCCESS") return { success: true, skipped: true, reason: status || "MISSING_STATUS" };
@@ -331,6 +334,9 @@ export async function processOutscraperWebhook(event, dependencies, options = {}
 }
 
 export async function recoverLatestOutscraperImport(dependencies, options = {}) {
+  if (dependencies.config.outscraper.paused === true) {
+    return { success: true, recovered: false, inspected: 0, paused: true };
+  }
   const maxRequests = Math.min(50, Math.max(1, Number(options.maxRequests) || 10));
   const requests = await dependencies.outscraper.listFinishedRequests({ pageSize: maxRequests });
   const existingRecords = await dependencies.airtable.listRecords(

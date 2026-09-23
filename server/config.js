@@ -115,6 +115,9 @@ export const config = Object.freeze({
     }
   },
   outscraper: {
+    // Operational pause requested on 2026-09-23. Keep email export of existing
+    // leads active, but do not start or import any new Outscraper work.
+    paused: true,
     endpoint: "https://api.outscraper.cloud/google-maps-search",
     limit: 1,
     language: "en",

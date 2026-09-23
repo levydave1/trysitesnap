@@ -3,9 +3,14 @@ import { test } from "node:test";
 import { config } from "../server/config.js";
 import { recentOutscraperImport, runOutscraperWatchdog } from "../server/outscraper-watchdog.js";
 
+const activeConfig = {
+  ...config,
+  outscraper: { ...config.outscraper, paused: false }
+};
+
 function dependencies(overrides = {}) {
   return {
-    config,
+    config: activeConfig,
     airtable: {
       async listRecords() { return []; }
     },
@@ -18,6 +23,22 @@ function dependencies(overrides = {}) {
     ...overrides
   };
 }
+
+test("watchdog performs no Outscraper work while the operational pause is active", async () => {
+  let calls = 0;
+  const result = await runOutscraperWatchdog({ headers: { host: "example.test" } }, {
+    config,
+    airtable: { async listRecords() { calls += 1; return []; } },
+    outscraper: {
+      async listFinishedRequests() { calls += 1; return []; },
+      async listRequests() { calls += 1; return []; },
+      async startGoogleMapsSearch() { calls += 1; return {}; }
+    },
+    telegram: null
+  });
+  assert.deepEqual(result, { success: true, action: "paused", paused: true });
+  assert.equal(calls, 0);
+});
 
 test("watchdog recognizes a recent Outscraper import", () => {
   const now = new Date("2026-08-30T11:00:00Z");
@@ -67,7 +88,7 @@ test("watchdog can backfill one known UI task by request ID", async () => {
   const result = await runOutscraperWatchdog({ headers: { host: "project.example" } }, dependencies({
     config: {
       ...config,
-      outscraper: { ...config.outscraper, manualBackfillResults: { "20260830122243s22e2": resultUrl } }
+      outscraper: { ...activeConfig.outscraper, manualBackfillResults: { "20260830122243s22e2": resultUrl } }
     },
     outscraper: {
       async getRequestResults(url) {

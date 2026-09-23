@@ -28,6 +28,9 @@ function webhookUrl(request, path) {
 export async function runOutscraperWatchdog(request, dependencies, options = {}) {
   const now = options.now || new Date();
   const cfg = dependencies.config.outscraper;
+  if (cfg.paused === true) {
+    return { success: true, action: "paused", paused: true };
+  }
   const backfillRequestId = text(options.backfillRequestId);
   if (backfillRequestId) {
     if (!/^[a-z0-9_-]{8,200}$/i.test(backfillRequestId)) throw new Error("Invalid Outscraper backfill request ID");
