@@ -77,6 +77,7 @@ The Stripe webhook signing secret still needs a security rotation. Stripe requir
 - All five table counts and content checksums match the snapshot. Field-ID compatibility and a create/read/delete smoke test also passed.
 - Production and Preview select the new database with `DATA_BACKEND=postgres`. `/api/02-email-preview-test?health=data-store` performs a live query without exposing customer data or sending email.
 - Rollback does not require a code change: set `DATA_BACKEND=airtable` and redeploy. Keep the Airtable token and inactive Airtable account available during the observation period.
+- The `SiteSnap Local Service Watchdog` Windows task is disabled (not deleted), and the old local Airtable server/sync processes were stopped. The production health query still passed afterward, confirming that the live system no longer depends on this computer or shared folder being online.
 - The import recorded metadata for 15,145 referenced assets. Airtable-hosted attachment files still need to be copied to independent object storage before the Airtable subscription can be cancelled without losing old file links.
 
 ## Rollback rule
