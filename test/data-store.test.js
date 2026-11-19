@@ -1,0 +1,130 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { airtableFieldNamesByTable, config } from "../server/config.js";
+import { createPostgresDataClient } from "../server/data-store.js";
+
+function fakeDatabase() {
+  const records = [
+    {
+      id: "recAAAAAAAAAAAAAA",
+      table_id: config.airtable.tableId,
+      created_at: "2026-10-02T00:00:00.000Z",
+      fields: { "Business Name": "Later", "Business ID": "recBBBBBBBBBBBBBB", "Draft Site URL": "", Notes: "" }
+    },
+    {
+      id: "recCCCCCCCCCCCCCC",
+      table_id: config.airtable.tableId,
+      created_at: "2026-10-01T00:00:00.000Z",
+      fields: { "Business Name": "Earlier", "Business ID": "recDDDDDDDDDDDDDD", "Draft Site URL": "", Notes: "" }
+    },
+    {
+      id: "recEEEEEEEEEEEEEE",
+      table_id: config.airtable.emailThreadsTableId,
+      created_at: "2026-10-03T00:00:00.000Z",
+      fields: { "Business ID": "recRawRawRawRaw01", "To Email": "owner@example.com", "Reply Status": "sent" }
+    }
+  ];
+  const calls = [];
+  async function query(text, values) {
+    calls.push({ text, values });
+    if (/^SELECT id, fields, created_at FROM sitesnap_records WHERE id=/m.test(text)) {
+      return records.filter((record) => record.id === values[0] && record.table_id === values[1]);
+    }
+    if (/FROM sitesnap_records\s+WHERE table_id=\$1/m.test(text)) {
+      const names = values[1] ? JSON.parse(values[1]) : null;
+      return records.filter((record) => record.table_id === values[0]).map((record) => ({
+        ...record,
+        fields: names
+          ? Object.fromEntries(Object.entries(record.fields).filter(([name]) => names.includes(name)))
+          : record.fields
+      }));
+    }
+    if (/^UPDATE sitesnap_records/m.test(text)) {
+      const record = records.find((item) => item.id === values[0] && item.table_id === values[1]);
+      if (!record) return [];
+      Object.assign(record.fields, JSON.parse(values[2]));
+      return [record];
+    }
+    if (/^INSERT INTO sitesnap_records/m.test(text)) {
+      const created = [];
+      for (let index = 0; index < values.length; index += 4) {
+        const record = {
+          id: values[index], table_id: values[index + 1],
+          fields: JSON.parse(values[index + 2]), created_at: values[index + 3]
+        };
+        records.push(record);
+        created.push(record);
+      }
+      return created;
+    }
+    throw new Error(`Unexpected query: ${text}`);
+  }
+  return { calls, query, records };
+}
+
+function client(database) {
+  return createPostgresDataClient({
+    defaultTableId: config.airtable.tableId,
+    fieldNamesByTable: airtableFieldNamesByTable,
+    queryImpl: database.query
+  });
+}
+
+test("Postgres data store preserves Airtable field-ID reads", async () => {
+  const database = fakeDatabase();
+  const store = client(database);
+  const records = await store.listRecords(config.airtable.emailThreadsTableId, {
+    fields: [
+      config.airtable.emailThreadFields.rawBusinessRecord,
+      config.airtable.emailThreadFields.recipientEmail,
+      config.airtable.emailThreadFields.status
+    ],
+    returnFieldsByFieldId: true
+  });
+  assert.deepEqual(records[0].fields, {
+    [config.airtable.emailThreadFields.rawBusinessRecord]: "recRawRawRawRaw01",
+    [config.airtable.emailThreadFields.recipientEmail]: "owner@example.com",
+    [config.airtable.emailThreadFields.status]: "sent"
+  });
+  assert.match(database.calls[0].text, /jsonb_each/);
+});
+
+test("Postgres data store translates Airtable field IDs on writes", async () => {
+  const database = fakeDatabase();
+  const store = client(database);
+  const result = await store.updateRecord("recAAAAAAAAAAAAAA", {
+    [config.airtable.fields.notes]: "migrated"
+  });
+  assert.equal(result.fields.Notes, "migrated");
+  assert.deepEqual(JSON.parse(database.calls[0].values[2]), { Notes: "migrated" });
+  await assert.rejects(
+    store.updateRecord("recAAAAAAAAAAAAAA", { fldUnknownField000: "bad" }),
+    /Unknown Airtable field ID/
+  );
+});
+
+test("Postgres data store supports the first-sketch queue filter and ordering", async () => {
+  const database = fakeDatabase();
+  const store = client(database);
+  const records = await store.listRecords(config.airtable.tableId, {
+    filterByFormula: "AND({Business Name}!=\"\",{Draft Site URL}=\"\",IS_AFTER(CREATED_TIME(),'2026-09-30T00:00:00.000Z'))",
+    maxRecords: 20,
+    sort: [{ field: "Created At", direction: "asc" }]
+  });
+  assert.deepEqual(records.map((record) => record.id), ["recCCCCCCCCCCCCCC", "recAAAAAAAAAAAAAA"]);
+  await assert.rejects(
+    store.listRecords(config.airtable.tableId, { filterByFormula: "TRUE()" }),
+    /Unsupported data-store filter formula/
+  );
+});
+
+test("Postgres data store creates Airtable-compatible record IDs", async () => {
+  const database = fakeDatabase();
+  const store = client(database);
+  const created = await store.createRecord(config.airtable.rawOutscraperTableId, {
+    [config.airtable.rawOutscraperFields.businessName]: "New business"
+  });
+  assert.match(created.id, /^rec[a-zA-Z0-9]{14}$/);
+  assert.equal(created.fields["Business Name"], "New business");
+});
+

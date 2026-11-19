@@ -13,17 +13,29 @@ import {
   createTelegramClient,
   createVercelDeliveryClient
 } from "./clients.js";
-import { config } from "./config.js";
+import { airtableFieldNamesByTable, config } from "./config.js";
+import { createPostgresDataClient } from "./data-store.js";
 
 export function createRuntimeDependencies(needs = {}) {
   const dependencies = { config };
   if (needs.airtable) {
-    dependencies.airtable = createAirtableClient({
-      baseId: config.airtable.baseId,
-      tableId: config.airtable.tableId,
-      accessToken: process.env.AIRTABLE_ACCESS_TOKEN,
-      timeoutMs: config.upstreamTimeoutMs
-    });
+    const dataBackend = String(process.env.DATA_BACKEND || "airtable").trim().toLowerCase();
+    if (!new Set(["airtable", "postgres"]).has(dataBackend)) {
+      throw new Error(`Unsupported DATA_BACKEND: ${dataBackend}`);
+    }
+    dependencies.dataBackend = dataBackend;
+    dependencies.airtable = dataBackend === "postgres"
+      ? createPostgresDataClient({
+          databaseUrl: process.env.DATABASE_URL,
+          defaultTableId: config.airtable.tableId,
+          fieldNamesByTable: airtableFieldNamesByTable
+        })
+      : createAirtableClient({
+          baseId: config.airtable.baseId,
+          tableId: config.airtable.tableId,
+          accessToken: process.env.AIRTABLE_ACCESS_TOKEN,
+          timeoutMs: config.upstreamTimeoutMs
+        });
   }
   if (needs.cloudflare) {
     dependencies.cloudflare = createCloudflareClient({
