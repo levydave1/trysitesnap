@@ -197,6 +197,10 @@ export function createPostgresDataClient({
   }
 
   return {
+    async healthCheck() {
+      await query("SELECT COUNT(*)::bigint AS record_count FROM sitesnap_records");
+      return { reachable: true };
+    },
     getRecord(id) {
       return getRecordFromTable(defaultTableId, id);
     },

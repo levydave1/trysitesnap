@@ -27,6 +27,9 @@ function fakeDatabase() {
   const calls = [];
   async function query(text, values) {
     calls.push({ text, values });
+    if (/^SELECT COUNT\(\*\)::bigint AS record_count FROM sitesnap_records/m.test(text)) {
+      return [{ record_count: String(records.length) }];
+    }
     if (/^SELECT id, fields, created_at FROM sitesnap_records WHERE id=/m.test(text)) {
       return records.filter((record) => record.id === values[0] && record.table_id === values[1]);
     }
@@ -126,5 +129,12 @@ test("Postgres data store creates Airtable-compatible record IDs", async () => {
   });
   assert.match(created.id, /^rec[a-zA-Z0-9]{14}$/);
   assert.equal(created.fields["Business Name"], "New business");
+});
+
+test("Postgres data store health check reaches the records table", async () => {
+  const database = fakeDatabase();
+  const store = client(database);
+  assert.deepEqual(await store.healthCheck(), { reachable: true });
+  assert.match(database.calls[0].text, /COUNT\(\*\).*sitesnap_records/);
 });
 
