@@ -75,7 +75,7 @@ The Stripe webhook signing secret still needs a security rotation. Stripe requir
 - The independent `sitesnap-data` Neon Postgres database is connected to Vercel Production and Preview in region `iad1`.
 - The local Airtable snapshot was imported with 10,267 structured records: 92 Generation Jobs, 1 Orders Domains, 5,911 Raw Outscraper, 4,225 Email Threads and 38 Businesses.
 - All five table counts and content checksums match the snapshot. Field-ID compatibility and a create/read/delete smoke test also passed.
-- Production and Preview select the new database with `DATA_BACKEND=postgres`. `/api/data-store-health` performs a live query without exposing customer data.
+- Production and Preview select the new database with `DATA_BACKEND=postgres`. `/api/02-email-preview-test?health=data-store` performs a live query without exposing customer data or sending email.
 - Rollback does not require a code change: set `DATA_BACKEND=airtable` and redeploy. Keep the Airtable token and inactive Airtable account available during the observation period.
 - The import recorded metadata for 15,145 referenced assets. Airtable-hosted attachment files still need to be copied to independent object storage before the Airtable subscription can be cancelled without losing old file links.
 
