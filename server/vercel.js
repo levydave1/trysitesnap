@@ -1,5 +1,5 @@
-import { createAirtableClient, createCloudflareClient } from "./clients.js";
 import { config } from "./config.js";
+import { createRuntimeDependencies } from "./runtime.js";
 
 function requestOrigin(request) {
   const protocol = String(request.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
@@ -29,7 +29,13 @@ function bodySize(request) {
   return Buffer.byteLength(raw);
 }
 
-export function createVercelHandler({ method, action, needsCloudflare = false, needsAirtable = false }) {
+export function createVercelHandler({
+  method,
+  action,
+  needsCloudflare = false,
+  needsAirtable = false,
+  dependencyFactory = createRuntimeDependencies
+}) {
   return async function handler(request, response) {
     applyHeaders(request, response);
     const origin = request.headers.origin;
@@ -47,22 +53,10 @@ export function createVercelHandler({ method, action, needsCloudflare = false, n
     }
 
     try {
-      const dependencies = { config };
-      if (needsCloudflare) {
-        dependencies.cloudflare = createCloudflareClient({
-          accountId: config.cloudflare.accountId,
-          apiToken: process.env.CLOUDFLARE_API_TOKEN,
-          timeoutMs: config.upstreamTimeoutMs
-        });
-      }
-      if (needsAirtable) {
-        dependencies.airtable = createAirtableClient({
-          baseId: config.airtable.baseId,
-          tableId: config.airtable.tableId,
-          accessToken: process.env.AIRTABLE_ACCESS_TOKEN,
-          timeoutMs: config.upstreamTimeoutMs
-        });
-      }
+      const dependencies = dependencyFactory({
+        cloudflare: needsCloudflare,
+        airtable: needsAirtable
+      });
 
       const input = request.method === "GET" ? request.query : request.body;
       return response.status(200).json(await action(input, dependencies));

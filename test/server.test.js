@@ -7,7 +7,19 @@ import {
   domainRegistration,
   existingDomain
 } from "../server/handlers.js";
-import { isAllowedOrigin } from "../server/vercel.js";
+import { createVercelHandler, isAllowedOrigin } from "../server/vercel.js";
+
+function responseRecorder() {
+  return {
+    headers: {},
+    statusCode: 0,
+    payload: null,
+    setHeader(name, value) { this.headers[name] = value; },
+    status(code) { this.statusCode = code; return this; },
+    json(payload) { this.payload = payload; return this; },
+    end() { return this; }
+  };
+}
 
 test("07 applies the original Make price and tier policy", async () => {
   const calls = [];
@@ -68,6 +80,29 @@ test("09 updates only the existing-domain field", async () => {
     { success: true }
   );
   assert.deepEqual(calls, [{ recordId: "recIoxgm0vtZ9DmGv", fields: { fldvynrxwT7lCptbK: "example.com" } }]);
+});
+
+test("shared Vercel handlers obtain Airtable-compatible data from the selected runtime backend", async () => {
+  const requested = [];
+  const dataClient = { async updateRecord() {} };
+  const handler = createVercelHandler({
+    method: ["POST"],
+    needsAirtable: true,
+    needsCloudflare: true,
+    dependencyFactory(needs) {
+      requested.push(needs);
+      return { config, airtable: dataClient, cloudflare: { checkDomains() {} } };
+    },
+    async action(input, dependencies) {
+      assert.equal(dependencies.airtable, dataClient);
+      return { success: true, input };
+    }
+  });
+  const response = responseRecorder();
+  await handler({ method: "POST", headers: {}, body: { record_id: "recTest" } }, response);
+  assert.deepEqual(requested, [{ cloudflare: true, airtable: true }]);
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.payload, { success: true, input: { record_id: "recTest" } });
 });
 
 test("Preview deployments accept their own same-origin form submissions", () => {
