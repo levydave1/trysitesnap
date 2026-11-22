@@ -42,7 +42,6 @@ Scenario 02 production test Raw record: `recdfAC9tau5DtoS1`.
 Secrets are stored only in Vercel or the corresponding provider, never in Git or this shared folder. The runtime uses:
 
 - `CLOUDFLARE_API_TOKEN`
-- `AIRTABLE_ACCESS_TOKEN`
 - `STRIPE_WEBHOOK_SECRET`
 - `VERCEL_DELIVERY_TOKEN`
 - `MAIL_RELAY_URL` and `MAIL_RELAY_SECRET`
@@ -76,9 +75,9 @@ The Stripe webhook signing secret still needs a security rotation. Stripe requir
 - The local Airtable snapshot was imported with 10,267 structured records: 92 Generation Jobs, 1 Orders Domains, 5,911 Raw Outscraper, 4,225 Email Threads and 38 Businesses.
 - All five table counts and content checksums match the snapshot. Field-ID compatibility and a create/read/delete smoke test also passed.
 - Production and Preview select the new database with `DATA_BACKEND=postgres`. `/api/02-email-preview-test?health=data-store` performs a live query without exposing customer data or sending email.
-- Rollback does not require a code change: set `DATA_BACKEND=airtable` and redeploy. Keep the Airtable token and inactive Airtable account available during the observation period.
+- On 2026-11-22 the Airtable token was removed from the local environment and from Vercel Production/Preview. Postgres is also the runtime default if `DATA_BACKEND` is absent. Reconnecting Airtable would now require deliberately adding a new token and selecting the Airtable backend.
 - The `SiteSnap Local Service Watchdog` Windows task is disabled (not deleted), and the old local Airtable server/sync processes were stopped. The production health query still passed afterward, confirming that the live system no longer depends on this computer or shared folder being online.
-- The import recorded metadata for 15,145 referenced assets. Airtable-hosted attachment files still need to be copied to independent object storage before the Airtable subscription can be cancelled without losing old file links.
+- The 52 actual Airtable attachments are dated 2026-05-11 through 2026-07-20 (about 42 MB), and all 52 have local copies. They are not used by the active runtime; loss of their original Airtable URLs was accepted during the final disconnect.
 
 ## Rollback rule
 

@@ -19,7 +19,7 @@ import { createPostgresDataClient } from "./data-store.js";
 export function createRuntimeDependencies(needs = {}) {
   const dependencies = { config };
   if (needs.airtable) {
-    const dataBackend = String(process.env.DATA_BACKEND || "airtable").trim().toLowerCase();
+    const dataBackend = String(process.env.DATA_BACKEND || "postgres").trim().toLowerCase();
     if (!new Set(["airtable", "postgres"]).has(dataBackend)) {
       throw new Error(`Unsupported DATA_BACKEND: ${dataBackend}`);
     }
