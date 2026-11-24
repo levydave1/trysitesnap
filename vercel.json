@@ -1,6 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/overture-leads",
+      "destination": "/api/02-email-preview-test?pipeline=overture"
+    }
+  ],
   "functions": {
     "api/1c177b7f64d64fa9a9a4dce318d8d681-stripe-events.js": {
       "maxDuration": 60
@@ -21,9 +27,6 @@
       "maxDuration": 300
     },
     "api/04-first-sketch.js": {
-      "maxDuration": 300
-    },
-    "api/overture-leads.js": {
       "maxDuration": 300
     }
   },

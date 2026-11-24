@@ -1,6 +1,7 @@
 import { normalizeEmailFlow } from "../server/email-export.js";
 import { checkDataStore } from "../server/data-store-health.js";
 import { sendEmailPreviewTests } from "../server/email-preview-test.js";
+import { overtureHandler } from "../server/overture-handler.js";
 import { createRuntimeDependencies } from "../server/runtime.js";
 
 function authorized(request) {
@@ -9,6 +10,7 @@ function authorized(request) {
 }
 
 export default async function emailPreviewTestHandler(request, response) {
+  if (request.query?.pipeline === "overture") return overtureHandler(request, response);
   response.setHeader("Cache-Control", "no-store");
   response.setHeader("X-Content-Type-Options", "nosniff");
   if (request.method === "GET" && request.query?.health === "data-store") {
