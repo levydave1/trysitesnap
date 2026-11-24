@@ -163,6 +163,56 @@ export function createPostgresDataClient({
     return records.map((record) => projectRecord(record, options, fieldNamesByTable, tableId));
   }
 
+  async function listTables() {
+    return resultRows(await query(
+      `SELECT t.id, t.name, COUNT(r.id)::bigint AS record_count,
+              COUNT(r.id) FILTER (WHERE r.source_hash IS NOT NULL)::bigint AS imported_count,
+              COUNT(r.id) FILTER (WHERE r.source_hash IS NULL)::bigint AS live_count,
+              t.field_count, t.source_exported_at, MAX(r.updated_at) AS last_record_update
+       FROM sitesnap_tables t
+       LEFT JOIN sitesnap_records r ON r.table_id=t.id
+       GROUP BY t.id, t.name, t.field_count, t.source_exported_at
+       ORDER BY t.name ASC`,
+      []
+    )).map((row) => ({
+      id: row.id,
+      name: row.name,
+      recordCount: Number(row.record_count) || 0,
+      importedCount: Number(row.imported_count) || 0,
+      liveCount: Number(row.live_count) || 0,
+      fieldCount: Number(row.field_count) || 0,
+      sourceExportedAt: isoTime(row.source_exported_at),
+      lastRecordUpdate: isoTime(row.last_record_update)
+    }));
+  }
+
+  async function browseRecords(tableId, options = {}) {
+    const limit = Math.max(1, Math.min(100, Number(options.limit) || 25));
+    const offset = Math.max(0, Number(options.offset) || 0);
+    const search = String(options.search || "").trim().slice(0, 120);
+    const pattern = search ? `%${search}%` : "";
+    const countRows = resultRows(await query(
+      `SELECT COUNT(*)::bigint AS total
+       FROM sitesnap_records
+       WHERE table_id=$1 AND ($2='' OR fields::text ILIKE $2)`,
+      [tableId, pattern]
+    ));
+    const rows = resultRows(await query(
+      `SELECT id, fields, created_at
+       FROM sitesnap_records
+       WHERE table_id=$1 AND ($2='' OR fields::text ILIKE $2)
+       ORDER BY created_at DESC, id DESC
+       LIMIT $3 OFFSET $4`,
+      [tableId, pattern, limit, offset]
+    ));
+    return {
+      total: Number(countRows[0]?.total) || 0,
+      limit,
+      offset,
+      records: rows.map(rowRecord)
+    };
+  }
+
   async function updateRecordInTable(tableId, id, fields) {
     const canonical = canonicalFields(fieldNamesByTable, tableId, fields);
     const rows = resultRows(await query(
@@ -210,6 +260,8 @@ export function createPostgresDataClient({
     },
     getRecordFromTable,
     listRecords,
+    listTables,
+    browseRecords,
     updateRecord,
     updateRecordInTable,
     async createRecord(tableId, fields) {

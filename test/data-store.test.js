@@ -148,3 +148,34 @@ test("Postgres data store health check reaches the records table", async () => {
   assert.match(database.calls[0].text, /COUNT\(\*\).*sitesnap_records/);
 });
 
+test("Postgres data store exposes live table counts and paginated record browsing", async () => {
+  const calls = [];
+  const store = createPostgresDataClient({
+    defaultTableId: config.airtable.tableId,
+    fieldNamesByTable: airtableFieldNamesByTable,
+    queryImpl: async (text, values) => {
+      calls.push({ text, values });
+      if (/FROM sitesnap_tables t/.test(text)) return [{
+        id: "tblHistory", name: "Businesses", record_count: "38", imported_count: "38",
+        live_count: "0", field_count: 12, source_exported_at: "2026-11-20T00:00:00Z",
+        last_record_update: "2026-11-20T00:00:00Z"
+      }];
+      if (/SELECT COUNT\(\*\)::bigint AS total/.test(text)) return [{ total: "1" }];
+      if (/ORDER BY created_at DESC/.test(text)) return [{
+        id: "recDashboardRecord", fields: { "Business Name": "Dashboard Co" }, created_at: "2026-11-24T00:00:00Z"
+      }];
+      throw new Error(`Unexpected query: ${text}`);
+    }
+  });
+  const tables = await store.listTables();
+  assert.deepEqual(tables[0], {
+    id: "tblHistory", name: "Businesses", recordCount: 38, importedCount: 38,
+    liveCount: 0, fieldCount: 12, sourceExportedAt: "2026-11-20T00:00:00.000Z",
+    lastRecordUpdate: "2026-11-20T00:00:00.000Z"
+  });
+  const page = await store.browseRecords("tblHistory", { limit: 20, offset: 0, search: "Dashboard" });
+  assert.equal(page.total, 1);
+  assert.equal(page.records[0].fields["Business Name"], "Dashboard Co");
+  assert.deepEqual(calls[1].values, ["tblHistory", "%Dashboard%"]);
+});
+

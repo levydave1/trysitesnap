@@ -79,6 +79,14 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - A protected GET on `/api/overture-leads` returns the pending verification batch. A protected POST with `action=verification_results` imports the later batch results; neither operation sends email by itself.
 - GitHub Actions uses a short-lived signed identity token. The route accepts it only from `levydave1/trysitesnap`, the `main` branch and the manual Overture workflow, so no new shared GitHub/Vercel secret is required. The existing `CRON_SECRET` remains available for protected manual batch export/import.
 
+## Operations dashboard
+
+- `/lead-dashboard` is the private operational view for the full system, not only the Overture pipeline.
+- It reads the five Neon tables that replaced Airtable, distinguishes untouched Airtable snapshot records from records created or updated locally after cutover, and supports protected search across the complete history.
+- The overview combines lead sources and decisions, verification state, Instantly queue history, generation jobs, sketches, orders/domains, system dependencies and recent activity.
+- Pending verification email addresses can be downloaded as CSV. A later external-result CSV can be reviewed and imported from the same dashboard; the server still enforces the strict approval gate.
+- Access uses an HTTP-only signed session cookie backed by the Vercel Secret `DASHBOARD_ACCESS_KEY`; the key is never embedded in the page or repository.
+
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
 ## Airtable data cutover — 2026-11-20
