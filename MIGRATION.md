@@ -54,7 +54,7 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - `EMAIL_EXPORT_MAX_RECORDS`
 - `EMAIL_EXPORT_FLOW` (`v2` in production; change to `legacy` for model-flow rollback)
 - `EMAIL_PREVIEW_TEST_SECRET`
-- `OVERTURE_INGEST_SECRET` (optional dedicated secret; the protected Overture route falls back to `CRON_SECRET`)
+- `OVERTURE_INGEST_SECRET` is optional for manual integrations. The GitHub discovery workflow authenticates with a short-lived signed identity instead of storing a shared secret.
 
 ## Scenario 02 operating notes
 
@@ -77,7 +77,7 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - Scenario 02 enforces that gate. Only a fresh external result of `GOOD`, `OK`, `VALID` or `DELIVERABLE`, with a named provider and no catch-all flag, can make an Overture row exportable.
 - Instantly verification is explicitly disabled on import. This prevents verification-credit usage there.
 - A protected GET on `/api/overture-leads` returns the pending verification batch. A protected POST with `action=verification_results` imports the later batch results; neither operation sends email by itself.
-- GitHub Actions needs one repository secret named `OVERTURE_INGEST_SECRET`. Store the same value in Vercel as a Secret, or let the route use the existing `CRON_SECRET` value and put that value only in the GitHub secret.
+- GitHub Actions uses a short-lived signed identity token. The route accepts it only from `levydave1/trysitesnap`, the `main` branch and the manual Overture workflow, so no new shared GitHub/Vercel secret is required. The existing `CRON_SECRET` remains available for protected manual batch export/import.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
