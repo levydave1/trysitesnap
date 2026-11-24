@@ -34,7 +34,7 @@ jobs:
       - run: python -m pip install -r ops/requirements-overture.txt
       - name: Discover and stage leads
         env:
-          OVERTURE_INGEST_URL: https://www.trysitesnap.com/api/overture-leads
+          OVERTURE_INGEST_URL: https://trysitesnap.com/api/overture-leads
           OVERTURE_INGEST_SECRET: ${{ secrets.OVERTURE_INGEST_SECRET }}
           OVERTURE_RELEASE: ${{ inputs.release }}
           OVERTURE_LIMIT: ${{ inputs.limit }}

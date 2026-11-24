@@ -21,7 +21,7 @@ import duckdb
 
 
 DEFAULT_RELEASE = "2026-11-18.0"
-DEFAULT_URL = "https://www.trysitesnap.com/api/overture-leads"
+DEFAULT_URL = "https://trysitesnap.com/api/overture-leads"
 RELEASE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}\.\d+$")
 STATE_GROUPS = [
     ["CA", "OR", "WA", "AK", "HI"],
