@@ -54,18 +54,30 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - `EMAIL_EXPORT_MAX_RECORDS`
 - `EMAIL_EXPORT_FLOW` (`v2` in production; change to `legacy` for model-flow rollback)
 - `EMAIL_PREVIEW_TEST_SECRET`
+- `OVERTURE_INGEST_SECRET` (optional dedicated secret; the protected Overture route falls back to `CRON_SECRET`)
 
 ## Scenario 02 operating notes
 
 - Vercel owns the schedule, so scenario 02 does not depend on either local computer or on the shared folder being open.
 - Two UTC cron entries cover Israeli daylight-saving and winter time. Each route checks that the local hour in `Asia/Jerusalem` is 12 before doing work, preventing a duplicate daily run.
 - The production batch limit is 200 eligible leads. Malformed source email addresses are ignored before the limit is applied, so an invalid oldest row cannot block the queue.
-- Instantly duplicate guards and the Airtable `sent` audit record make retries safe for already-exported Raw records.
+- Instantly duplicate guards and the Neon `queued` audit record make retries safe for already-exported Raw records. `queued` means the lead was added to the campaign; it does not claim that Instantly has already sent the message.
 - Vercel Hobby cron execution has a flexible one-hour window. The run is therefore expected during the 12:00–12:59 Israel-time hour, not necessarily at exactly 12:00:00.
 - Production uses the v2 one-model flow: one Claude structured-output request receives the verified Airtable lead fields and returns the subject/body JSON directly. Gemini is not initialized or called in v2.
 - The original Gemini-to-Claude chain and its exact prompts remain in the code as the `legacy` flow. Set `EMAIL_EXPORT_FLOW=legacy` in Vercel and redeploy to roll back without restoring code or reactivating Make.
 - `/api/02-email-preview-test` is a protected, non-exporting test route. It requires exactly three Airtable Raw record IDs, can send only to the hard-coded approved inbox `levy.dave.1@gmail.com`, and neither calls Instantly nor writes to Airtable.
-- The v2 first email intentionally omits finished-site pricing. It focuses on the already-drafted preview, one grounded detail, one practical benefit, and a permission-based CTA. It states once that viewing the preview has no cost or obligation, without implying that the finished website or launch is free. The `$199` offer belongs in a follow-up after interest.
+- The v2 first email intentionally omits finished-site pricing. It truthfully offers to prepare a tailored homepage concept, uses at most one grounded detail and one practical benefit, and asks permission before work begins. It states that preparing and viewing the concept has no cost or obligation, without implying that the finished website or launch is free. The `$199` offer belongs in a follow-up after interest.
+
+## Overture lead discovery — staged rollout
+
+- Overture Places replaces paid discovery for the new lead source. A manual GitHub Actions job scans the current public Parquet release by a rotating US state group and a broad local-business category profile.
+- The discovery job currently has no daily schedule. The first run is intentionally manual and defaults to dry-run mode so the results can be reviewed before any recurring collection is enabled.
+- The Vercel ingestion route performs syntax, disposable-domain and mail-DNS checks, scores business fit and available website-building data, deduplicates by Overture place and email, and saves qualified rows in Neon.
+- These free checks do not claim that the mailbox exists. Every new Overture row is stored as `PENDING_EXTERNAL_VERIFICATION`, `Email Eligible=no` and `Lead Decision=pending_verification`.
+- Scenario 02 enforces that gate. Only a fresh external result of `GOOD`, `OK`, `VALID` or `DELIVERABLE`, with a named provider and no catch-all flag, can make an Overture row exportable.
+- Instantly verification is explicitly disabled on import. This prevents verification-credit usage there.
+- A protected GET on `/api/overture-leads` returns the pending verification batch. A protected POST with `action=verification_results` imports the later batch results; neither operation sends email by itself.
+- GitHub Actions needs one repository secret named `OVERTURE_INGEST_SECRET`. Store the same value in Vercel as a Secret, or let the route use the existing `CRON_SECRET` value and put that value only in the GitHub secret.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 

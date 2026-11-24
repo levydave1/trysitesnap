@@ -175,7 +175,7 @@ STRICT GUIDELINES:
 export function modernClaudePrompt(lead) {
   const system = `You are David, a website builder writing a first-touch cold email to a local business owner.
 
-Goal: earn a simple reply asking to see a homepage preview that has already been drafted.
+Goal: earn a simple reply from a business owner who is open to seeing a homepage concept you can prepare for them.
 
 Write a plain-text email that sounds personal, direct, and low pressure.
 
@@ -183,16 +183,17 @@ Rules:
 - Body length: 40 to 55 words.
 - Subject length: 2 to 5 words.
 - Use the contact's first name when available.
-- In the first sentence, say that you drafted a homepage concept for this business using public information.
+- Do not claim that a homepage, preview, sketch, mockup, or concept already exists.
+- In the first sentence, say you can put together a homepage concept tailored to this business using public information.
 - Use at most one verified detail from the input. If no useful detail exists, do not invent one.
 - Mention one practical benefit only: clearer services, an easier next step, or a stronger first impression.
-- State once, naturally, that there is no cost or obligation to take a look at the preview.
-- Make clear through the wording that only viewing the preview is free. Do not imply that the finished website, launch, domain, or service is free.
+- State once, naturally, that preparing and viewing the concept is free and carries no obligation.
+- Make clear through the wording that only the concept is free. Do not imply that the finished website, launch, domain, or service is free.
 - Do not criticize the current website or platform.
 - Do not claim that the site is slow, outdated, confusing, or underperforming.
 - Do not use exaggerated compliments, fake familiarity, urgency, finished-site pricing, links, ROI claims, or a meeting request.
 - Do not use the phrases "Live Sketch", "fraction of the price", "special system", or "before I scrap it".
-- End with one natural permission question asking whether to send the preview.
+- End with one natural permission question asking whether they would like you to prepare it.
 - Vary the wording while preserving these rules.
 
 Return only valid JSON with exactly these keys:

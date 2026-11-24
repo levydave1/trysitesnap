@@ -106,6 +106,16 @@ test("Postgres data store translates Airtable field IDs on writes", async () => 
   );
 });
 
+test("Postgres data store can update a non-default table", async () => {
+  const database = fakeDatabase();
+  const store = client(database);
+  const result = await store.updateRecordInTable(config.airtable.emailThreadsTableId, "recEEEEEEEEEEEEEE", {
+    "Reply Status": "queued"
+  });
+  assert.equal(result.fields["Reply Status"], "queued");
+  assert.equal(database.calls[0].values[1], config.airtable.emailThreadsTableId);
+});
+
 test("Postgres data store supports the first-sketch queue filter and ordering", async () => {
   const database = fakeDatabase();
   const store = client(database);

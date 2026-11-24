@@ -79,7 +79,8 @@ test("02 v2 prompt stays grounded and excludes first-email pricing", () => {
   });
   assert.match(prompt.user, /Family and employment law services/);
   assert.match(prompt.system, /using public information/);
-  assert.match(prompt.system, /no cost or obligation to take a look/i);
+  assert.match(prompt.system, /Do not claim that a homepage, preview, sketch, mockup, or concept already exists/i);
+  assert.match(prompt.system, /preparing and viewing the concept is free and carries no obligation/i);
   assert.match(prompt.system, /Do not imply that the finished website, launch, domain, or service is free/i);
   assert.match(prompt.system, /Do not use.*finished-site pricing/i);
   assert.match(prompt.system, /40 to 55 words/);
@@ -154,11 +155,60 @@ test("02 exports only undocumented raw leads and records the Instantly result", 
   assert.equal(instantPayloads[0].campaign, config.emailExport.campaignId);
   assert.equal(instantPayloads[0].custom_variables.businessId, "recNewExportLead");
   assert.equal(instantPayloads[0].skip_if_in_campaign, true);
+  assert.equal(instantPayloads[0].verify_leads_on_import, false);
   assert.equal(writes[0].tableId, config.airtable.emailThreadsTableId);
   assert.deepEqual(writes[0].fields[tf.rawBusinessRecord], ["recNewExportLead"]);
   assert.equal(writes[0].fields[tf.instantlyLeadId], "lead-test-02");
-  assert.equal(writes[0].fields[tf.status], "sent");
-  assert.match(messages[0], /נשלחו: 1/);
+  assert.equal(writes[0].fields[tf.status], "queued");
+  assert.match(writes[0].fields["Queued At"], /^\d{4}-\d{2}-\d{2}T/);
+  assert.equal(writes[0].fields[tf.sentAt], undefined);
+  assert.match(messages[0], /נטענו: 1/);
+});
+
+test("02 blocks an Overture lead until fresh external verification approves it", async () => {
+  const instantPayloads = [];
+  const baseFields = {
+    Email: "owner@example.com",
+    "Business Name": "Pending Plumbing",
+    "Source System": "overture",
+    "Email Eligible": "no",
+    "Email Validation Status": "PENDING_EXTERNAL_VERIFICATION",
+    "Lead Decision": "pending_verification"
+  };
+  const run = async (fields, now) => processEmailExportBatch({
+    config,
+    airtable: {
+      async listRecords(tableId) {
+        if (tableId === config.airtable.emailThreadsTableId) return [];
+        return [{ id: "recOvertureLead", fields }];
+      },
+      async createRecord() { return { id: "recThread" }; }
+    },
+    claude: { async writeEmail() { return { subject: "Homepage idea", body: "A short email" }; } },
+    instantly: {
+      async createLead(payload) { instantPayloads.push(payload); return { id: "lead-overture" }; },
+      async listLeads() { return { items: [] }; }
+    },
+    telegram: { async send() {} }
+  }, { now, notify: false });
+
+  const pending = await run(baseFields, new Date("2026-11-24T10:00:00Z"));
+  assert.equal(pending.exported, 0);
+  assert.equal(pending.skippedUnverified, 1);
+  assert.equal(instantPayloads.length, 0);
+
+  const approved = await run({
+    ...baseFields,
+    "Email Eligible": "yes",
+    "Email Validation Status": "GOOD",
+    "Email Validation Provider": "external_batch",
+    "Email Validation Checked At": "2026-11-23T10:00:00Z",
+    "Email Catch All": "no",
+    "Email Disposable": "no",
+    "Lead Decision": "approved"
+  }, new Date("2026-11-24T10:00:00Z"));
+  assert.equal(approved.exported, 1);
+  assert.equal(instantPayloads.length, 1);
 });
 
 test("02 ignores malformed source emails before applying the batch limit", async () => {

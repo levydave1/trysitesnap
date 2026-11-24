@@ -1,4 +1,5 @@
 import { legacyClaudePrompt, legacyGeminiPrompt, modernClaudePrompt } from "./email-prompts.js";
+import { emailExportEligibility } from "./lead-eligibility.js";
 
 const rawFieldNames = [
   "First Name",
@@ -13,7 +14,15 @@ const rawFieldNames = [
   "Category",
   "City",
   "Website",
-  "Email"
+  "Email",
+  "Source System",
+  "Email Eligible",
+  "Email Validation Status",
+  "Email Validation Provider",
+  "Email Validation Checked At",
+  "Email Catch All",
+  "Email Disposable",
+  "Lead Decision"
 ];
 
 function clean(value) {
@@ -120,7 +129,7 @@ function summaryMessage(results) {
     failureCounts.set(key, (failureCounts.get(key) || 0) + 1);
   }
   const failureDetails = [...failureCounts.entries()].slice(0, 5).map(([key, count]) => `- ${key}: ${count}`).join("\n");
-  return `נטענו לידים ל-Instantly\nנשלחו: ${exported.length}\nנכשלו: ${failed.length}${names ? `\n${names}${omitted}` : ""}${failureDetails ? `\nסיבות:\n${failureDetails}` : ""}`;
+  return `נטענו לידים ל-Instantly\nנטענו: ${exported.length}\nנכשלו: ${failed.length}${names ? `\n${names}${omitted}` : ""}${failureDetails ? `\nסיבות:\n${failureDetails}` : ""}`;
 }
 
 export async function processEmailExportBatch(dependencies, options = {}) {
@@ -141,7 +150,7 @@ export async function processEmailExportBatch(dependencies, options = {}) {
   for (const thread of threads) {
     const value = thread.fields?.[threadFields.rawBusinessRecord];
     if (value !== undefined) rawLinkUsesArray = Array.isArray(value);
-    if (clean(thread.fields?.[threadFields.status]).toLowerCase() === "sent") {
+    if (["queued", "sent", "delivered", "replied"].includes(clean(thread.fields?.[threadFields.status]).toLowerCase())) {
       for (const id of linkedIds(value)) completed.add(id);
       const recipientEmail = clean(thread.fields?.[threadFields.recipientEmail]).toLowerCase();
       if (isValidLeadEmail(recipientEmail)) completedEmails.add(recipientEmail);
@@ -154,11 +163,16 @@ export async function processEmailExportBatch(dependencies, options = {}) {
   const candidates = [];
   const seenEmails = new Set(completedEmails);
   let skippedDuplicates = 0;
+  let skippedUnverified = 0;
   for (const record of rawRecords
     .filter((item) => item?.id && !completed.has(item.id))
     .sort((a, b) => String(a.createdTime || "").localeCompare(String(b.createdTime || "")))) {
     const email = leadFromEmailRecord(record).email;
     if (!isValidLeadEmail(email)) continue;
+    if (!emailExportEligibility(record, { now: options.now }).eligible) {
+      skippedUnverified += 1;
+      continue;
+    }
     if (seenEmails.has(email)) {
       skippedDuplicates += 1;
       continue;
@@ -191,7 +205,7 @@ export async function processEmailExportBatch(dependencies, options = {}) {
         },
         skip_if_in_workspace: true,
         skip_if_in_campaign: true,
-        verify_leads_on_import: true
+        verify_leads_on_import: false
       }, lead.email, config.emailExport.campaignId);
 
       if (!completed.has(record.id)) {
@@ -203,11 +217,11 @@ export async function processEmailExportBatch(dependencies, options = {}) {
           [threadFields.contactName]: lead.fullName,
           [threadFields.sender]: config.emailExport.senderLabel,
           [threadFields.rawBusinessRecord]: rawLinkUsesArray ? [record.id] : record.id,
-          [threadFields.sentAt]: new Date().toISOString(),
+          "Queued At": new Date().toISOString(),
           [threadFields.instantlyLeadId]: instantLead.id,
           [threadFields.businessName]: lead.businessName,
           [threadFields.recipientEmail]: lead.email,
-          [threadFields.status]: "sent",
+          [threadFields.status]: "queued",
           [threadFields.searchText]: `${email.body}${email.subject}`
         });
         completed.add(record.id);
@@ -240,7 +254,8 @@ export async function processEmailExportBatch(dependencies, options = {}) {
     flow: normalizeEmailFlow(options.flow),
     candidates: candidates.length,
     exported: results.filter((item) => item.status === "exported").length,
-    skipped: skippedDuplicates + results.filter((item) => item.status === "skipped").length,
+    skipped: skippedDuplicates + skippedUnverified + results.filter((item) => item.status === "skipped").length,
+    skippedUnverified,
     failed: results.filter((item) => item.status === "failed").length,
     results
   };

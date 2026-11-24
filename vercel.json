@@ -22,6 +22,9 @@
     },
     "api/04-first-sketch.js": {
       "maxDuration": 300
+    },
+    "api/overture-leads.js": {
+      "maxDuration": 300
     }
   },
   "crons": [

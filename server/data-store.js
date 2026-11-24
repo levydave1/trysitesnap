@@ -163,17 +163,21 @@ export function createPostgresDataClient({
     return records.map((record) => projectRecord(record, options, fieldNamesByTable, tableId));
   }
 
-  async function updateRecord(id, fields) {
-    const canonical = canonicalFields(fieldNamesByTable, defaultTableId, fields);
+  async function updateRecordInTable(tableId, id, fields) {
+    const canonical = canonicalFields(fieldNamesByTable, tableId, fields);
     const rows = resultRows(await query(
       `UPDATE sitesnap_records
        SET fields=fields || $3::jsonb, updated_at=NOW(), source_hash=NULL
        WHERE id=$1 AND table_id=$2
        RETURNING id, fields, created_at`,
-      [id, defaultTableId, JSON.stringify(canonical)]
+      [id, tableId, JSON.stringify(canonical)]
     ));
     if (!rows.length) throw recordNotFound(id);
     return rowRecord(rows[0]);
+  }
+
+  async function updateRecord(id, fields) {
+    return updateRecordInTable(defaultTableId, id, fields);
   }
 
   async function createRecords(tableId, records, options = {}) {
@@ -207,6 +211,7 @@ export function createPostgresDataClient({
     getRecordFromTable,
     listRecords,
     updateRecord,
+    updateRecordInTable,
     async createRecord(tableId, fields) {
       return (await createRecords(tableId, [fields]))[0];
     },
