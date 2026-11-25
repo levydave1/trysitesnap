@@ -4,6 +4,7 @@ import {
   auditExistingBacklog,
   deterministicBacklogEmail,
   prepareExistingBacklogDrafts,
+  refreshLocalBacklogDrafts,
   verifyExistingBacklog
 } from "../server/backlog-preparation.js";
 import { config } from "../server/config.js";
@@ -206,6 +207,29 @@ test("local backlog templates remain short, truthful, and permission-based", () 
     assert.match(email.body, /\?$/);
     assert.doesNotMatch(email.body, /already (?:built|made|prepared)|finished website|free website/i);
   }
+});
+
+test("local backlog draft refresh updates only local unsent backlog drafts", async () => {
+  const updates = [];
+  const rawRecord = raw("rec01", { "First Name": "Sam", "Business Name": "Acme Roofing" });
+  const result = await refreshLocalBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) {
+        if (tableId === config.airtable.rawOutscraperTableId) return [rawRecord];
+        return [
+          { id: "recDraft", fields: { "Business ID": ["rec01"], "Reply Status": "draft", "Draft Source": "existing_backlog", "Draft Model Provider": "local_template" } },
+          { id: "recSent", fields: { "Business ID": ["rec01"], "Reply Status": "sent", "Draft Source": "existing_backlog", "Draft Model Provider": "local_template" } },
+          { id: "recClaude", fields: { "Business ID": ["rec01"], "Reply Status": "draft", "Draft Source": "existing_backlog", "Draft Model Provider": "claude" } }
+        ];
+      },
+      async updateRecordInTable(tableId, id, fields) { updates.push({ tableId, id, fields }); }
+    }
+  }, { now: new Date("2026-11-25T11:00:00.000Z") });
+  assert.equal(result.refreshed, 1);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].id, "recDraft");
+  assert.match(updates[0].fields[config.airtable.emailThreadFields.body], /Acme Roofing/);
 });
 
 test("existing backlog drafts are idempotent", async () => {

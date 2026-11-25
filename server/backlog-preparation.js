@@ -109,7 +109,8 @@ async function loadRecords(dependencies) {
   const [rawRecords, threadRecords] = await Promise.all([
     dependencies.data.listRecords(rawTableId),
     dependencies.data.listRecords(threadTableId, { fields: [
-      "Business ID", "To Email", "Reply Status", "Subject", "Email Body"
+      "Business ID", "To Email", "Reply Status", "Subject", "Email Body",
+      "Draft Source", "Draft Model Provider"
     ] })
   ]);
   return { rawRecords, threadRecords, rawTableId, threadTableId };
@@ -218,7 +219,7 @@ export function deterministicBacklogEmail(lead) {
     },
     {
       subject: "Quick website idea",
-      body: `${greeting} I would be happy to prepare a homepage concept tailored to ${business} from public information. The focus would be giving potential customers a clearer next step. It is free to have the concept prepared and view it, with no obligation. Would you like me to put it together?`
+      body: `${greeting} I would be happy to prepare a homepage concept tailored to ${business} from public information. The focus would be giving potential customers a clearer next step. Preparing and viewing the concept is free, and there is no obligation. Would you like me to put it together?`
     },
     {
       subject: "A clearer homepage",
@@ -226,7 +227,7 @@ export function deterministicBacklogEmail(lead) {
     },
     {
       subject: "Homepage concept",
-      body: `${greeting} I can prepare a tailored homepage concept for ${business} using public information. I would keep it focused on presenting the services clearly for first-time visitors. The concept is free to prepare and view, with no obligation attached. Would you be open to seeing what I put together?`
+      body: `${greeting} I can prepare a tailored homepage concept for ${business} using public information. I would keep it focused on presenting the services clearly for first-time visitors. Preparing and viewing the concept is free, with no obligation attached. Would you like me to create it for you?`
     }
   ];
   return variants[templateIndex(lead.recordId || lead.email || business, variants.length)];
@@ -312,6 +313,41 @@ export async function prepareExistingBacklogDrafts(dependencies, options = {}) {
     summary.results.push(result);
   }
   return summary;
+}
+
+export async function refreshLocalBacklogDrafts(dependencies, options = {}) {
+  const loaded = options.rawRecords && options.threadRecords ? options : await loadRecords(dependencies);
+  const rawById = new Map(loaded.rawRecords.map((record) => [record.id, record]));
+  const limit = Math.max(1, Math.min(1000, Number(options.limit) || 1000));
+  const candidates = loaded.threadRecords.filter((record) => {
+    const fields = record.fields || {};
+    return lower(fields["Reply Status"]) === "draft"
+      && lower(fields["Draft Source"]) === "existing_backlog"
+      && lower(fields["Draft Model Provider"]) === "local_template";
+  }).slice(0, limit);
+  const now = options.now instanceof Date ? options.now : new Date(options.now || Date.now());
+  const threadFields = dependencies.config.airtable.emailThreadFields;
+  let refreshed = 0;
+  let skipped = 0;
+  for (const draft of candidates) {
+    const sourceId = linkedIds(draft.fields?.["Business ID"])[0];
+    const rawRecord = rawById.get(sourceId);
+    if (!rawRecord) {
+      skipped += 1;
+      continue;
+    }
+    const email = deterministicBacklogEmail(leadFromEmailRecord(rawRecord));
+    if (!options.dryRun) {
+      await dependencies.data.updateRecordInTable(loaded.threadTableId, draft.id, {
+        [threadFields.subject]: email.subject,
+        [threadFields.body]: email.body,
+        [threadFields.searchText]: `${email.body}${email.subject}`,
+        "Draft Refreshed At": now.toISOString()
+      });
+    }
+    refreshed += 1;
+  }
+  return { success: true, dryRun: Boolean(options.dryRun), selected: candidates.length, refreshed, skipped };
 }
 
 export const backlogDraftVersion = DRAFT_VERSION;
