@@ -84,10 +84,15 @@ export function extractVisibleEmails(html) {
   const mailto = [...decoded.matchAll(/href\s*=\s*["']mailto:([^"'#?\s>]+)[^"']*["']/gi)].map((match) => match[1]);
   const plain = visibleHtml(decoded).match(EMAIL_PATTERN) || [];
   const obfuscated = [];
-  const obfuscatedPattern = /\b([a-z0-9.!#$%&'*+/=?^_`{|}~-]+)\s*(?:\[\s*at\s*\]|\(\s*at\s*\)|\s+at\s+)\s*([a-z0-9-]+(?:\s*(?:\[\s*dot\s*\]|\(\s*dot\s*\)|\s+dot\s+|\.)\s*[a-z0-9-]+)+)/gi;
-  for (const match of visibleHtml(decoded).matchAll(obfuscatedPattern)) {
+  const markedAtPattern = /\b([a-z0-9.!#$%&'*+/=?^_`{|}~-]+)\s*(?:\[\s*at\s*\]|\(\s*at\s*\))\s*([a-z0-9-]+(?:\s*(?:\[\s*dot\s*\]|\(\s*dot\s*\)|\s+dot\s+|\.)\s*[a-z0-9-]+)+)/gi;
+  for (const match of visibleHtml(decoded).matchAll(markedAtPattern)) {
     const domain = match[2].replace(/\s*(?:\[|\()?\s*dot\s*(?:\]|\))?\s*/gi, ".").replace(/\s+/g, "");
     obfuscated.push(`${match[1]}@${domain}`);
+  }
+  const textualAtPattern = /\b([a-z0-9.!#$%&'*+/=?^_`{|}~-]+)\s+at\s+([a-z0-9-]+(?:\s+dot\s+[a-z0-9-]+)+)\b/gi;
+  for (const match of visibleHtml(decoded).matchAll(textualAtPattern)) {
+    if (!ROLE_LOCAL_PART.test(match[1])) continue;
+    obfuscated.push(`${match[1]}@${match[2].replace(/\s+dot\s+/gi, ".")}`);
   }
   return unique([...mailto, ...plain, ...obfuscated]);
 }
@@ -104,7 +109,7 @@ function emailLinkedToBusiness(email, record, sourceUrl, sourceType, sourceHtml,
   const localPart = email.split("@")[0].replace(/[^a-z0-9]+/g, "");
   const emailHost = email.split("@")[1];
   const domainLinked = sameSite(`https://${emailHost}`, sourceUrl) || sameSite(`https://${emailHost}`, website);
-  if (domainLinked && ROLE_LOCAL_PART.test(email.split("@")[0])) return true;
+  if (domainLinked && ROLE_LOCAL_PART.test(email.split("@")[0]) && businessWords.length <= 2) return true;
   const localLinked = businessWords.some((word) => word.length >= 4 && localPart.includes(word));
   if (localLinked) return true;
   const pageWords = new Set(identityWords(visibleHtml(sourceHtml)));

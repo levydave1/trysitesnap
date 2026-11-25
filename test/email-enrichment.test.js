@@ -45,10 +45,11 @@ test("email extraction finds mailto, visible, obfuscated, and JSON-LD addresses"
   const html = `
     <a href="mailto:hello@acme.test?subject=Hi">Email us</a>
     <p>Sales: sales [at] acme [dot] test</p>
+    <p>Support: support at acme dot test</p>
     <p>Find information at example dot com and discover the destination.</p>
     <script>const hidden = "ignored@script.test"</script>
     <script type="application/ld+json">{"@type":"Organization","contactPoint":{"email":"office@acme.test"}}</script>`;
-  assert.deepEqual(extractVisibleEmails(html).sort(), ["hello@acme.test", "sales@acme.test"]);
+  assert.deepEqual(extractVisibleEmails(html).sort(), ["hello@acme.test", "sales@acme.test", "support@acme.test"]);
   assert.deepEqual(extractStructuredEmails(html), ["office@acme.test"]);
 });
 
@@ -133,7 +134,7 @@ test("stage 4 rejects a real address that belongs to somebody else on a generic 
     }
   });
   const fetchImpl = async (url) => url === "https://serhant.test/"
-    ? htmlResponse("<h1>Serhant</h1><p>Naples listings by <a href='mailto:coyne@serhant.test'>Coyne</a></p>")
+    ? htmlResponse("<h1>Serhant</h1><p>Naples listings by <a href='mailto:coyne@serhant.test'>Coyne</a>. <a href='mailto:hello@serhant.test'>Contact the brand</a></p>")
     : htmlResponse("missing", 404);
   const result = await enrichOvertureEmails({
     config,
