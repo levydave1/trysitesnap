@@ -260,7 +260,7 @@ test("04 live mode mirrors the Make fields and notifies after deployment", async
   assert.equal(deps.calls.updates.length, 1);
   const update = deps.calls.updates[0].fields;
   assert.equal(update[config.firstSketch.fields.customerEmail], "customer@example.com");
-  assert.equal(update[config.firstSketch.fields.geminiOutput], update[config.firstSketch.fields.claudeOutput]);
+  assert.equal(update[config.firstSketch.fields.auditedOutput], update[config.firstSketch.fields.claudeOutput]);
   assert.equal(update[config.firstSketch.fields.draftSiteUrl], "preview.vercel.app");
   assert.match(update[config.firstSketch.fields.htmlTake1], /"index.html"/);
   assert.equal(deps.calls.mail[0].to, "customer@example.com");

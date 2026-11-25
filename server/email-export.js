@@ -1,4 +1,4 @@
-import { legacyClaudePrompt, legacyGeminiPrompt, modernClaudePrompt } from "./email-prompts.js";
+import { legacyClaudePrompt, legacyGroqPrompt, modernClaudePrompt } from "./email-prompts.js";
 import { emailExportEligibility } from "./lead-eligibility.js";
 
 const rawFieldNames = [
@@ -61,7 +61,7 @@ export function normalizeEmailFlow(value) {
   return String(value || "").trim().toLowerCase() === "legacy" ? "legacy" : "v2";
 }
 
-function analysisFromGemini(output) {
+function analysisFromGroq(output) {
   return {
     hook: clean(output?.hook),
     reputation: clean(output?.reputation ?? output?.reputation_comment),
@@ -79,8 +79,7 @@ function emailFromClaude(output) {
 async function writeEmailWithFallback(dependencies, prompt) {
   const writers = [
     dependencies.claude?.writeEmail && (() => dependencies.claude.writeEmail(prompt)),
-    dependencies.groq?.writeEmail && (() => dependencies.groq.writeEmail(prompt)),
-    dependencies.gemini?.analyze && (() => dependencies.gemini.analyze(prompt))
+    dependencies.groq?.writeEmail && (() => dependencies.groq.writeEmail(prompt))
   ].filter(Boolean);
   let lastError;
   for (const write of writers) {
@@ -97,8 +96,8 @@ async function writeEmailWithFallback(dependencies, prompt) {
 export async function generateEmailForLead(dependencies, lead, flow = "v2") {
   const selectedFlow = normalizeEmailFlow(flow);
   if (selectedFlow === "legacy") {
-    if (!dependencies.gemini) throw new Error("Gemini is required for the legacy email flow");
-    const analysis = analysisFromGemini(await dependencies.gemini.analyze(legacyGeminiPrompt(lead)));
+    if (!dependencies.groq) throw new Error("Groq is required for the legacy email flow");
+    const analysis = analysisFromGroq(await dependencies.groq.analyze(legacyGroqPrompt(lead)));
     return emailFromClaude(await writeEmailWithFallback(dependencies, legacyClaudePrompt(lead, analysis)));
   }
   return emailFromClaude(await writeEmailWithFallback(dependencies, modernClaudePrompt(lead)));
@@ -152,7 +151,7 @@ function summaryMessage(results) {
 }
 
 export async function processEmailExportBatch(dependencies, options = {}) {
-  const { airtable, gemini, claude, instantly, telegram, config } = dependencies;
+  const { airtable, groq, claude, instantly, telegram, config } = dependencies;
   const threadFields = config.airtable.emailThreadFields;
   const maxRecords = Math.max(1, Math.min(
     config.emailExport.maxRecords,
@@ -205,7 +204,7 @@ export async function processEmailExportBatch(dependencies, options = {}) {
     const lead = leadFromEmailRecord(record);
     let stage = "generate_email";
     try {
-      const email = await generateEmailForLead({ gemini, claude }, lead, options.flow);
+      const email = await generateEmailForLead({ groq, claude }, lead, options.flow);
       stage = "instantly";
       const instantLead = await ensureInstantlyLead(instantly, {
         campaign: config.emailExport.campaignId,

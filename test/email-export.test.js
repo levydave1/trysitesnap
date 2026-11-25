@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createClaudeClient, createGeminiClient, createGroqClient, createInstantlyClient } from "../server/clients.js";
+import { createClaudeClient, createGroqClient, createGroqTextClient, createInstantlyClient } from "../server/clients.js";
 import {
   generateEmailForLead,
   processEmailExportBatch,
@@ -15,17 +15,17 @@ test("02 direct AI clients request the configured models and parse JSON", async 
   const calls = [];
   const fetchImpl = async (url, options) => {
     calls.push({ url: String(url), options, body: JSON.parse(options.body) });
-    if (String(url).includes("googleapis")) {
-      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"hook":"specific detail","reputation":"","pain":"old site"}' }] } }] }), { status: 200 });
+    if (String(url).includes("api.groq.com")) {
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"hook":"specific detail","reputation":"","pain":"old site"}' } }] }), { status: 200 });
     }
     return new Response(JSON.stringify({ content: [{ type: "text", text: '{"subject":"Quick idea","body":"Hi Sam — want to see the homepage draft?"}' }] }), { status: 200 });
   };
-  const gemini = createGeminiClient({ apiKey: "gemini-secret", model: "gemini-test", timeoutMs: 1000, fetchImpl });
+  const groq = createGroqClient({ apiKey: "groq-secret", model: "groq-test", timeoutMs: 1000, fetchImpl });
   const claude = createClaudeClient({ apiKey: "claude-secret", model: "claude-test", timeoutMs: 1000, fetchImpl });
-  assert.equal((await gemini.analyze({ system: "system", user: "user" })).hook, "specific detail");
+  assert.equal((await groq.analyze({ system: "system", user: "user" })).hook, "specific detail");
   assert.equal((await claude.writeEmail({ system: "system", user: "user" })).subject, "Quick idea");
-  assert.match(calls[0].url, /gemini-test:generateContent/);
-  assert.equal(calls[0].options.headers["x-goog-api-key"], "gemini-secret");
+  assert.equal(calls[0].url, "https://api.groq.com/openai/v1/chat/completions");
+  assert.equal(calls[0].options.headers.Authorization, "Bearer groq-secret");
   assert.equal(calls[1].body.model, "claude-test");
   assert.deepEqual(calls[1].body.output_config.format.schema.required, ["subject", "body"]);
 });
@@ -62,7 +62,25 @@ test("02 Groq client requests strict subject and body JSON", async () => {
   assert.deepEqual(call.body.response_format.json_schema.schema.required, ["subject", "body"]);
 });
 
-test("02 v2 uses one Claude call while legacy keeps Gemini then Claude available", async () => {
+test("04 Groq text client supports JSON briefs and full HTML output", async () => {
+  const calls = [];
+  const client = createGroqTextClient({
+    apiKey: "groq-secret",
+    model: "openai/gpt-oss-20b",
+    timeoutMs: 1000,
+    async fetchImpl(url, options) {
+      calls.push({ url: String(url), options, body: JSON.parse(options.body) });
+      return new Response(JSON.stringify({ choices: [{ message: { content: calls.length === 1 ? '{"sections":[]}' : "<!doctype html><html></html>" } }] }), { status: 200 });
+    }
+  });
+  assert.equal(await client.generate({ system: "brief", user: "facts", json: true }), '{"sections":[]}');
+  assert.equal(await client.generate({ system: "audit", user: "html", maxTokens: 24000 }), "<!doctype html><html></html>");
+  assert.deepEqual(calls[0].body.response_format, { type: "json_object" });
+  assert.equal(calls[1].body.max_completion_tokens, 24000);
+  assert.equal(calls[1].body.response_format, undefined);
+});
+
+test("02 v2 uses one Claude call while legacy uses Groq analysis then Claude", async () => {
   const calls = [];
   const lead = {
     firstName: "Ryan",
@@ -73,7 +91,10 @@ test("02 v2 uses one Claude call while legacy keeps Gemini then Claude available
     website: "https://example.com"
   };
   const dependencies = {
-    gemini: { async analyze(prompt) { calls.push(["gemini", prompt]); return { hook: "repair and installation" }; } },
+    groq: {
+      async analyze(prompt) { calls.push(["groq", prompt]); return { hook: "repair and installation" }; },
+      async writeEmail(prompt) { calls.push(["groq-writer", prompt]); return { subject: "Fallback", body: "Fallback" }; }
+    },
     claude: { async writeEmail(prompt) { calls.push(["claude", prompt]); return { subject: "Aaron homepage idea", body: "Ryan — I drafted a homepage concept for Aaron Overhead Doors using public information. It puts repair and installation up front and makes the next step easier for homeowners. Want me to send the preview?" }; } }
   };
 
@@ -84,37 +105,26 @@ test("02 v2 uses one Claude call while legacy keeps Gemini then Claude available
 
   calls.length = 0;
   await generateEmailForLead(dependencies, lead, "legacy");
-  assert.deepEqual(calls.map(([service]) => service), ["gemini", "claude"]);
+  assert.deepEqual(calls.map(([service]) => service), ["groq", "claude"]);
 });
 
-test("02 falls back to Gemini when Claude cannot generate the email", async () => {
+test("02 falls back to Groq when Claude cannot generate the email", async () => {
   const calls = [];
   const result = await generateEmailForLead({
     claude: { async writeEmail() { calls.push("claude"); throw Object.assign(new Error("credits"), { code: "CLAUDE_UPSTREAM_ERROR", upstreamStatus: 400 }); } },
-    gemini: { async analyze(prompt) { calls.push(["gemini", prompt]); return { subject: "Homepage concept", body: "Hi — I can prepare a homepage concept using public information. It can make the next step clearer. Preparing and viewing the concept is free, with no obligation. Would you like me to put it together?" }; } }
+    groq: { async writeEmail(prompt) { calls.push(["groq", prompt]); return { subject: "Homepage concept", body: "Hi — I can prepare a homepage concept using public information. It can make the next step clearer. Preparing and viewing the concept is free, with no obligation. Would you like me to put it together?" }; } }
   }, { businessName: "Avalon Group Realty", city: "St Petersburg" }, "v2");
 
-  assert.deepEqual(calls.map((item) => Array.isArray(item) ? item[0] : item), ["claude", "gemini"]);
+  assert.deepEqual(calls.map((item) => Array.isArray(item) ? item[0] : item), ["claude", "groq"]);
   assert.equal(result.subject, "Homepage concept");
   assert.match(result.body, /free, with no obligation/);
-});
-
-test("02 tries Groq before Gemini", async () => {
-  const calls = [];
-  const result = await generateEmailForLead({
-    claude: { async writeEmail() { calls.push("claude"); throw new Error("claude unavailable"); } },
-    groq: { async writeEmail() { calls.push("groq"); return { subject: "Homepage idea", body: "Would you like to see a homepage concept?" }; } },
-    gemini: { async analyze() { calls.push("gemini"); return { subject: "Wrong order", body: "Must not run" }; } }
-  }, { businessName: "Avalon Group Realty" }, "v2");
-  assert.deepEqual(calls, ["claude", "groq"]);
-  assert.equal(result.subject, "Homepage idea");
 });
 
 test("02 fails closed when both writing providers are out of credit", async () => {
   const unavailable = async () => { throw Object.assign(new Error("credits"), { code: "WRITER_UPSTREAM_ERROR", upstreamStatus: 402 }); };
   await assert.rejects(() => generateEmailForLead({
     claude: { writeEmail: unavailable },
-    gemini: { analyze: unavailable }
+    groq: { writeEmail: unavailable }
   }, { businessName: "Avalon Group Realty", firstName: "", city: "St Petersburg" }, "v2"), (error) => {
     assert.equal(error.code, "WRITER_UPSTREAM_ERROR");
     assert.equal(error.upstreamStatus, 402);
@@ -195,7 +205,7 @@ test("02 exports only undocumented raw leads and records the Instantly result", 
       },
       async createRecord(tableId, fields) { writes.push({ tableId, fields }); return { id: "recThreadTest" }; }
     },
-    gemini: { async analyze() { return { hook: "family bakery", reputation_comment: "great reviews", platform_pain: "updates" }; } },
+    groq: { async writeEmail() { return { subject: "Fallback", body: "Fallback" }; } },
     claude: { async writeEmail() { return { subject: "Small homepage idea", body: "Hi Sam — I made a small homepage draft. Want to see it?" }; } },
     instantly: {
       async createLead(payload) { instantPayloads.push(payload); return { id: "lead-test-02" }; },
@@ -279,7 +289,7 @@ test("02 ignores malformed source emails before applying the batch limit", async
       },
       async createRecord() { return { id: "recThread" }; }
     },
-    gemini: { async analyze() { return { hook: "detail" }; } },
+    groq: { async writeEmail() { return { subject: "Fallback", body: "Fallback" }; } },
     claude: { async writeEmail() { return { subject: "Quick idea", body: "Short email" }; } },
     instantly: {
       async createLead(payload) { sent.push(payload.email); return { id: "lead-valid" }; },

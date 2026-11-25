@@ -94,19 +94,18 @@ export const config = Object.freeze({
     senderLabel: "sitesnap-test (levy.dave.1@gmail.com)",
     testRecipient: "levy.dave.1@gmail.com",
     defaultFlow: "v2",
-    geminiModel: "gemini-3.1-flash-lite",
     groqModel: "openai/gpt-oss-20b",
     claudeModel: "claude-sonnet-4-6"
   },
   firstSketch: {
-    briefModel: "gemini-3-flash-preview",
+    briefModel: "openai/gpt-oss-20b",
     htmlModel: "claude-sonnet-4-6",
-    auditModel: "gemini-3.5-flash",
+    auditModel: "openai/gpt-oss-20b",
     testRecipient: "levy.dave.1@gmail.com",
     fields: {
       customerEmail: "fld05Dw3vwFAXFPu9",
       newSitePage2: "fld1Mxl6tZaAhDQBP",
-      geminiOutput: "fld3tKWCGhkCvgOq3",
+      auditedOutput: "fld3tKWCGhkCvgOq3",
       claudeOutput: "fldErFxka5TpewgRa",
       draftSiteUrl: "fldY4hvv7SwEwuXKA",
       newSite: "fldjILXRl7hozRqqV",

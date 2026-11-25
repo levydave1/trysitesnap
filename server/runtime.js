@@ -3,9 +3,8 @@ import {
   createClaudeClient,
   createClaudeTextClient,
   createCloudflareClient,
-  createGeminiClient,
-  createGeminiTextClient,
   createGroqClient,
+  createGroqTextClient,
   createInstantlyClient,
   createMailRelayClient,
   createMillionVerifierClient,
@@ -61,23 +60,16 @@ export function createRuntimeDependencies(needs = {}) {
     });
   }
   if (needs.emailExport) {
-    dependencies.gemini = createGeminiClient({
-      apiKey: process.env.GEMINI_API_KEY,
-      model: config.emailExport.geminiModel,
-      timeoutMs: 45000
-    });
     dependencies.claude = createClaudeClient({
       apiKey: process.env.ANTHROPIC_API_KEY,
       model: config.emailExport.claudeModel,
       timeoutMs: 60000
     });
-    if (process.env.GROQ_API_KEY) {
-      dependencies.groq = createGroqClient({
-        apiKey: process.env.GROQ_API_KEY,
-        model: config.emailExport.groqModel,
-        timeoutMs: 45000
-      });
-    }
+    dependencies.groq = createGroqClient({
+      apiKey: process.env.GROQ_API_KEY,
+      model: config.emailExport.groqModel,
+      timeoutMs: 45000
+    });
     dependencies.instantly = createInstantlyClient({
       apiKey: process.env.INSTANTLY_API_KEY,
       timeoutMs: 30000
@@ -89,18 +81,11 @@ export function createRuntimeDependencies(needs = {}) {
       model: config.emailExport.claudeModel,
       timeoutMs: 60000
     });
-    dependencies.gemini = createGeminiClient({
-      apiKey: process.env.GEMINI_API_KEY,
-      model: config.emailExport.geminiModel,
+    dependencies.groq = createGroqClient({
+      apiKey: process.env.GROQ_API_KEY,
+      model: config.emailExport.groqModel,
       timeoutMs: 45000
     });
-    if (process.env.GROQ_API_KEY) {
-      dependencies.groq = createGroqClient({
-        apiKey: process.env.GROQ_API_KEY,
-        model: config.emailExport.groqModel,
-        timeoutMs: 45000
-      });
-    }
   }
   if (needs.firstSketch) {
     dependencies.tavily = createTavilyClient({
@@ -111,8 +96,8 @@ export function createRuntimeDependencies(needs = {}) {
       apiKey: process.env.PEXELS_API_KEY,
       timeoutMs: config.upstreamTimeoutMs
     });
-    dependencies.sketchBrief = createGeminiTextClient({
-      apiKey: process.env.GEMINI_API_KEY,
+    dependencies.sketchBrief = createGroqTextClient({
+      apiKey: process.env.GROQ_API_KEY,
       model: config.firstSketch.briefModel,
       timeoutMs: 75000,
       attempts: 1
@@ -123,8 +108,8 @@ export function createRuntimeDependencies(needs = {}) {
       timeoutMs: 150000,
       attempts: 1
     });
-    dependencies.sketchAudit = createGeminiTextClient({
-      apiKey: process.env.GEMINI_API_KEY,
+    dependencies.sketchAudit = createGroqTextClient({
+      apiKey: process.env.GROQ_API_KEY,
       model: config.firstSketch.auditModel,
       timeoutMs: 120000,
       attempts: 1

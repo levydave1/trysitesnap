@@ -674,8 +674,8 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
   } catch {
     htmlProviderFailed = true;
   }
-  let geminiOutput = claudeOutput;
-  let structureError = htmlStructureError(geminiOutput);
+  let auditedOutput = claudeOutput;
+  let structureError = htmlStructureError(auditedOutput);
   const sourceStructureError = structureError;
   const sourceHtmlLength = claudeOutput.length;
   let auditStructureError = "";
@@ -695,29 +695,29 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
       })));
       auditHtmlLength = auditedRawOutput.length;
       auditStructureError = htmlStructureError(auditedRawOutput);
-      const auditedOutput = completeAuditedDocument(auditedRawOutput);
-      const usableAuditError = htmlStructureError(auditedOutput);
+      const completedAudit = completeAuditedDocument(auditedRawOutput);
+      const usableAuditError = htmlStructureError(completedAudit);
       auditClosingTagsRecovered = !usableAuditError && Boolean(auditStructureError);
       if (!usableAuditError) {
-        geminiOutput = auditedOutput;
+        auditedOutput = completedAudit;
         structureError = "";
       } else if (!structureError) {
-        geminiOutput = claudeOutput;
+        auditedOutput = claudeOutput;
         structureError = "";
       } else {
-        geminiOutput = auditedOutput;
+        auditedOutput = completedAudit;
         structureError = usableAuditError;
       }
     } catch {
       repairProviderFailed = true;
-      geminiOutput = claudeOutput;
-      structureError = htmlStructureError(geminiOutput);
+      auditedOutput = claudeOutput;
+      structureError = htmlStructureError(auditedOutput);
     }
   }
   if (structureError) {
     fallbackUsed = true;
-    geminiOutput = fallbackWebsite(siteFacts, brief, images);
-    structureError = htmlStructureError(geminiOutput);
+    auditedOutput = fallbackWebsite(siteFacts, brief, images);
+    structureError = htmlStructureError(auditedOutput);
     if (structureError) {
       const error = new Error(`The fallback website HTML is malformed: ${structureError}`);
       error.code = "SCENARIO_04_HTML_INVALID";
@@ -725,7 +725,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
       throw error;
     }
   }
-  const finalHtml = injectSiteSnapControls(geminiOutput, id, siteFacts, {
+  const finalHtml = injectSiteSnapControls(auditedOutput, id, siteFacts, {
     trackOpen: !options.testMode,
     testMode: Boolean(options.testMode),
     testSecret: process.env.LOCAL_TELEGRAM_RELAY_SECRET || "",
@@ -741,7 +741,7 @@ export async function runFirstSketch(recordId, dependencies, options = {}) {
     const fields = config.firstSketch.fields;
     const update = {
       [fields.customerEmail]: facts.email,
-      [fields.geminiOutput]: geminiOutput,
+      [fields.auditedOutput]: auditedOutput,
       [fields.claudeOutput]: claudeOutput,
       [fields.draftSiteUrl]: text(deployment.url),
       [fields.htmlTake1]: payload,

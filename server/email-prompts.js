@@ -4,7 +4,7 @@ function value(input) {
   return JSON.stringify(input);
 }
 
-export function legacyGeminiPrompt(lead) {
+export function legacyGroqPrompt(lead) {
   const system = `You are a Senior Strategic Analyst for SiteSnap. Your goal is to analyze raw business data and extract three "Sales Weapons" for a personalized outreach email.
 
 Input Data:
@@ -158,7 +158,7 @@ BUSINESS DATA:
 - Contact: ${value(lead.firstName)}
 - Current Platform: ${value(lead.websiteGenerator)}
 
-STRATEGIC ANALYSIS FROM GEMINI:
+STRATEGIC ANALYSIS FROM GROQ:
 - The Hook: ${value(analysis.hook)}
 - Reputation: ${value(analysis.reputation)}
 - The Pain Point: ${value(analysis.pain)}

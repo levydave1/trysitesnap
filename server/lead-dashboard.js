@@ -341,8 +341,7 @@ export async function leadDashboardHandler(request, response) {
         config: runtime.config,
         data: runtime.airtable,
         claude: runtime.claude,
-        groq: runtime.groq,
-        gemini: runtime.gemini
+        groq: runtime.groq
       }, {
         limit: request.body?.limit,
         concurrency: request.body?.concurrency,

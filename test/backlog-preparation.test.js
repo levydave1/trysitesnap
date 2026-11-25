@@ -145,7 +145,7 @@ test("backlog draft preparation includes externally verified Overture records", 
   assert.equal(created[0].fields["Draft Source"], "existing_backlog");
 });
 
-test("backlog draft preparation falls back to Gemini only when Claude credits are exhausted", async () => {
+test("backlog draft preparation falls back to Groq only when Claude credits are exhausted", async () => {
   const created = [];
   const approved = raw("rec01", {
     Email: "owner@acme.test",
@@ -168,16 +168,16 @@ test("backlog draft preparation falls back to Gemini only when Claude credits ar
       async updateRecordInTable() {}
     },
     claude: { async writeEmail() { throw failure; } },
-    gemini: { async analyze() { return { subject: "Homepage idea", body: "Would you like a free, no-obligation homepage concept?" }; } }
+    groq: { async writeEmail() { return { subject: "Homepage idea", body: "Would you like a free, no-obligation homepage concept?" }; } }
   }, { now: new Date("2026-11-25T10:00:00.000Z") });
   assert.equal(result.drafted, 1);
   assert.equal(result.errors, 0);
-  assert.equal(created[0].fields["Draft Model Provider"], "gemini");
+  assert.equal(created[0].fields["Draft Model Provider"], "groq");
 });
 
-test("backlog draft preparation tries Groq before Gemini", async () => {
+test("backlog draft preparation stops after a successful Groq fallback", async () => {
   const created = [];
-  let geminiCalls = 0;
+  let groqCalls = 0;
   const approved = raw("rec01", {
     Email: "owner@acme.test",
     "Lead Decision": "approved",
@@ -200,12 +200,11 @@ test("backlog draft preparation tries Groq before Gemini", async () => {
       async updateRecordInTable() {}
     },
     claude: { async writeEmail() { throw failure; } },
-    groq: { async writeEmail() { return { subject: "Homepage idea", body: "Would you like to see a homepage concept?" }; } },
-    gemini: { async analyze() { geminiCalls += 1; return { subject: "Wrong order", body: "Must not run" }; } }
+    groq: { async writeEmail() { groqCalls += 1; return { subject: "Homepage idea", body: "Would you like to see a homepage concept?" }; } }
   }, { now: new Date("2026-11-25T10:00:00.000Z") });
   assert.equal(result.drafted, 1);
   assert.equal(created[0].fields["Draft Model Provider"], "groq");
-  assert.equal(geminiCalls, 0);
+  assert.equal(groqCalls, 1);
 });
 
 test("backlog draft preparation fails closed when both AI providers are unavailable", async () => {
@@ -225,10 +224,10 @@ test("backlog draft preparation fails closed when both AI providers are unavaila
   claudeFailure.code = "CLAUDE_UPSTREAM_ERROR";
   claudeFailure.upstreamStatus = 400;
   claudeFailure.upstreamDetails = "Your credit balance is too low to access the Anthropic API.";
-  const geminiFailure = new Error("gemini request failed (402)");
-  geminiFailure.code = "GEMINI_UPSTREAM_ERROR";
-  geminiFailure.upstreamStatus = 402;
-  geminiFailure.upstreamDetails = "Your prepayment credits are depleted.";
+  const groqFailure = new Error("groq request failed (402)");
+  groqFailure.code = "GROQ_UPSTREAM_ERROR";
+  groqFailure.upstreamStatus = 402;
+  groqFailure.upstreamDetails = "Provider credits are depleted.";
   const result = await prepareExistingBacklogDrafts({
     config,
     data: {
@@ -237,7 +236,7 @@ test("backlog draft preparation fails closed when both AI providers are unavaila
       async updateRecordInTable() {}
     },
     claude: { async writeEmail() { throw claudeFailure; } },
-    gemini: { async analyze() { throw geminiFailure; } }
+    groq: { async writeEmail() { throw groqFailure; } }
   }, { now: new Date("2026-11-25T10:00:00.000Z") });
   assert.equal(result.drafted, 0);
   assert.equal(result.errors, 1);

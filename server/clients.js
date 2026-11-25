@@ -480,26 +480,6 @@ async function retryingJson(service, url, options, { timeoutMs, fetchImpl, attem
   throw lastError;
 }
 
-export function createGeminiClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  return {
-    async analyze({ system, user }) {
-      const payload = await retryingJson("gemini", endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: system }] },
-          contents: [{ role: "user", parts: [{ text: user }] }],
-          generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
-        })
-      }, { timeoutMs, fetchImpl });
-      const output = payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
-      return modelJson(output, "gemini");
-    }
-  };
-}
-
 export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
   return {
@@ -538,31 +518,50 @@ export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch
 
 export function createGroqClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
+  async function complete({ system, user, temperature, maxTokens, responseFormat }) {
+    return retryingJson("groq", "https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        temperature,
+        max_completion_tokens: maxTokens,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        response_format: responseFormat
+      })
+    }, { timeoutMs, fetchImpl });
+  }
   return {
     async writeEmail({ system, user }) {
-      const payload = await retryingJson("groq", "https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model,
-          temperature: 0.8,
-          max_completion_tokens: 1000,
-          messages: [{ role: "system", content: system }, { role: "user", content: user }],
-          response_format: {
-            type: "json_schema",
-            json_schema: {
-              name: "outreach_email",
-              strict: true,
-              schema: {
-                type: "object",
-                properties: { subject: { type: "string" }, body: { type: "string" } },
-                required: ["subject", "body"],
-                additionalProperties: false
-              }
+      const payload = await complete({
+        system,
+        user,
+        temperature: 0.8,
+        maxTokens: 1000,
+        responseFormat: {
+          type: "json_schema",
+          json_schema: {
+            name: "outreach_email",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: { subject: { type: "string" }, body: { type: "string" } },
+              required: ["subject", "body"],
+              additionalProperties: false
             }
           }
-        })
-      }, { timeoutMs, fetchImpl });
+        }
+      });
+      return modelJson(payload.choices?.[0]?.message?.content || "", "groq");
+    },
+    async analyze({ system, user }) {
+      const payload = await complete({
+        system,
+        user,
+        temperature: 0.2,
+        maxTokens: 1200,
+        responseFormat: { type: "json_object" }
+      });
       return modelJson(payload.choices?.[0]?.message?.content || "", "groq");
     }
   };
@@ -592,25 +591,22 @@ export function createClaudeTextClient({ apiKey, model, timeoutMs, attempts = 3,
   };
 }
 
-export function createGeminiTextClient({ apiKey, model, timeoutMs, attempts = 4, fetchImpl = fetch }) {
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+export function createGroqTextClient({ apiKey, model, timeoutMs, attempts = 4, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
   return {
     async generate({ system, user, maxTokens = 10000, temperature = 0.3, json = false }) {
-      const payload = await retryingJson("gemini", endpoint, {
+      const payload = await retryingJson("groq", "https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
-          system_instruction: { parts: [{ text: system }] },
-          contents: [{ role: "user", parts: [{ text: user }] }],
-          generationConfig: {
-            temperature,
-            maxOutputTokens: maxTokens,
-            ...(json ? { responseMimeType: "application/json" } : {})
-          }
+          model,
+          temperature,
+          max_completion_tokens: maxTokens,
+          messages: [{ role: "system", content: system }, { role: "user", content: user }],
+          ...(json ? { response_format: { type: "json_object" } } : {})
         })
       }, { timeoutMs, fetchImpl, attempts });
-      return payload.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
+      return payload.choices?.[0]?.message?.content || "";
     }
   };
 }
