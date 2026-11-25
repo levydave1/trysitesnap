@@ -123,3 +123,26 @@ jobs:
               https://trysitesnap.com/api/overture-enrichment)"
             ENRICHMENT_RESPONSE="$response" python -c 'import json,os; r=json.loads(os.environ["ENRICHMENT_RESPONSE"]); print({k:r.get(k) for k in ("selected","found","notFound","duplicates","errors","updated","dryRun")})'
           done
+      - name: Verify eligible emails with MillionVerifier
+        env:
+          VERIFICATION_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        shell: bash
+        run: |
+          batches=5
+          if [ "$VERIFICATION_DRY_RUN" = "true" ]; then
+            batches=1
+          fi
+          for batch in $(seq 1 "$batches"); do
+            token="$(curl --fail --silent --show-error \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sitesnap-overture" \
+              | python -c 'import json,sys; print(json.load(sys.stdin)["value"])')"
+            echo "::add-mask::$token"
+            payload="$(printf '{"action":"millionverifier","confirm":"VERIFY_PENDING_EMAILS","limit":25,"concurrency":2,"dry_run":%s}' "$VERIFICATION_DRY_RUN")"
+            response="$(curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer $token" \
+              -H "Content-Type: application/json" \
+              -d "$payload" \
+              https://trysitesnap.com/api/overture-leads)"
+            VERIFICATION_RESPONSE="$response" python -c 'import json,os; r=json.loads(os.environ["VERIFICATION_RESPONSE"]); print({k:r.get(k) for k in ("selected","apiCalls","reused","approved","rejected","errors","updated","dryRun")})'
+          done

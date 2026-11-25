@@ -22,6 +22,7 @@ const rawFieldNames = [
   "Email Validation Checked At",
   "Email Catch All",
   "Email Disposable",
+  "Email Risky",
   "Lead Decision"
 ];
 

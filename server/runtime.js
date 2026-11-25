@@ -7,6 +7,7 @@ import {
   createGeminiTextClient,
   createInstantlyClient,
   createMailRelayClient,
+  createMillionVerifierClient,
   createOutscraperClient,
   createPexelsClient,
   createTavilyClient,
@@ -49,6 +50,13 @@ export function createRuntimeDependencies(needs = {}) {
       apiKey: process.env.OUTSCRAPER_API_KEY,
       endpoint: config.outscraper.endpoint,
       timeoutMs: config.outscraper.timeoutMs
+    });
+  }
+  if (needs.millionVerifier) {
+    dependencies.millionVerifier = createMillionVerifierClient({
+      apiKey: process.env.MILLIONVERIFIER_API_KEY,
+      endpoint: config.millionVerifier.endpoint,
+      timeoutMs: config.millionVerifier.timeoutMs
     });
   }
   if (needs.emailExport) {

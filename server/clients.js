@@ -30,6 +30,46 @@ async function requestJson(service, url, options, { allow = [], fetchImpl = fetc
   return { status: response.status, payload };
 }
 
+export function createMillionVerifierClient({ apiKey, endpoint, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("MILLIONVERIFIER_API_KEY is not configured");
+  const baseUrl = endpoint || "https://api.millionverifier.com/api/v3/";
+  return {
+    async verifyEmail(email) {
+      const url = new URL(baseUrl);
+      url.searchParams.set("api", apiKey);
+      url.searchParams.set("email", email);
+      url.searchParams.set("timeout", String(Math.max(2, Math.min(60, Math.ceil(timeoutMs / 1000)))));
+      let response;
+      try {
+        response = await fetchImpl(url, {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(timeoutMs)
+        });
+      } catch (error) {
+        const timeout = error?.name === "TimeoutError" || error?.name === "AbortError";
+        const wrapped = new Error(timeout ? "MillionVerifier request timed out" : "MillionVerifier request failed");
+        wrapped.code = timeout ? "MILLIONVERIFIER_TIMEOUT" : "MILLIONVERIFIER_NETWORK_ERROR";
+        wrapped.cause = error;
+        throw wrapped;
+      }
+      const payload = await readJson(response);
+      if (response.status === 429) {
+        const error = upstreamError("millionverifier", response.status, payload.error || "rate_limited");
+        error.code = "MILLIONVERIFIER_RATE_LIMIT";
+        error.retryAfter = response.headers.get("retry-after") || "";
+        error.upstreamPayload = payload;
+        throw error;
+      }
+      if (!response.ok) {
+        const error = upstreamError("millionverifier", response.status, payload.error || payload.raw || "");
+        error.upstreamPayload = payload;
+        throw error;
+      }
+      return payload;
+    }
+  };
+}
+
 export function createCloudflareClient({ accountId, apiToken, timeoutMs, fetchImpl = fetch }) {
   if (!apiToken) throw new Error("CLOUDFLARE_API_TOKEN is not configured");
   return {

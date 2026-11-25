@@ -1,4 +1,4 @@
-const VERIFIED_STATUSES = new Set(["GOOD", "OK", "VALID", "DELIVERABLE"]);
+const VERIFIED_STATUSES = new Set(["GOOD", "OK"]);
 const LEGACY_OUTSCRAPER_STATUSES = new Set(["RECEIVING", "VALID", "DELIVERABLE"]);
 
 function text(value) {
@@ -51,6 +51,9 @@ export function emailExportEligibility(record, options = {}) {
     }
     if (normalizedBoolean(fields["Email Disposable"]) === true) {
       return { eligible: false, reason: "DISPOSABLE_NOT_ALLOWED" };
+    }
+    if (normalizedBoolean(fields["Email Risky"]) === true) {
+      return { eligible: false, reason: "RISKY_NOT_ALLOWED" };
     }
     const now = options.now instanceof Date ? options.now : new Date(options.now || Date.now());
     const maxAgeDays = Math.max(1, Number(options.maxAgeDays) || 30);

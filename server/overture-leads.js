@@ -464,7 +464,7 @@ export async function applyExternalVerificationResults(results, dependencies, op
   );
   const byId = new Map(records.map((record) => [record.id, record]));
   const byEmail = new Map(records.map((record) => [text(record.fields?.Email).toLowerCase(), record]).filter(([email]) => email));
-  const approved = new Set(["GOOD", "OK", "VALID", "DELIVERABLE"]);
+  const approved = new Set(["GOOD", "OK"]);
   const summary = { success: true, inspected: 0, approved: 0, rejected: 0, notFound: 0 };
 
   for (const result of Array.isArray(results) ? results : []) {
@@ -477,15 +477,15 @@ export async function applyExternalVerificationResults(results, dependencies, op
     const status = normalizedResultStatus(result);
     const catchAll = ["CATCH_ALL", "CATCHALL", "ACCEPT_ALL"].includes(status) || result.catch_all === true;
     const disposable = ["DISPOSABLE", "TEMPORARY", "TEMP_EMAIL"].includes(status) || result.disposable === true;
-    const risky = ["RISKY", "ROLE", "ROLE_ACCOUNT", "SPAMTRAP"].includes(status) || result.risky === true;
+    const risky = ["RISKY", "UNKNOWN", "CATCH_ALL", "CATCHALL", "ACCEPT_ALL", "ROLE", "ROLE_ACCOUNT", "SPAMTRAP"].includes(status) || result.risky === true;
     const isApproved = approved.has(status) && !catchAll && !disposable && !risky;
-    const decisionReason = isApproved ? "EXTERNAL_VERIFICATION_GOOD" : (status || "UNKNOWN");
+    const decisionReason = isApproved ? "EXTERNAL_VERIFICATION_GOOD" : `EXTERNAL_VERIFICATION_${status || "UNKNOWN"}`;
     const fields = {
       "Email Validation Status": status || "UNKNOWN",
       "Email Validation Provider": text(result.provider) || "external_batch",
       "Email Validation Checked At": text(result.checked_at || result.checkedAt) || now.toISOString(),
       "Email Validation Details": text(result.details || result.reason),
-      "Email Validation Raw JSON": JSON.stringify(result),
+      "Email Validation Raw JSON": JSON.stringify(result.raw_response ?? result.rawResponse ?? result),
       "Email Catch All": catchAll ? "yes" : "no",
       "Email Disposable": disposable ? "yes" : "no",
       "Email Risky": risky ? "yes" : "no",

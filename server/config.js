@@ -150,6 +150,13 @@ export const config = Object.freeze({
     },
     webhookPath: "/api/6f09f89b1e644c79ae3aa7210f8f2ff7-outscraper-results"
   },
+  millionVerifier: {
+    endpoint: "https://api.millionverifier.com/api/v3/",
+    timeoutMs: 15000,
+    maxAgeDays: 30,
+    batchLimit: 25,
+    concurrency: 2
+  },
   stripe: {
     webhookToleranceSeconds: 300,
     paymentLinks: {

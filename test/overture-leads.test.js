@@ -216,6 +216,21 @@ test("risky and disposable verification results remain rejected", async () => {
   assert.equal(updates[1].fields["Email Disposable"], "yes");
 });
 
+test("Instantly gate rejects a risky flag even when other approval fields look valid", () => {
+  const result = emailExportEligibility({ fields: {
+    "Source System": "overture",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-24T09:00:00.000Z",
+    "Email Catch All": "no",
+    "Email Disposable": "no",
+    "Email Risky": "yes"
+  } }, { now: new Date("2026-11-25T09:00:00Z") });
+  assert.deepEqual(result, { eligible: false, reason: "RISKY_NOT_ALLOWED" });
+});
+
 test("verification batch exports only pending Overture leads", () => {
   const batch = pendingVerificationBatch([
     { id: "recPending", fields: { Email: "pending@example.com", "Business Name": "Pending Co", "Source System": "overture", "Lead Decision": "pending_verification" } },

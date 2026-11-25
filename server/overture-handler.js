@@ -5,6 +5,7 @@ import {
   ingestOverturePlaces,
   pendingVerificationBatch
 } from "./overture-leads.js";
+import { verifyPendingEmails } from "./millionverifier.js";
 
 function text(value) {
   return String(value ?? "").trim();
@@ -81,9 +82,13 @@ export async function overtureHandler(request, response) {
   if (!await authorizedOvertureRequest(request)) return response.status(401).json({ success: false, code: "UNAUTHORIZED" });
 
   try {
-    const dependencies = createRuntimeDependencies({ airtable: true });
-    const data = dependencies.airtable;
     const action = text(request.body?.action || request.query?.action || "ingest").toLowerCase();
+    const verificationDryRun = request.body?.dry_run === true;
+    const dependencies = createRuntimeDependencies({
+      airtable: true,
+      millionVerifier: action === "millionverifier" && !verificationDryRun
+    });
+    const data = dependencies.airtable;
 
     if (request.method === "GET") {
       const records = await data.listRecords(dependencies.config.airtable.rawOutscraperTableId, {
@@ -108,6 +113,25 @@ export async function overtureHandler(request, response) {
         data
       }, { dryRun: request.body?.dry_run === true });
       console.log(JSON.stringify({ event: "overture_verification_results_applied", ...result }));
+      return response.status(200).json(result);
+    }
+
+    if (action === "millionverifier") {
+      const recordId = text(request.body?.record_id || request.body?.recordId);
+      if (!recordId && request.body?.confirm !== "VERIFY_PENDING_EMAILS") {
+        return response.status(400).json({ success: false, code: "BATCH_CONFIRMATION_REQUIRED" });
+      }
+      const result = await verifyPendingEmails({
+        config: dependencies.config,
+        data,
+        millionVerifier: dependencies.millionVerifier
+      }, {
+        recordId,
+        limit: positiveInteger(request.body?.limit, dependencies.config.millionVerifier.batchLimit, 100),
+        concurrency: positiveInteger(request.body?.concurrency, dependencies.config.millionVerifier.concurrency, 5),
+        dryRun: verificationDryRun
+      });
+      console.log(JSON.stringify({ event: "millionverifier_batch_completed", ...result, results: undefined }));
       return response.status(200).json(result);
     }
 

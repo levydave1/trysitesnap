@@ -3,7 +3,7 @@ import { isIP } from "node:net";
 import { isValidLeadEmail } from "./email-export.js";
 import { validateEmailLocally } from "./overture-leads.js";
 
-const GOOD_VERIFICATION = new Set(["GOOD", "OK", "VALID", "DELIVERABLE"]);
+const GOOD_VERIFICATION = new Set(["GOOD", "OK"]);
 const CONTACT_HINT = /(?:contact|about|team|staff|privacy|legal|support|reach[-_ ]?us|get[-_ ]?in[-_ ]?touch)/i;
 const SOCIAL_HOSTS = /(?:^|\.)(?:facebook|instagram|linkedin|tiktok|x|twitter|yelp)\.com$/i;
 const FREE_MAIL_HOSTS = new Set(["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "aol.com", "icloud.com"]);
