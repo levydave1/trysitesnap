@@ -31,6 +31,15 @@ on:
         required: true
         default: false
         type: boolean
+      verification_only:
+        description: Skip discovery and enrichment; run only MillionVerifier stage 5
+        required: true
+        default: false
+        type: boolean
+      verification_limit:
+        description: Maximum pending leads to inspect with MillionVerifier (1-100)
+        required: true
+        default: "100"
 
 permissions:
   contents: read
@@ -43,12 +52,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
+        if: ${{ inputs.verification_only != true }}
         with:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: ops/requirements-overture.txt
       - run: python -m pip install -r ops/requirements-overture.txt
+        if: ${{ inputs.verification_only != true }}
       - name: Request short-lived ingest token
+        if: ${{ inputs.verification_only != true }}
         id: oidc
         shell: bash
         run: |
@@ -59,6 +71,7 @@ jobs:
           echo "::add-mask::$token"
           printf 'token=%s\n' "$token" >> "$GITHUB_OUTPUT"
       - name: Ensure lead data rules
+        if: ${{ inputs.verification_only != true }}
         env:
           OVERTURE_INGEST_SECRET: ${{ steps.oidc.outputs.token }}
         run: |
@@ -68,6 +81,7 @@ jobs:
             -d '{"action":"migrate_schema"}' \
             https://trysitesnap.com/api/overture-leads
       - name: Discover and stage leads
+        if: ${{ inputs.verification_only != true }}
         env:
           OVERTURE_INGEST_URL: https://trysitesnap.com/api/overture-leads
           OVERTURE_INGEST_SECRET: ${{ steps.oidc.outputs.token }}
@@ -88,6 +102,7 @@ jobs:
             --category-groups "$OVERTURE_CATEGORY_GROUPS" \
             $dry_run_flag
       - name: Find and document public business emails
+        if: ${{ inputs.verification_only != true }}
         env:
           ENRICHMENT_DRY_RUN: ${{ inputs.dry_run || 'false' }}
           RECHECK_FOUND: ${{ inputs.recheck_found || 'false' }}
@@ -128,21 +143,33 @@ jobs:
           VERIFICATION_DRY_RUN: ${{ inputs.dry_run || 'false' }}
         shell: bash
         run: |
-          batches=5
-          if [ "$VERIFICATION_DRY_RUN" = "true" ]; then
-            batches=1
+          remaining="${{ inputs.verification_limit || '100' }}"
+          if ! [[ "$remaining" =~ ^[0-9]+$ ]] || [ "$remaining" -lt 1 ] || [ "$remaining" -gt 100 ]; then
+            echo "verification_limit must be between 1 and 100" >&2
+            exit 1
           fi
-          for batch in $(seq 1 "$batches"); do
+          if [ "$VERIFICATION_DRY_RUN" = "true" ]; then
+            remaining=25
+          fi
+          while [ "$remaining" -gt 0 ]; do
+            batch_size=25
+            if [ "$remaining" -lt "$batch_size" ]; then
+              batch_size="$remaining"
+            fi
             token="$(curl --fail --silent --show-error \
               -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
               "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sitesnap-overture" \
               | python -c 'import json,sys; print(json.load(sys.stdin)["value"])')"
             echo "::add-mask::$token"
-            payload="$(printf '{"action":"millionverifier","confirm":"VERIFY_PENDING_EMAILS","limit":25,"concurrency":2,"dry_run":%s}' "$VERIFICATION_DRY_RUN")"
+            payload="$(printf '{"action":"millionverifier","confirm":"VERIFY_PENDING_EMAILS","limit":%s,"concurrency":2,"dry_run":%s}' "$batch_size" "$VERIFICATION_DRY_RUN")"
             response="$(curl --fail-with-body --silent --show-error \
               -H "Authorization: Bearer $token" \
               -H "Content-Type: application/json" \
               -d "$payload" \
               https://trysitesnap.com/api/overture-leads)"
-            VERIFICATION_RESPONSE="$response" python -c 'import json,os; r=json.loads(os.environ["VERIFICATION_RESPONSE"]); print({k:r.get(k) for k in ("selected","apiCalls","reused","approved","rejected","errors","updated","dryRun")})'
+            selected="$(VERIFICATION_RESPONSE="$response" python -c 'import json,os; r=json.loads(os.environ["VERIFICATION_RESPONSE"]); print({k:r.get(k) for k in ("selected","apiCalls","reused","approved","rejected","errors","updated","dryRun")}); print(int(r.get("selected") or 0))' | tee /dev/stderr | tail -n 1)"
+            if [ "$selected" -eq 0 ]; then
+              break
+            fi
+            remaining=$((remaining - batch_size))
           done
