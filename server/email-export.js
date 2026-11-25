@@ -81,22 +81,8 @@ async function writeEmailWithFallback(dependencies, prompt) {
     return await dependencies.claude.writeEmail(prompt);
   } catch (claudeError) {
     if (!dependencies.gemini?.analyze) throw claudeError;
-    try {
-      return await dependencies.gemini.analyze(prompt);
-    } catch {
-      return null;
-    }
+    return dependencies.gemini.analyze(prompt);
   }
-}
-
-function localFallbackEmail(lead) {
-  const businessName = clean(lead.businessName) || "your business";
-  const shortName = businessName.split(/\s+/).slice(0, 2).join(" ");
-  const greeting = clean(lead.firstName) ? `Hi ${clean(lead.firstName)},` : "Hi,";
-  return {
-    subject: `${shortName} homepage concept`,
-    body: `${greeting} I can put together a homepage concept for ${businessName} using public information. It would focus on a clear first impression and make the next step easier for prospective clients. Preparing and viewing the concept is free, with no obligation. Would you like me to prepare it?`
-  };
 }
 
 export async function generateEmailForLead(dependencies, lead, flow = "v2") {
@@ -104,11 +90,9 @@ export async function generateEmailForLead(dependencies, lead, flow = "v2") {
   if (selectedFlow === "legacy") {
     if (!dependencies.gemini) throw new Error("Gemini is required for the legacy email flow");
     const analysis = analysisFromGemini(await dependencies.gemini.analyze(legacyGeminiPrompt(lead)));
-    const output = await writeEmailWithFallback(dependencies, legacyClaudePrompt(lead, analysis));
-    return output ? emailFromClaude(output) : localFallbackEmail(lead);
+    return emailFromClaude(await writeEmailWithFallback(dependencies, legacyClaudePrompt(lead, analysis)));
   }
-  const output = await writeEmailWithFallback(dependencies, modernClaudePrompt(lead));
-  return output ? emailFromClaude(output) : localFallbackEmail(lead);
+  return emailFromClaude(await writeEmailWithFallback(dependencies, modernClaudePrompt(lead)));
 }
 
 function linkedIds(value) {

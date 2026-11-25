@@ -81,17 +81,16 @@ test("02 falls back to Gemini when Claude cannot generate the email", async () =
   assert.match(result.body, /free, with no obligation/);
 });
 
-test("02 uses a grounded local email when both writing providers are out of credit", async () => {
-  const unavailable = async () => { throw Object.assign(new Error("credits"), { upstreamStatus: 402 }); };
-  const result = await generateEmailForLead({
+test("02 fails closed when both writing providers are out of credit", async () => {
+  const unavailable = async () => { throw Object.assign(new Error("credits"), { code: "WRITER_UPSTREAM_ERROR", upstreamStatus: 402 }); };
+  await assert.rejects(() => generateEmailForLead({
     claude: { writeEmail: unavailable },
     gemini: { analyze: unavailable }
-  }, { businessName: "Avalon Group Realty", firstName: "", city: "St Petersburg" }, "v2");
-
-  assert.equal(result.subject, "Avalon Group homepage concept");
-  assert.equal(result.body.split(/\s+/).length, 49);
-  assert.match(result.body, /using public information/);
-  assert.match(result.body, /free, with no obligation/);
+  }, { businessName: "Avalon Group Realty", firstName: "", city: "St Petersburg" }, "v2"), (error) => {
+    assert.equal(error.code, "WRITER_UPSTREAM_ERROR");
+    assert.equal(error.upstreamStatus, 402);
+    return true;
+  });
 });
 
 test("02 v2 prompt stays grounded and excludes first-email pricing", () => {
