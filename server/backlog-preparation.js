@@ -63,6 +63,10 @@ function isOutscraper(record) {
   return lower(record.fields?.["Source System"]) === "outscraper";
 }
 
+function isDraftableBacklogSource(record) {
+  return ["outscraper", "overture"].includes(lower(record.fields?.["Source System"]));
+}
+
 function recentRetry(fields, now, cooldownHours = 24) {
   if (lower(fields["Lead Decision"]) !== "pending_verification") return false;
   const attemptedAt = Date.parse(text(fields["Email Verification Last Attempt At"]));
@@ -96,7 +100,7 @@ function draftCandidates(rawRecords, threadRecords, options = {}) {
   return (rawRecords || []).filter((record) => {
     const fields = record.fields || {};
     const email = lower(fields.Email);
-    if (!isOutscraper(record) || wasContacted(record, index) || !email) return false;
+    if (!isDraftableBacklogSource(record) || wasContacted(record, index) || !email) return false;
     if (index.draftIds.has(record.id) || index.draftEmails.has(email)) return false;
     if (lower(fields["Lead Decision"]) !== "approved" || lower(fields["Email Eligible"]) !== "yes") return false;
     return safeCurrentVerification(fields, now, maxAgeDays);
@@ -132,6 +136,7 @@ export async function auditExistingBacklog(dependencies, options = {}) {
     : await loadRecords(dependencies);
   const index = threadIndex(threadRecords);
   const outscraper = rawRecords.filter(isOutscraper);
+  const overture = rawRecords.filter((record) => lower(record.fields?.["Source System"]) === "overture");
   const untouched = outscraper.filter((record) => !wasContacted(record, index));
   const withEmail = untouched.filter((record) => lower(record.fields?.Email));
   const withoutEmail = untouched.filter((record) => !lower(record.fields?.Email));
@@ -142,6 +147,7 @@ export async function auditExistingBacklog(dependencies, options = {}) {
     success: true,
     scanned: rawRecords.length,
     outscraper: outscraper.length,
+    overture: overture.length,
     directWebsiteExcluded: rawRecords.filter((record) => lower(record.fields?.["Source System"]) === "site").length,
     untouched: untouched.length,
     withEmail: withEmail.length,
@@ -150,6 +156,7 @@ export async function auditExistingBacklog(dependencies, options = {}) {
     duplicateEmailRows: duplicateEmails.rows,
     pendingPaidVerification: verification.length,
     readyForDraft: drafts.length,
+    overtureReadyForDraft: drafts.filter((record) => lower(record.fields?.["Source System"]) === "overture").length,
     existingDrafts: index.draftIds.size
   };
 }

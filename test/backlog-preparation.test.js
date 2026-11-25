@@ -122,6 +122,31 @@ test("backlog draft preparation stores a draft without initializing or calling I
   assert.equal(updates[0].fields["Draft Status"], "prepared");
 });
 
+test("backlog draft preparation includes externally verified Overture records", async () => {
+  const created = [];
+  const approved = raw("rec01", {
+    "Source System": "overture",
+    Email: "owner@acme.test",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Status": "verified",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-25T09:00:00.000Z"
+  });
+  const result = await prepareExistingBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) { return tableId === config.airtable.rawOutscraperTableId ? [approved] : []; },
+      async createRecord(tableId, fields) { created.push({ tableId, fields }); return { id: "recDraft" }; },
+      async updateRecordInTable() {}
+    },
+    claude: { async writeEmail() { return { subject: "Homepage idea", body: "Would you like a free, no-obligation homepage concept?" }; } }
+  }, { now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.drafted, 1);
+  assert.equal(created[0].fields["Draft Source"], "existing_backlog");
+});
+
 test("backlog draft preparation falls back to Gemini only when Claude credits are exhausted", async () => {
   const created = [];
   const approved = raw("rec01", {
