@@ -81,6 +81,19 @@ test("02 falls back to Gemini when Claude cannot generate the email", async () =
   assert.match(result.body, /free, with no obligation/);
 });
 
+test("02 uses a grounded local email when both writing providers are out of credit", async () => {
+  const unavailable = async () => { throw Object.assign(new Error("credits"), { upstreamStatus: 402 }); };
+  const result = await generateEmailForLead({
+    claude: { writeEmail: unavailable },
+    gemini: { analyze: unavailable }
+  }, { businessName: "Avalon Group Realty", firstName: "", city: "St Petersburg" }, "v2");
+
+  assert.equal(result.subject, "Avalon Group homepage concept");
+  assert.equal(result.body.split(/\s+/).length, 49);
+  assert.match(result.body, /using public information/);
+  assert.match(result.body, /free, with no obligation/);
+});
+
 test("02 v2 prompt stays grounded and excludes first-email pricing", () => {
   const prompt = modernClaudePrompt({
     firstName: "Monica",
