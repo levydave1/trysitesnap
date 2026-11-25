@@ -83,6 +83,11 @@ export function createRuntimeDependencies(needs = {}) {
       model: config.emailExport.claudeModel,
       timeoutMs: 60000
     });
+    dependencies.gemini = createGeminiClient({
+      apiKey: process.env.GEMINI_API_KEY,
+      model: config.emailExport.geminiModel,
+      timeoutMs: 45000
+    });
   }
   if (needs.firstSketch) {
     dependencies.tavily = createTavilyClient({

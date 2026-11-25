@@ -340,7 +340,8 @@ export async function leadDashboardHandler(request, response) {
       const result = await prepareExistingBacklogDrafts({
         config: runtime.config,
         data: runtime.airtable,
-        claude: runtime.claude
+        claude: runtime.claude,
+        gemini: runtime.gemini
       }, {
         limit: request.body?.limit,
         concurrency: request.body?.concurrency,

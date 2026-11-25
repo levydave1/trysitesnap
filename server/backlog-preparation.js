@@ -184,6 +184,28 @@ async function mapConcurrent(items, concurrency, operation) {
   return results;
 }
 
+function claudeCreditExhausted(error) {
+  return error?.code === "CLAUDE_UPSTREAM_ERROR"
+    && error?.upstreamStatus === 400
+    && /credit balance is too low/i.test(text(error?.upstreamDetails || error?.message));
+}
+
+async function generateBacklogEmail(dependencies, lead) {
+  try {
+    return {
+      ...(await generateEmailForLead({ claude: dependencies.claude }, lead, "v2")),
+      provider: "claude"
+    };
+  } catch (error) {
+    if (!claudeCreditExhausted(error) || !dependencies.gemini) throw error;
+    const geminiWriter = { writeEmail: (prompt) => dependencies.gemini.analyze(prompt) };
+    return {
+      ...(await generateEmailForLead({ claude: geminiWriter }, lead, "v2")),
+      provider: "gemini"
+    };
+  }
+}
+
 export async function prepareExistingBacklogDrafts(dependencies, options = {}) {
   const loaded = options.rawRecords && options.threadRecords ? options : await loadRecords(dependencies);
   const limit = Math.max(1, Math.min(50, Number(options.limit) || 10));
@@ -202,7 +224,7 @@ export async function prepareExistingBacklogDrafts(dependencies, options = {}) {
   const results = await mapConcurrent(candidates, Math.max(1, Math.min(5, Number(options.concurrency) || 3)), async (record) => {
     const lead = leadFromEmailRecord(record);
     try {
-      const email = await generateEmailForLead({ claude: dependencies.claude }, lead, "v2");
+      const email = await generateBacklogEmail(dependencies, lead);
       const draft = await dependencies.data.createRecord(loaded.threadTableId, {
         [threadFields.subject]: email.subject,
         [threadFields.body]: email.body,
@@ -213,6 +235,7 @@ export async function prepareExistingBacklogDrafts(dependencies, options = {}) {
         "Drafted At": now.toISOString(),
         "Draft Prompt Version": DRAFT_VERSION,
         "Draft Source": "existing_backlog",
+        "Draft Model Provider": email.provider,
         [threadFields.businessName]: lead.businessName,
         [threadFields.recipientEmail]: lead.email,
         [threadFields.status]: "draft",

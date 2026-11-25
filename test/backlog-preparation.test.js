@@ -116,7 +116,38 @@ test("backlog draft preparation stores a draft without initializing or calling I
   assert.equal(created[0].tableId, config.airtable.emailThreadsTableId);
   assert.equal(created[0].fields[config.airtable.emailThreadFields.status], "draft");
   assert.equal(created[0].fields[config.airtable.emailThreadFields.rawBusinessRecord][0], "rec01");
+  assert.equal(created[0].fields["Draft Model Provider"], "claude");
   assert.equal(updates[0].fields["Draft Status"], "prepared");
+});
+
+test("backlog draft preparation falls back to Gemini only when Claude credits are exhausted", async () => {
+  const created = [];
+  const approved = raw("rec01", {
+    Email: "owner@acme.test",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Status": "verified",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-25T09:00:00.000Z"
+  });
+  const failure = new Error("claude request failed (400)");
+  failure.code = "CLAUDE_UPSTREAM_ERROR";
+  failure.upstreamStatus = 400;
+  failure.upstreamDetails = "Your credit balance is too low to access the Anthropic API.";
+  const result = await prepareExistingBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) { return tableId === config.airtable.rawOutscraperTableId ? [approved] : []; },
+      async createRecord(tableId, fields) { created.push({ tableId, fields }); return { id: "recDraft" }; },
+      async updateRecordInTable() {}
+    },
+    claude: { async writeEmail() { throw failure; } },
+    gemini: { async analyze() { return { subject: "Homepage idea", body: "Would you like a free, no-obligation homepage concept?" }; } }
+  }, { now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.drafted, 1);
+  assert.equal(result.errors, 0);
+  assert.equal(created[0].fields["Draft Model Provider"], "gemini");
 });
 
 test("existing backlog drafts are idempotent", async () => {
