@@ -77,6 +77,13 @@ export function createRuntimeDependencies(needs = {}) {
       timeoutMs: 30000
     });
   }
+  if (needs.emailDraft) {
+    dependencies.claude = createClaudeClient({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      model: config.emailExport.claudeModel,
+      timeoutMs: 60000
+    });
+  }
   if (needs.firstSketch) {
     dependencies.tavily = createTavilyClient({
       apiKey: process.env.TAVILY_API_KEY,

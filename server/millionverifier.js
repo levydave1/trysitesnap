@@ -95,6 +95,10 @@ export async function verifyPendingEmails(dependencies, options = {}) {
   const records = options.records || await dependencies.data.listRecords(tableId, { fields });
   const requestedId = text(options.recordId);
   const requested = requestedId ? records.filter((record) => record.id === requestedId) : records;
+  const sourceSystem = lower(options.sourceSystem) || "overture";
+  const eligibleRecordIds = options.eligibleRecordIds instanceof Set
+    ? options.eligibleRecordIds
+    : new Set(Array.isArray(options.eligibleRecordIds) ? options.eligibleRecordIds.map(text) : []);
   if (requestedId && !requested.length) {
     const error = new Error(`Lead ${requestedId} was not found`);
     error.code = "LEAD_NOT_FOUND";
@@ -109,8 +113,10 @@ export async function verifyPendingEmails(dependencies, options = {}) {
   }
   const limit = requestedId ? 1 : Math.max(1, Math.min(100, Number(options.limit) || settings.batchLimit));
   const selected = requested
-    .filter((record) => lower(record.fields?.["Source System"]) === "overture")
-    .filter((record) => lower(record.fields?.["Lead Decision"]) === "pending_verification")
+    .filter((record) => lower(record.fields?.["Source System"]) === sourceSystem)
+    .filter((record) => eligibleRecordIds.size
+      ? eligibleRecordIds.has(record.id)
+      : lower(record.fields?.["Lead Decision"]) === "pending_verification")
     .slice(0, limit);
   const summary = {
     success: true,
@@ -184,7 +190,11 @@ export async function verifyPendingEmails(dependencies, options = {}) {
                 disposable: status === "DISPOSABLE",
                 risky: ["CATCH_ALL", "UNKNOWN"].includes(status),
                 raw_response: raw
-              }], dependencies, { now, records: [record] });
+              }], dependencies, {
+                now,
+                records: [record],
+                allowedSourceSystems: [sourceSystem]
+              });
               summary.updated += 1;
               outcome = CURRENT_GOOD.has(status) ? "approved" : "rejected";
               updates = null;

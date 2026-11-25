@@ -103,6 +103,17 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - The protected maintenance action `dedupe_unsent_leads` removes only later copies of exact, uncontacted Outscraper duplicates. It requires an explicit confirmation phrase and preserves the earliest record in every identical group.
 - On 2026-11-25 the action removed 495 later copies from 495 exact pairs after confirming that none was referenced by an email thread, generation job, business or order. Raw lead count changed from 5,958 to 5,463; a second dry run found zero remaining safe duplicate groups.
 
+## Current work plan — existing lead backlog
+
+Before increasing new-lead collection, process the accumulated unsent records already stored in Neon. This backlog pass must not send email or add a lead to an active Instantly campaign.
+
+1. Identify records that have never been queued, sent, delivered or replied to, while preserving direct website inquiries as a separate `00` exception.
+2. Remove only safe exact duplicates and keep the earliest canonical record; never delete a record referenced by an email thread, generation job, business or order.
+3. Run free syntax, disposable-domain, mail-DNS and database-wide duplicate checks before any paid verification.
+4. Send only the remaining unique candidates to MillionVerifier, reuse a current safe result for 30 days, and reject invalid, catch-all, disposable, risky or unknown mailboxes.
+5. Generate the v2 first-email subject and body only for approved records and store them as drafts with the source lead, prompt version and generation timestamp.
+6. Review a controlled sample before export. Completion means every backlog record is documented as rejected, approved with a stored draft, previously contacted, or intentionally excluded. Sending and Instantly export are separate later actions.
+
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
 ## Airtable data cutover — 2026-11-20

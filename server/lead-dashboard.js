@@ -1,4 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import {
+  auditExistingBacklog,
+  prepareExistingBacklogDrafts,
+  verifyExistingBacklog
+} from "./backlog-preparation.js";
 import { createRuntimeDependencies } from "./runtime.js";
 import { planSafeUnsentLeadDedupe } from "./lead-dedupe.js";
 import { applyExternalVerificationResults, pendingVerificationBatch } from "./overture-leads.js";
@@ -303,6 +308,46 @@ export async function leadDashboardHandler(request, response) {
       response.setHeader("Content-Type", "text/csv; charset=utf-8");
       response.setHeader("Content-Disposition", `attachment; filename="sitesnap-verification-${new Date().toISOString().slice(0, 10)}.csv"`);
       return response.status(200).send(`\uFEFF${verificationCsv(records)}`);
+    }
+    if (request.method === "GET" && action === "backlog_audit") {
+      const result = await auditExistingBacklog({ config: dependencies.config, data });
+      return response.status(200).json(result);
+    }
+    if (request.method === "POST" && action === "backlog_verify") {
+      if (request.body?.confirm !== "VERIFY_EXISTING_BACKLOG") {
+        return response.status(400).json({ success: false, code: "BACKLOG_VERIFICATION_CONFIRMATION_REQUIRED" });
+      }
+      const dryRun = request.body?.dry_run === true;
+      const runtime = createRuntimeDependencies({ airtable: true, millionVerifier: !dryRun });
+      const result = await verifyExistingBacklog({
+        config: runtime.config,
+        data: runtime.airtable,
+        millionVerifier: runtime.millionVerifier
+      }, {
+        limit: request.body?.limit,
+        concurrency: request.body?.concurrency,
+        dryRun
+      });
+      console.log(JSON.stringify({ event: "existing_backlog_verification_completed", ...result, results: undefined }));
+      return response.status(200).json(result);
+    }
+    if (request.method === "POST" && action === "backlog_draft") {
+      if (request.body?.confirm !== "PREPARE_EXISTING_BACKLOG_DRAFTS") {
+        return response.status(400).json({ success: false, code: "BACKLOG_DRAFT_CONFIRMATION_REQUIRED" });
+      }
+      const dryRun = request.body?.dry_run === true;
+      const runtime = createRuntimeDependencies({ airtable: true, emailDraft: !dryRun });
+      const result = await prepareExistingBacklogDrafts({
+        config: runtime.config,
+        data: runtime.airtable,
+        claude: runtime.claude
+      }, {
+        limit: request.body?.limit,
+        concurrency: request.body?.concurrency,
+        dryRun
+      });
+      console.log(JSON.stringify({ event: "existing_backlog_drafts_completed", ...result, results: undefined }));
+      return response.status(200).json(result);
     }
     if (request.method === "POST" && action === "verification_results") {
       const results = Array.isArray(request.body?.results) ? request.body.results : [];

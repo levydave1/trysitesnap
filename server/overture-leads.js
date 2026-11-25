@@ -458,6 +458,8 @@ function normalizedResultStatus(result) {
 
 export async function applyExternalVerificationResults(results, dependencies, options = {}) {
   const now = options.now instanceof Date ? options.now : new Date(options.now || Date.now());
+  const allowedSources = new Set((options.allowedSourceSystems || ["overture"])
+    .map((value) => text(value).toLowerCase()).filter(Boolean));
   const records = options.records || await dependencies.data.listRecords(
     dependencies.config.airtable.rawOutscraperTableId,
     { fields: ["Email", "Source System", "Lead Decision"] }
@@ -470,7 +472,7 @@ export async function applyExternalVerificationResults(results, dependencies, op
   for (const result of Array.isArray(results) ? results : []) {
     summary.inspected += 1;
     const record = byId.get(text(result.record_id || result.recordId)) || byEmail.get(text(result.email).toLowerCase());
-    if (!record || text(record.fields?.["Source System"]).toLowerCase() !== "overture") {
+    if (!record || !allowedSources.has(text(record.fields?.["Source System"]).toLowerCase())) {
       summary.notFound += 1;
       continue;
     }

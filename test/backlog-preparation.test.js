@@ -1,0 +1,143 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  auditExistingBacklog,
+  prepareExistingBacklogDrafts,
+  verifyExistingBacklog
+} from "../server/backlog-preparation.js";
+import { config } from "../server/config.js";
+
+const dns = {
+  async resolveMx(domain) { return [{ priority: 10, exchange: `mail.${domain}` }]; },
+  async resolve4() { return []; },
+  async resolve6() { return []; }
+};
+
+function raw(id, overrides = {}) {
+  return {
+    id,
+    createdTime: `2026-01-${id.slice(-2).padStart(2, "0")}T00:00:00.000Z`,
+    fields: {
+      "Source System": "outscraper",
+      "Business Name": `Business ${id}`,
+      Email: `${id}@example.test`,
+      "Email Status": "not_started",
+      "Email Eligible": "yes",
+      ...overrides
+    }
+  };
+}
+
+function thread(id, email, status = "sent") {
+  return { id: `thread-${id}`, fields: { "Business ID": [id], "To Email": email, "Reply Status": status } };
+}
+
+test("backlog audit excludes direct website inquiries and already-contacted records", async () => {
+  const rawRecords = [
+    raw("rec01"),
+    raw("rec02", { Email: "" }),
+    raw("rec03"),
+    raw("rec04", { "Source System": "site" })
+  ];
+  const result = await auditExistingBacklog({}, {
+    rawRecords,
+    threadRecords: [thread("rec03", "rec03@example.test")]
+  });
+  assert.equal(result.directWebsiteExcluded, 1);
+  assert.equal(result.untouched, 2);
+  assert.equal(result.withEmail, 1);
+  assert.equal(result.withoutEmail, 1);
+  assert.equal(result.pendingPaidVerification, 1);
+});
+
+test("backlog verification checks only unique uncontacted Outscraper leads", async () => {
+  const updates = [];
+  let calls = 0;
+  const rawRecords = [
+    raw("rec01", { Email: "owner@acme.test" }),
+    raw("rec02", { Email: "contacted@acme.test" }),
+    raw("rec03", { Email: "site@acme.test", "Source System": "site" }),
+    raw("rec04", { Email: "overture@acme.test", "Source System": "overture", "Lead Decision": "pending_verification" })
+  ];
+  const result = await verifyExistingBacklog({
+    config,
+    data: {
+      async listRecords(tableId) {
+        return tableId === config.airtable.rawOutscraperTableId
+          ? rawRecords
+          : [thread("rec02", "contacted@acme.test")];
+      },
+      async updateRecordInTable(tableId, id, fields) { updates.push({ tableId, id, fields }); }
+    },
+    millionVerifier: {
+      async verifyEmail() {
+        calls += 1;
+        return { email: "owner@acme.test", result: "ok", quality: "good", error: "" };
+      }
+    }
+  }, { dns, now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.selected, 1);
+  assert.equal(result.approved, 1);
+  assert.equal(calls, 1);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].id, "rec01");
+  assert.equal(updates[0].fields["Email Validation Provider"], "millionverifier");
+});
+
+test("backlog draft preparation stores a draft without initializing or calling Instantly", async () => {
+  const created = [];
+  const updates = [];
+  const approved = raw("rec01", {
+    Email: "owner@acme.test",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Status": "verified",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-25T09:00:00.000Z",
+    "Email Catch All": "no",
+    "Email Disposable": "no",
+    "Email Risky": "no"
+  });
+  const result = await prepareExistingBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) { return tableId === config.airtable.rawOutscraperTableId ? [approved] : []; },
+      async createRecord(tableId, fields) { created.push({ tableId, fields }); return { id: "recDraft" }; },
+      async updateRecordInTable(tableId, id, fields) { updates.push({ tableId, id, fields }); }
+    },
+    claude: {
+      async writeEmail() { return { subject: "Quick question", body: "Would you like to see a tailored homepage concept?" }; }
+    }
+  }, { now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.drafted, 1);
+  assert.equal(result.errors, 0);
+  assert.equal(created.length, 1);
+  assert.equal(created[0].tableId, config.airtable.emailThreadsTableId);
+  assert.equal(created[0].fields[config.airtable.emailThreadFields.status], "draft");
+  assert.equal(created[0].fields[config.airtable.emailThreadFields.rawBusinessRecord][0], "rec01");
+  assert.equal(updates[0].fields["Draft Status"], "prepared");
+});
+
+test("existing backlog drafts are idempotent", async () => {
+  const approved = raw("rec01", {
+    Email: "owner@acme.test",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Status": "verified",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-25T09:00:00.000Z"
+  });
+  const result = await prepareExistingBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) {
+        return tableId === config.airtable.rawOutscraperTableId
+          ? [approved]
+          : [thread("rec01", "owner@acme.test", "draft")];
+      }
+    }
+  }, { dryRun: true, now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.selected, 0);
+});
