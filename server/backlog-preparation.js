@@ -226,7 +226,14 @@ export async function prepareExistingBacklogDrafts(dependencies, options = {}) {
       });
       return { recordId: record.id, businessName: lead.businessName, outcome: "drafted" };
     } catch (error) {
-      return { recordId: record.id, businessName: lead.businessName, outcome: "error", code: error.code || "DRAFT_FAILED" };
+      return {
+        recordId: record.id,
+        businessName: lead.businessName,
+        outcome: "error",
+        code: error.code || "DRAFT_FAILED",
+        upstreamStatus: error.upstreamStatus || null,
+        details: text(error.upstreamDetails || error.message).slice(0, 300)
+      };
     }
   });
   for (const result of results) {

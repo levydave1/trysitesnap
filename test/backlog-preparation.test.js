@@ -142,6 +142,36 @@ test("existing backlog drafts are idempotent", async () => {
   assert.equal(result.selected, 0);
 });
 
+test("backlog draft errors expose safe upstream diagnostics without creating records", async () => {
+  let creates = 0;
+  const approved = raw("rec01", {
+    Email: "owner@acme.test",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Status": "verified",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-25T09:00:00.000Z"
+  });
+  const failure = new Error("claude request failed (400)");
+  failure.code = "CLAUDE_UPSTREAM_ERROR";
+  failure.upstreamStatus = 400;
+  failure.upstreamDetails = "Invalid structured output schema";
+  const result = await prepareExistingBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) { return tableId === config.airtable.rawOutscraperTableId ? [approved] : []; },
+      async createRecord() { creates += 1; }
+    },
+    claude: { async writeEmail() { throw failure; } }
+  }, { now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.drafted, 0);
+  assert.equal(result.errors, 1);
+  assert.equal(result.results[0].upstreamStatus, 400);
+  assert.equal(result.results[0].details, "Invalid structured output schema");
+  assert.equal(creates, 0);
+});
+
 test("a backlog cooldown with no eligible records does not fall back to immediate retries", async () => {
   let calls = 0;
   const coolingDown = raw("rec01", {
