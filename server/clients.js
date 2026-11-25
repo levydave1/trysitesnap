@@ -632,7 +632,7 @@ export function createInstantlyClient({ apiKey, timeoutMs, fetchImpl = fetch }) 
       return retryingJson("instantly", "https://api.instantly.ai/api/v2/leads", {
         method: "POST",
         headers,
-        body: JSON.stringify(lead)
+        body: JSON.stringify({ ...lead, verify_leads_on_import: false })
       }, { timeoutMs, fetchImpl });
     },
     async listLeads(query = {}) {

@@ -36,11 +36,12 @@ test("02 Instantly client uses API v2 with bearer authentication", async () => {
     calls.push({ url: String(url), options, body: JSON.parse(options.body) });
     return new Response(JSON.stringify(String(url).endsWith("/list") ? { items: [] } : { id: "lead-test" }), { status: 200 });
   } });
-  assert.equal((await client.createLead({ email: "lead@example.com" })).id, "lead-test");
+  assert.equal((await client.createLead({ email: "lead@example.com", verify_leads_on_import: true })).id, "lead-test");
   await client.listLeads({ search: "lead@example.com" });
   assert.equal(calls[0].url, "https://api.instantly.ai/api/v2/leads");
   assert.equal(calls[1].url, "https://api.instantly.ai/api/v2/leads/list");
   assert.equal(calls[0].options.headers.Authorization, "Bearer instantly-secret");
+  assert.equal(JSON.parse(calls[0].options.body).verify_leads_on_import, false);
 });
 
 test("02 v2 uses one Claude call while legacy keeps Gemini then Claude available", async () => {

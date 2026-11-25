@@ -6,6 +6,7 @@ import {
   pendingVerificationBatch
 } from "./overture-leads.js";
 import { verifyPendingEmails } from "./millionverifier.js";
+import { normalizeEmailFlow, processEmailExportBatch } from "./email-export.js";
 
 function text(value) {
   return String(value ?? "").trim();
@@ -84,9 +85,12 @@ export async function overtureHandler(request, response) {
   try {
     const action = text(request.body?.action || request.query?.action || "ingest").toLowerCase();
     const verificationDryRun = request.body?.dry_run === true;
+    const emailFlow = normalizeEmailFlow(request.body?.flow || process.env.EMAIL_EXPORT_FLOW);
     const dependencies = createRuntimeDependencies({
       airtable: true,
-      millionVerifier: action === "millionverifier" && !verificationDryRun
+      millionVerifier: action === "millionverifier" && !verificationDryRun,
+      emailExport: action === "instantly_export",
+      emailFlow
     });
     const data = dependencies.airtable;
 
@@ -133,6 +137,29 @@ export async function overtureHandler(request, response) {
       });
       console.log(JSON.stringify({ event: "millionverifier_batch_completed", ...result, results: undefined }));
       return response.status(200).json(result);
+    }
+
+    if (action === "instantly_export") {
+      const recordId = text(request.body?.record_id || request.body?.recordId);
+      if (!recordId || request.body?.confirm !== "EXPORT_ONE_VERIFIED_LEAD") {
+        return response.status(400).json({ success: false, code: "SINGLE_EXPORT_CONFIRMATION_REQUIRED" });
+      }
+      const result = await processEmailExportBatch(dependencies, {
+        recordId,
+        maxRecords: 1,
+        concurrency: 1,
+        flow: emailFlow,
+        notify: false
+      });
+      console.log(JSON.stringify({
+        event: "single_instantly_export_completed",
+        recordId,
+        exported: result.exported,
+        skipped: result.skipped,
+        skippedUnverified: result.skippedUnverified,
+        failed: result.failed
+      }));
+      return response.status(result.failed ? 207 : 200).json(result);
     }
 
     if (action === "migrate_schema") {
