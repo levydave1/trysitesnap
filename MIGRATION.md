@@ -86,6 +86,7 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - The overview combines lead sources and decisions, verification state, Instantly queue history, generation jobs, sketches, orders/domains, system dependencies and recent activity.
 - Pending verification email addresses can be downloaded as CSV. A later external-result CSV can be reviewed and imported from the same dashboard; the server still enforces the strict approval gate.
 - Access uses an HTTP-only signed session cookie backed by the Vercel Secret `DASHBOARD_ACCESS_KEY`; the key is never embedded in the page or repository.
+- The protected maintenance action `dedupe_unsent_leads` removes only later copies of exact, uncontacted Outscraper duplicates. It requires an explicit confirmation phrase and preserves the earliest record in every identical group.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 

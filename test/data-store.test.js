@@ -179,3 +179,19 @@ test("Postgres data store exposes live table counts and paginated record browsin
   assert.deepEqual(calls[1].values, ["tblHistory", "%Dashboard%"]);
 });
 
+test("Postgres data store deletes only explicit record IDs from one table", async () => {
+  const calls = [];
+  const store = createPostgresDataClient({
+    defaultTableId: config.airtable.tableId,
+    fieldNamesByTable: airtableFieldNamesByTable,
+    queryImpl: async (text, values) => {
+      calls.push({ text, values });
+      return values[1].map((id) => ({ id }));
+    }
+  });
+  const deleted = await store.deleteRecordsFromTable("tblRaw", ["recOne", "recTwo", "recOne"]);
+  assert.deepEqual(deleted, ["recOne", "recTwo"]);
+  assert.match(calls[0].text, /DELETE FROM sitesnap_records/);
+  assert.deepEqual(calls[0].values, ["tblRaw", ["recOne", "recTwo"]]);
+});
+

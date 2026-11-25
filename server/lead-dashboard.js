@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createRuntimeDependencies } from "./runtime.js";
+import { planSafeUnsentLeadDedupe } from "./lead-dedupe.js";
 import { applyExternalVerificationResults, pendingVerificationBatch } from "./overture-leads.js";
 
 const COOKIE_NAME = "sitesnap_dashboard";
@@ -295,6 +296,38 @@ export async function leadDashboardHandler(request, response) {
       if (!results.length || results.length > 2000) return response.status(400).json({ success: false, code: "INVALID_RESULTS" });
       const result = await applyExternalVerificationResults(results, { config: dependencies.config, data });
       return response.status(200).json(result);
+    }
+    if (request.method === "POST" && action === "dedupe_unsent_leads") {
+      const [rawRecords, threadRecords] = await Promise.all([
+        data.listRecords(dependencies.config.airtable.rawOutscraperTableId, { fields: [
+          "Email", "Place ID", "Business Name", "Website", "Source Run Name",
+          "Source System", "Email Status", "Email Eligible"
+        ] }),
+        data.listRecords(dependencies.config.airtable.emailThreadsTableId, {
+          fields: ["Business ID", "To Email"]
+        })
+      ]);
+      const plan = planSafeUnsentLeadDedupe(rawRecords, threadRecords);
+      if (request.body?.confirm !== "DELETE_SAFE_DUPLICATES") {
+        return response.status(200).json({ success: true, dryRun: true, ...plan, deleteIds: undefined });
+      }
+      if (typeof data.deleteRecordsFromTable !== "function") {
+        return response.status(503).json({ success: false, code: "POSTGRES_DELETE_REQUIRED" });
+      }
+      const deletedIds = await data.deleteRecordsFromTable(
+        dependencies.config.airtable.rawOutscraperTableId,
+        plan.deleteIds
+      );
+      return response.status(200).json({
+        success: true,
+        dryRun: false,
+        scanned: plan.scanned,
+        eligibleUnsent: plan.eligibleUnsent,
+        duplicateGroups: plan.duplicateGroups,
+        planned: plan.deleteIds.length,
+        deleted: deletedIds.length,
+        kept: plan.keepCount
+      });
     }
     if (request.method === "POST" && action === "logout") {
       response.setHeader("Set-Cookie", `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`);

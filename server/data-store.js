@@ -230,6 +230,19 @@ export function createPostgresDataClient({
     return updateRecordInTable(defaultTableId, id, fields);
   }
 
+  async function deleteRecordsFromTable(tableId, recordIds) {
+    const ids = [...new Set((recordIds || []).map((id) => String(id || "").trim()).filter(Boolean))];
+    if (!ids.length) return [];
+    if (ids.length > 1000) throw new Error("Data-store delete is limited to 1000 records");
+    const rows = resultRows(await query(
+      `DELETE FROM sitesnap_records
+       WHERE table_id=$1 AND id=ANY($2::text[])
+       RETURNING id`,
+      [tableId, ids]
+    ));
+    return rows.map((row) => row.id);
+  }
+
   async function createRecords(tableId, records, options = {}) {
     if (!Array.isArray(records) || records.length < 1 || records.length > 10) {
       throw new Error("Data-store batch must contain between 1 and 10 records");
@@ -264,6 +277,7 @@ export function createPostgresDataClient({
     browseRecords,
     updateRecord,
     updateRecordInTable,
+    deleteRecordsFromTable,
     async createRecord(tableId, fields) {
       return (await createRecords(tableId, [fields]))[0];
     },
