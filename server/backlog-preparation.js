@@ -212,22 +212,23 @@ export function deterministicBacklogEmail(lead) {
   const firstName = firstNameOrBlank(lead);
   const greeting = firstName ? `Hi ${firstName},` : "Hi,";
   const business = text(lead.businessName) || "your business";
+  const businessReference = business.split(/\s+/).length > 6 ? "your business" : business;
   const variants = [
     {
       subject: "A homepage idea",
-      body: `${greeting} I can put together a homepage concept for ${business} using public information, focused on making the main services easier to understand. Preparing and viewing the concept is free, with no obligation. It is simply a way to see a possible direction. Would you like me to prepare it?`
+      body: `${greeting} I can put together a homepage concept for ${businessReference} using public information, focused on making the main services easier to understand. Preparing and viewing the concept is free, with no obligation. It is simply a way to see a possible direction. Would you like me to prepare it?`
     },
     {
       subject: "Quick website idea",
-      body: `${greeting} I would be happy to prepare a homepage concept tailored to ${business} from public information. The focus would be giving potential customers a clearer next step. Preparing and viewing the concept is free, and there is no obligation. Would you like me to put it together?`
+      body: `${greeting} I would be happy to prepare a homepage concept tailored to ${businessReference} from public information. The focus would be giving potential customers a clearer next step. Preparing and viewing the concept is free, and there is no obligation. Would you like me to put it together?`
     },
     {
       subject: "A clearer homepage",
-      body: `${greeting} I can create a simple homepage concept for ${business} based on public information, with a stronger first impression for potential customers. Preparing and viewing the concept is free, and there is no obligation. It is just a chance to see the idea before deciding anything. Should I prepare it?`
+      body: `${greeting} I can create a simple homepage concept for ${businessReference} based on public information, with a stronger first impression for potential customers. Preparing and viewing the concept is free, and there is no obligation. It is just a chance to see the idea before deciding anything. Should I prepare it?`
     },
     {
       subject: "Homepage concept",
-      body: `${greeting} I can prepare a tailored homepage concept for ${business} using public information. I would keep it focused on presenting the services clearly for first-time visitors. Preparing and viewing the concept is free, with no obligation attached. Would you like me to create it for you?`
+      body: `${greeting} I can prepare a tailored homepage concept for ${businessReference} using public information. I would keep it focused on presenting the services clearly for first-time visitors. Preparing and viewing the concept is free, with no obligation attached. Would you like me to create it for you?`
     }
   ];
   return variants[templateIndex(lead.recordId || lead.email || business, variants.length)];

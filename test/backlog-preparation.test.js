@@ -192,11 +192,13 @@ test("backlog draft preparation uses an audited local template when both AI bala
 });
 
 test("local backlog templates remain short, truthful, and permission-based", () => {
-  for (let index = 0; index < 12; index += 1) {
+  for (let index = 0; index < 16; index += 1) {
     const email = deterministicBacklogEmail({
       recordId: `rec${index}`,
       firstName: index % 2 ? "Sam" : "",
-      businessName: "Acme Roofing"
+      businessName: index < 12
+        ? "Acme Roofing"
+        : "Advanced Roofing Vinyl Siding Gutters Patio Covers Windows and Exterior Design LLC"
     });
     const subjectWords = email.subject.trim().split(/\s+/).length;
     const bodyWords = email.body.trim().split(/\s+/).length;
