@@ -205,10 +205,20 @@ async function generateBacklogEmail(dependencies, lead) {
       provider: "claude"
     };
   } catch (error) {
-    if (!claudeCreditExhausted(error) || !dependencies.gemini) throw error;
-    const geminiWriter = { writeEmail: (prompt) => dependencies.gemini.analyze(prompt) };
+    if (!claudeCreditExhausted(error)) throw error;
+    if (dependencies.groq) {
+      try {
+        return {
+          ...(await generateEmailForLead({ claude: dependencies.groq }, lead, "v2")),
+          provider: "groq"
+        };
+      } catch (groqError) {
+        if (!dependencies.gemini) throw groqError;
+      }
+    }
+    if (!dependencies.gemini) throw error;
     return {
-      ...(await generateEmailForLead({ claude: geminiWriter }, lead, "v2")),
+      ...(await generateEmailForLead({ claude: { writeEmail: (prompt) => dependencies.gemini.analyze(prompt) } }, lead, "v2")),
       provider: "gemini"
     };
   }

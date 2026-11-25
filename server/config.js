@@ -95,6 +95,7 @@ export const config = Object.freeze({
     testRecipient: "levy.dave.1@gmail.com",
     defaultFlow: "v2",
     geminiModel: "gemini-3.1-flash-lite",
+    groqModel: "openai/gpt-oss-20b",
     claudeModel: "claude-sonnet-4-6"
   },
   firstSketch: {

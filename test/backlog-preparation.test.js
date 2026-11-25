@@ -175,6 +175,39 @@ test("backlog draft preparation falls back to Gemini only when Claude credits ar
   assert.equal(created[0].fields["Draft Model Provider"], "gemini");
 });
 
+test("backlog draft preparation tries Groq before Gemini", async () => {
+  const created = [];
+  let geminiCalls = 0;
+  const approved = raw("rec01", {
+    Email: "owner@acme.test",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Status": "verified",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-25T09:00:00.000Z"
+  });
+  const failure = Object.assign(new Error("claude credits"), {
+    code: "CLAUDE_UPSTREAM_ERROR",
+    upstreamStatus: 400,
+    upstreamDetails: "Your credit balance is too low to access the Anthropic API."
+  });
+  const result = await prepareExistingBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) { return tableId === config.airtable.rawOutscraperTableId ? [approved] : []; },
+      async createRecord(tableId, fields) { created.push({ tableId, fields }); return { id: "recDraft" }; },
+      async updateRecordInTable() {}
+    },
+    claude: { async writeEmail() { throw failure; } },
+    groq: { async writeEmail() { return { subject: "Homepage idea", body: "Would you like to see a homepage concept?" }; } },
+    gemini: { async analyze() { geminiCalls += 1; return { subject: "Wrong order", body: "Must not run" }; } }
+  }, { now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.drafted, 1);
+  assert.equal(created[0].fields["Draft Model Provider"], "groq");
+  assert.equal(geminiCalls, 0);
+});
+
 test("backlog draft preparation fails closed when both AI providers are unavailable", async () => {
   const created = [];
   const approved = raw("rec01", {

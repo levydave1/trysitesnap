@@ -5,6 +5,7 @@ import {
   createCloudflareClient,
   createGeminiClient,
   createGeminiTextClient,
+  createGroqClient,
   createInstantlyClient,
   createMailRelayClient,
   createMillionVerifierClient,
@@ -70,6 +71,13 @@ export function createRuntimeDependencies(needs = {}) {
       model: config.emailExport.claudeModel,
       timeoutMs: 60000
     });
+    if (process.env.GROQ_API_KEY) {
+      dependencies.groq = createGroqClient({
+        apiKey: process.env.GROQ_API_KEY,
+        model: config.emailExport.groqModel,
+        timeoutMs: 45000
+      });
+    }
     dependencies.instantly = createInstantlyClient({
       apiKey: process.env.INSTANTLY_API_KEY,
       timeoutMs: 30000
@@ -86,6 +94,13 @@ export function createRuntimeDependencies(needs = {}) {
       model: config.emailExport.geminiModel,
       timeoutMs: 45000
     });
+    if (process.env.GROQ_API_KEY) {
+      dependencies.groq = createGroqClient({
+        apiKey: process.env.GROQ_API_KEY,
+        model: config.emailExport.groqModel,
+        timeoutMs: 45000
+      });
+    }
   }
   if (needs.firstSketch) {
     dependencies.tavily = createTavilyClient({

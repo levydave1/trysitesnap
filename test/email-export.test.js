@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createClaudeClient, createGeminiClient, createInstantlyClient } from "../server/clients.js";
+import { createClaudeClient, createGeminiClient, createGroqClient, createInstantlyClient } from "../server/clients.js";
 import {
   generateEmailForLead,
   processEmailExportBatch,
@@ -44,6 +44,24 @@ test("02 Instantly client uses API v2 with bearer authentication", async () => {
   assert.equal(JSON.parse(calls[0].options.body).verify_leads_on_import, false);
 });
 
+test("02 Groq client requests strict subject and body JSON", async () => {
+  let call;
+  const client = createGroqClient({
+    apiKey: "groq-secret",
+    model: "openai/gpt-oss-20b",
+    timeoutMs: 1000,
+    async fetchImpl(url, options) {
+      call = { url: String(url), options, body: JSON.parse(options.body) };
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"subject":"Idea","body":"Short message"}' } }] }), { status: 200 });
+    }
+  });
+  assert.deepEqual(await client.writeEmail({ system: "system", user: "user" }), { subject: "Idea", body: "Short message" });
+  assert.equal(call.url, "https://api.groq.com/openai/v1/chat/completions");
+  assert.equal(call.options.headers.Authorization, "Bearer groq-secret");
+  assert.equal(call.body.response_format.json_schema.strict, true);
+  assert.deepEqual(call.body.response_format.json_schema.schema.required, ["subject", "body"]);
+});
+
 test("02 v2 uses one Claude call while legacy keeps Gemini then Claude available", async () => {
   const calls = [];
   const lead = {
@@ -79,6 +97,17 @@ test("02 falls back to Gemini when Claude cannot generate the email", async () =
   assert.deepEqual(calls.map((item) => Array.isArray(item) ? item[0] : item), ["claude", "gemini"]);
   assert.equal(result.subject, "Homepage concept");
   assert.match(result.body, /free, with no obligation/);
+});
+
+test("02 tries Groq before Gemini", async () => {
+  const calls = [];
+  const result = await generateEmailForLead({
+    claude: { async writeEmail() { calls.push("claude"); throw new Error("claude unavailable"); } },
+    groq: { async writeEmail() { calls.push("groq"); return { subject: "Homepage idea", body: "Would you like to see a homepage concept?" }; } },
+    gemini: { async analyze() { calls.push("gemini"); return { subject: "Wrong order", body: "Must not run" }; } }
+  }, { businessName: "Avalon Group Realty" }, "v2");
+  assert.deepEqual(calls, ["claude", "groq"]);
+  assert.equal(result.subject, "Homepage idea");
 });
 
 test("02 fails closed when both writing providers are out of credit", async () => {

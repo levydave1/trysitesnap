@@ -536,6 +536,38 @@ export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch
   };
 }
 
+export function createGroqClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+  if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
+  return {
+    async writeEmail({ system, user }) {
+      const payload = await retryingJson("groq", "https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          temperature: 0.8,
+          max_completion_tokens: 1000,
+          messages: [{ role: "system", content: system }, { role: "user", content: user }],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "outreach_email",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: { subject: { type: "string" }, body: { type: "string" } },
+                required: ["subject", "body"],
+                additionalProperties: false
+              }
+            }
+          }
+        })
+      }, { timeoutMs, fetchImpl });
+      return modelJson(payload.choices?.[0]?.message?.content || "", "groq");
+    }
+  };
+}
+
 export function createClaudeTextClient({ apiKey, model, timeoutMs, attempts = 3, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
   return {

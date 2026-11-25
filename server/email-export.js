@@ -77,12 +77,21 @@ function emailFromClaude(output) {
 }
 
 async function writeEmailWithFallback(dependencies, prompt) {
-  try {
-    return await dependencies.claude.writeEmail(prompt);
-  } catch (claudeError) {
-    if (!dependencies.gemini?.analyze) throw claudeError;
-    return dependencies.gemini.analyze(prompt);
+  const writers = [
+    dependencies.claude?.writeEmail && (() => dependencies.claude.writeEmail(prompt)),
+    dependencies.groq?.writeEmail && (() => dependencies.groq.writeEmail(prompt)),
+    dependencies.gemini?.analyze && (() => dependencies.gemini.analyze(prompt))
+  ].filter(Boolean);
+  let lastError;
+  for (const write of writers) {
+    try {
+      return await write();
+    } catch (error) {
+      lastError = error;
+    }
   }
+  if (lastError) throw lastError;
+  throw new Error("No email writer is configured");
 }
 
 export async function generateEmailForLead(dependencies, lead, flow = "v2") {
