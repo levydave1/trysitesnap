@@ -96,6 +96,7 @@ export async function verifyPendingEmails(dependencies, options = {}) {
   const requestedId = text(options.recordId);
   const requested = requestedId ? records.filter((record) => record.id === requestedId) : records;
   const sourceSystem = lower(options.sourceSystem) || "overture";
+  const hasEligibleRecordFilter = options.eligibleRecordIds instanceof Set || Array.isArray(options.eligibleRecordIds);
   const eligibleRecordIds = options.eligibleRecordIds instanceof Set
     ? options.eligibleRecordIds
     : new Set(Array.isArray(options.eligibleRecordIds) ? options.eligibleRecordIds.map(text) : []);
@@ -114,7 +115,7 @@ export async function verifyPendingEmails(dependencies, options = {}) {
   const limit = requestedId ? 1 : Math.max(1, Math.min(100, Number(options.limit) || settings.batchLimit));
   const selected = requested
     .filter((record) => lower(record.fields?.["Source System"]) === sourceSystem)
-    .filter((record) => eligibleRecordIds.size
+    .filter((record) => hasEligibleRecordFilter
       ? eligibleRecordIds.has(record.id)
       : lower(record.fields?.["Lead Decision"]) === "pending_verification")
     .slice(0, limit);

@@ -141,3 +141,24 @@ test("existing backlog drafts are idempotent", async () => {
   }, { dryRun: true, now: new Date("2026-11-25T10:00:00.000Z") });
   assert.equal(result.selected, 0);
 });
+
+test("a backlog cooldown with no eligible records does not fall back to immediate retries", async () => {
+  let calls = 0;
+  const coolingDown = raw("rec01", {
+    Email: "owner@acme.test",
+    "Lead Decision": "pending_verification",
+    "Email Status": "pending_external_verification",
+    "Email Verification Last Attempt At": "2026-11-25T09:30:00.000Z"
+  });
+  const result = await verifyExistingBacklog({
+    config,
+    data: {
+      async listRecords(tableId) { return tableId === config.airtable.rawOutscraperTableId ? [coolingDown] : []; },
+      async updateRecordInTable() { throw new Error("must not update"); }
+    },
+    millionVerifier: { async verifyEmail() { calls += 1; return {}; } }
+  }, { dns, now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.backlogRemainingBeforeRun, 0);
+  assert.equal(result.selected, 0);
+  assert.equal(calls, 0);
+});
