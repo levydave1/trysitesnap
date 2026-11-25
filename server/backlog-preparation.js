@@ -190,6 +190,48 @@ function claudeCreditExhausted(error) {
     && /credit balance is too low/i.test(text(error?.upstreamDetails || error?.message));
 }
 
+function geminiCreditExhausted(error) {
+  return error?.code === "GEMINI_UPSTREAM_ERROR"
+    && [400, 402].includes(error?.upstreamStatus)
+    && /(prepayment credits are depleted|credit balance is too low|billing)/i.test(text(error?.upstreamDetails || error?.message));
+}
+
+function firstNameOrBlank(lead) {
+  const name = text(lead.firstName || lead.fullName).split(/\s+/)[0];
+  return name && !/@|https?:|www\./i.test(name) ? name : "";
+}
+
+function templateIndex(seed, count) {
+  let hash = 0;
+  for (const character of text(seed)) hash = ((hash * 31) + character.charCodeAt(0)) >>> 0;
+  return hash % count;
+}
+
+export function deterministicBacklogEmail(lead) {
+  const firstName = firstNameOrBlank(lead);
+  const greeting = firstName ? `Hi ${firstName},` : "Hi,";
+  const business = text(lead.businessName) || "your business";
+  const variants = [
+    {
+      subject: "A homepage idea",
+      body: `${greeting} I can put together a homepage concept for ${business} using public information, focused on making the main services easier to understand. Preparing and viewing the concept is free, with no obligation. It is simply a way to see a possible direction. Would you like me to prepare it?`
+    },
+    {
+      subject: "Quick website idea",
+      body: `${greeting} I would be happy to prepare a homepage concept tailored to ${business} from public information. The focus would be giving potential customers a clearer next step. It is free to have the concept prepared and view it, with no obligation. Would you like me to put it together?`
+    },
+    {
+      subject: "A clearer homepage",
+      body: `${greeting} I can create a simple homepage concept for ${business} based on public information, with a stronger first impression for potential customers. Preparing and viewing the concept is free, and there is no obligation. It is just a chance to see the idea before deciding anything. Should I prepare it?`
+    },
+    {
+      subject: "Homepage concept",
+      body: `${greeting} I can prepare a tailored homepage concept for ${business} using public information. I would keep it focused on presenting the services clearly for first-time visitors. The concept is free to prepare and view, with no obligation attached. Would you be open to seeing what I put together?`
+    }
+  ];
+  return variants[templateIndex(lead.recordId || lead.email || business, variants.length)];
+}
+
 async function generateBacklogEmail(dependencies, lead) {
   try {
     return {
@@ -199,10 +241,15 @@ async function generateBacklogEmail(dependencies, lead) {
   } catch (error) {
     if (!claudeCreditExhausted(error) || !dependencies.gemini) throw error;
     const geminiWriter = { writeEmail: (prompt) => dependencies.gemini.analyze(prompt) };
-    return {
-      ...(await generateEmailForLead({ claude: geminiWriter }, lead, "v2")),
-      provider: "gemini"
-    };
+    try {
+      return {
+        ...(await generateEmailForLead({ claude: geminiWriter }, lead, "v2")),
+        provider: "gemini"
+      };
+    } catch (fallbackError) {
+      if (!geminiCreditExhausted(fallbackError)) throw fallbackError;
+      return { ...deterministicBacklogEmail(lead), provider: "local_template" };
+    }
   }
 }
 

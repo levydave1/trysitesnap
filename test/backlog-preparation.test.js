@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   auditExistingBacklog,
+  deterministicBacklogEmail,
   prepareExistingBacklogDrafts,
   verifyExistingBacklog
 } from "../server/backlog-preparation.js";
@@ -148,6 +149,63 @@ test("backlog draft preparation falls back to Gemini only when Claude credits ar
   assert.equal(result.drafted, 1);
   assert.equal(result.errors, 0);
   assert.equal(created[0].fields["Draft Model Provider"], "gemini");
+});
+
+test("backlog draft preparation uses an audited local template when both AI balances are empty", async () => {
+  const created = [];
+  const approved = raw("rec01", {
+    "First Name": "Sam",
+    "Business Name": "Acme Roofing",
+    Email: "owner@acme.test",
+    "Lead Decision": "approved",
+    "Email Eligible": "yes",
+    "Email Status": "verified",
+    "Email Validation Status": "OK",
+    "Email Validation Provider": "millionverifier",
+    "Email Validation Checked At": "2026-11-25T09:00:00.000Z"
+  });
+  const claudeFailure = new Error("claude request failed (400)");
+  claudeFailure.code = "CLAUDE_UPSTREAM_ERROR";
+  claudeFailure.upstreamStatus = 400;
+  claudeFailure.upstreamDetails = "Your credit balance is too low to access the Anthropic API.";
+  const geminiFailure = new Error("gemini request failed (402)");
+  geminiFailure.code = "GEMINI_UPSTREAM_ERROR";
+  geminiFailure.upstreamStatus = 402;
+  geminiFailure.upstreamDetails = "Your prepayment credits are depleted.";
+  const result = await prepareExistingBacklogDrafts({
+    config,
+    data: {
+      async listRecords(tableId) { return tableId === config.airtable.rawOutscraperTableId ? [approved] : []; },
+      async createRecord(tableId, fields) { created.push({ tableId, fields }); return { id: "recDraft" }; },
+      async updateRecordInTable() {}
+    },
+    claude: { async writeEmail() { throw claudeFailure; } },
+    gemini: { async analyze() { throw geminiFailure; } }
+  }, { now: new Date("2026-11-25T10:00:00.000Z") });
+  assert.equal(result.drafted, 1);
+  assert.equal(result.errors, 0);
+  assert.equal(created[0].fields["Draft Model Provider"], "local_template");
+  assert.match(created[0].fields[config.airtable.emailThreadFields.body], /Acme Roofing/);
+  assert.match(created[0].fields[config.airtable.emailThreadFields.body], /free/i);
+  assert.match(created[0].fields[config.airtable.emailThreadFields.body], /no obligation/i);
+});
+
+test("local backlog templates remain short, truthful, and permission-based", () => {
+  for (let index = 0; index < 12; index += 1) {
+    const email = deterministicBacklogEmail({
+      recordId: `rec${index}`,
+      firstName: index % 2 ? "Sam" : "",
+      businessName: "Acme Roofing"
+    });
+    const subjectWords = email.subject.trim().split(/\s+/).length;
+    const bodyWords = email.body.trim().split(/\s+/).length;
+    assert.ok(subjectWords >= 2 && subjectWords <= 5);
+    assert.ok(bodyWords >= 40 && bodyWords <= 55, `${bodyWords}: ${email.body}`);
+    assert.match(email.body, /free/i);
+    assert.match(email.body, /no obligation/i);
+    assert.match(email.body, /\?$/);
+    assert.doesNotMatch(email.body, /already (?:built|made|prepared)|finished website|free website/i);
+  }
 });
 
 test("existing backlog drafts are idempotent", async () => {
