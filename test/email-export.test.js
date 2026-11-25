@@ -69,6 +69,18 @@ test("02 v2 uses one Claude call while legacy keeps Gemini then Claude available
   assert.deepEqual(calls.map(([service]) => service), ["gemini", "claude"]);
 });
 
+test("02 falls back to Gemini when Claude cannot generate the email", async () => {
+  const calls = [];
+  const result = await generateEmailForLead({
+    claude: { async writeEmail() { calls.push("claude"); throw Object.assign(new Error("credits"), { code: "CLAUDE_UPSTREAM_ERROR", upstreamStatus: 400 }); } },
+    gemini: { async analyze(prompt) { calls.push(["gemini", prompt]); return { subject: "Homepage concept", body: "Hi — I can prepare a homepage concept using public information. It can make the next step clearer. Preparing and viewing the concept is free, with no obligation. Would you like me to put it together?" }; } }
+  }, { businessName: "Avalon Group Realty", city: "St Petersburg" }, "v2");
+
+  assert.deepEqual(calls.map((item) => Array.isArray(item) ? item[0] : item), ["claude", "gemini"]);
+  assert.equal(result.subject, "Homepage concept");
+  assert.match(result.body, /free, with no obligation/);
+});
+
 test("02 v2 prompt stays grounded and excludes first-email pricing", () => {
   const prompt = modernClaudePrompt({
     firstName: "Monica",

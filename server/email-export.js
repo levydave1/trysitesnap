@@ -76,14 +76,23 @@ function emailFromClaude(output) {
   return { subject, body };
 }
 
+async function writeEmailWithFallback(dependencies, prompt) {
+  try {
+    return await dependencies.claude.writeEmail(prompt);
+  } catch (error) {
+    if (!dependencies.gemini?.analyze) throw error;
+    return dependencies.gemini.analyze(prompt);
+  }
+}
+
 export async function generateEmailForLead(dependencies, lead, flow = "v2") {
   const selectedFlow = normalizeEmailFlow(flow);
   if (selectedFlow === "legacy") {
     if (!dependencies.gemini) throw new Error("Gemini is required for the legacy email flow");
     const analysis = analysisFromGemini(await dependencies.gemini.analyze(legacyGeminiPrompt(lead)));
-    return emailFromClaude(await dependencies.claude.writeEmail(legacyClaudePrompt(lead, analysis)));
+    return emailFromClaude(await writeEmailWithFallback(dependencies, legacyClaudePrompt(lead, analysis)));
   }
-  return emailFromClaude(await dependencies.claude.writeEmail(modernClaudePrompt(lead)));
+  return emailFromClaude(await writeEmailWithFallback(dependencies, modernClaudePrompt(lead)));
 }
 
 function linkedIds(value) {
