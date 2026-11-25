@@ -224,7 +224,7 @@ export function deterministicBacklogEmail(lead) {
     },
     {
       subject: "A clearer homepage",
-      body: `${greeting} I can create a simple homepage concept for ${businessReference} based on public information, with a stronger first impression for potential customers. Preparing and viewing the concept is free, and there is no obligation. It is just a chance to see the idea before deciding anything. Should I prepare it?`
+      body: `${greeting} I can create a simple homepage concept for ${businessReference} based on public information, with a stronger first impression for potential customers. Preparing and viewing the concept is free, and there is no obligation. It is simply a possible direction to consider. Should I prepare it?`
     },
     {
       subject: "Homepage concept",
