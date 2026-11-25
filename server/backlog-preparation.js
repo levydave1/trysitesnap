@@ -198,49 +198,6 @@ function claudeCreditExhausted(error) {
     && /credit balance is too low/i.test(text(error?.upstreamDetails || error?.message));
 }
 
-function geminiCreditExhausted(error) {
-  return error?.code === "GEMINI_UPSTREAM_ERROR"
-    && [400, 402].includes(error?.upstreamStatus)
-    && /(prepayment credits are depleted|credit balance is too low|billing)/i.test(text(error?.upstreamDetails || error?.message));
-}
-
-function firstNameOrBlank(lead) {
-  const name = text(lead.firstName || lead.fullName).split(/\s+/)[0];
-  return name && !/@|https?:|www\./i.test(name) ? name : "";
-}
-
-function templateIndex(seed, count) {
-  let hash = 0;
-  for (const character of text(seed)) hash = ((hash * 31) + character.charCodeAt(0)) >>> 0;
-  return hash % count;
-}
-
-export function deterministicBacklogEmail(lead) {
-  const firstName = firstNameOrBlank(lead);
-  const greeting = firstName ? `Hi ${firstName},` : "Hi,";
-  const business = text(lead.businessName) || "your business";
-  const businessReference = business.split(/\s+/).length > 6 ? "your business" : business;
-  const variants = [
-    {
-      subject: "A homepage idea",
-      body: `${greeting} I can put together a homepage concept for ${businessReference} using public information, focused on making the main services easier to understand. Preparing and viewing the concept is free, with no obligation. It is simply a way to see a possible direction. Would you like me to prepare it?`
-    },
-    {
-      subject: "Quick website idea",
-      body: `${greeting} I would be happy to prepare a homepage concept tailored to ${businessReference} from public information. The focus would be giving potential customers a clearer next step. Preparing and viewing the concept is free, and there is no obligation. Would you like me to put it together?`
-    },
-    {
-      subject: "A clearer homepage",
-      body: `${greeting} I can create a simple homepage concept for ${businessReference} based on public information, with a stronger first impression for potential customers. Preparing and viewing the concept is free, and there is no obligation. It is simply a possible direction to consider. Should I prepare it?`
-    },
-    {
-      subject: "Homepage concept",
-      body: `${greeting} I can prepare a tailored homepage concept for ${businessReference} using public information. I would keep it focused on presenting the services clearly for first-time visitors. Preparing and viewing the concept is free, with no obligation attached. Would you like me to create it for you?`
-    }
-  ];
-  return variants[templateIndex(lead.recordId || lead.email || business, variants.length)];
-}
-
 async function generateBacklogEmail(dependencies, lead) {
   try {
     return {
@@ -250,15 +207,10 @@ async function generateBacklogEmail(dependencies, lead) {
   } catch (error) {
     if (!claudeCreditExhausted(error) || !dependencies.gemini) throw error;
     const geminiWriter = { writeEmail: (prompt) => dependencies.gemini.analyze(prompt) };
-    try {
-      return {
-        ...(await generateEmailForLead({ claude: geminiWriter }, lead, "v2")),
-        provider: "gemini"
-      };
-    } catch (fallbackError) {
-      if (!geminiCreditExhausted(fallbackError)) throw fallbackError;
-      return { ...deterministicBacklogEmail(lead), provider: "local_template" };
-    }
+    return {
+      ...(await generateEmailForLead({ claude: geminiWriter }, lead, "v2")),
+      provider: "gemini"
+    };
   }
 }
 
@@ -321,41 +273,6 @@ export async function prepareExistingBacklogDrafts(dependencies, options = {}) {
     summary.results.push(result);
   }
   return summary;
-}
-
-export async function refreshLocalBacklogDrafts(dependencies, options = {}) {
-  const loaded = options.rawRecords && options.threadRecords ? options : await loadRecords(dependencies);
-  const rawById = new Map(loaded.rawRecords.map((record) => [record.id, record]));
-  const limit = Math.max(1, Math.min(1000, Number(options.limit) || 1000));
-  const candidates = loaded.threadRecords.filter((record) => {
-    const fields = record.fields || {};
-    return lower(fields["Reply Status"]) === "draft"
-      && lower(fields["Draft Source"]) === "existing_backlog"
-      && lower(fields["Draft Model Provider"]) === "local_template";
-  }).slice(0, limit);
-  const now = options.now instanceof Date ? options.now : new Date(options.now || Date.now());
-  const threadFields = dependencies.config.airtable.emailThreadFields;
-  let refreshed = 0;
-  let skipped = 0;
-  for (const draft of candidates) {
-    const sourceId = linkedIds(draft.fields?.["Business ID"])[0];
-    const rawRecord = rawById.get(sourceId);
-    if (!rawRecord) {
-      skipped += 1;
-      continue;
-    }
-    const email = deterministicBacklogEmail(leadFromEmailRecord(rawRecord));
-    if (!options.dryRun) {
-      await dependencies.data.updateRecordInTable(loaded.threadTableId, draft.id, {
-        [threadFields.subject]: email.subject,
-        [threadFields.body]: email.body,
-        [threadFields.searchText]: `${email.body}${email.subject}`,
-        "Draft Refreshed At": now.toISOString()
-      });
-    }
-    refreshed += 1;
-  }
-  return { success: true, dryRun: Boolean(options.dryRun), selected: candidates.length, refreshed, skipped };
 }
 
 export const backlogDraftVersion = DRAFT_VERSION;

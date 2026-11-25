@@ -2,7 +2,6 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   auditExistingBacklog,
   prepareExistingBacklogDrafts,
-  refreshLocalBacklogDrafts,
   verifyExistingBacklog
 } from "./backlog-preparation.js";
 import { createRuntimeDependencies } from "./runtime.js";
@@ -349,17 +348,6 @@ export async function leadDashboardHandler(request, response) {
         dryRun
       });
       console.log(JSON.stringify({ event: "existing_backlog_drafts_completed", ...result, results: undefined }));
-      return response.status(200).json(result);
-    }
-    if (request.method === "POST" && action === "backlog_refresh_local_drafts") {
-      if (request.body?.confirm !== "REFRESH_LOCAL_BACKLOG_DRAFTS") {
-        return response.status(400).json({ success: false, code: "BACKLOG_DRAFT_REFRESH_CONFIRMATION_REQUIRED" });
-      }
-      const result = await refreshLocalBacklogDrafts({ config: dependencies.config, data }, {
-        limit: request.body?.limit,
-        dryRun: request.body?.dry_run === true
-      });
-      console.log(JSON.stringify({ event: "existing_backlog_local_drafts_refreshed", ...result }));
       return response.status(200).json(result);
     }
     if (request.method === "POST" && action === "verification_results") {

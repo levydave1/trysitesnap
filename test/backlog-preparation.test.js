@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   auditExistingBacklog,
-  deterministicBacklogEmail,
   prepareExistingBacklogDrafts,
-  refreshLocalBacklogDrafts,
   verifyExistingBacklog
 } from "../server/backlog-preparation.js";
 import { config } from "../server/config.js";
@@ -177,7 +175,7 @@ test("backlog draft preparation falls back to Gemini only when Claude credits ar
   assert.equal(created[0].fields["Draft Model Provider"], "gemini");
 });
 
-test("backlog draft preparation uses an audited local template when both AI balances are empty", async () => {
+test("backlog draft preparation fails closed when both AI providers are unavailable", async () => {
   const created = [];
   const approved = raw("rec01", {
     "First Name": "Sam",
@@ -208,55 +206,10 @@ test("backlog draft preparation uses an audited local template when both AI bala
     claude: { async writeEmail() { throw claudeFailure; } },
     gemini: { async analyze() { throw geminiFailure; } }
   }, { now: new Date("2026-11-25T10:00:00.000Z") });
-  assert.equal(result.drafted, 1);
-  assert.equal(result.errors, 0);
-  assert.equal(created[0].fields["Draft Model Provider"], "local_template");
-  assert.match(created[0].fields[config.airtable.emailThreadFields.body], /Acme Roofing/);
-  assert.match(created[0].fields[config.airtable.emailThreadFields.body], /free/i);
-  assert.match(created[0].fields[config.airtable.emailThreadFields.body], /no obligation/i);
-});
-
-test("local backlog templates remain short, truthful, and permission-based", () => {
-  for (let index = 0; index < 16; index += 1) {
-    const email = deterministicBacklogEmail({
-      recordId: `rec${index}`,
-      firstName: index % 2 ? "Sam" : "",
-      businessName: index < 12
-        ? "Acme Roofing"
-        : "Advanced Roofing Vinyl Siding Gutters Patio Covers Windows and Exterior Design LLC"
-    });
-    const subjectWords = email.subject.trim().split(/\s+/).length;
-    const bodyWords = email.body.trim().split(/\s+/).length;
-    assert.ok(subjectWords >= 2 && subjectWords <= 5);
-    assert.ok(bodyWords >= 40 && bodyWords <= 55, `${bodyWords}: ${email.body}`);
-    assert.match(email.body, /free/i);
-    assert.match(email.body, /no obligation/i);
-    assert.match(email.body, /\?$/);
-    assert.doesNotMatch(email.body, /already (?:built|made|prepared)|finished website|free website/i);
-  }
-});
-
-test("local backlog draft refresh updates only local unsent backlog drafts", async () => {
-  const updates = [];
-  const rawRecord = raw("rec01", { "First Name": "Sam", "Business Name": "Acme Roofing" });
-  const result = await refreshLocalBacklogDrafts({
-    config,
-    data: {
-      async listRecords(tableId) {
-        if (tableId === config.airtable.rawOutscraperTableId) return [rawRecord];
-        return [
-          { id: "recDraft", fields: { "Business ID": ["rec01"], "Reply Status": "draft", "Draft Source": "existing_backlog", "Draft Model Provider": "local_template" } },
-          { id: "recSent", fields: { "Business ID": ["rec01"], "Reply Status": "sent", "Draft Source": "existing_backlog", "Draft Model Provider": "local_template" } },
-          { id: "recClaude", fields: { "Business ID": ["rec01"], "Reply Status": "draft", "Draft Source": "existing_backlog", "Draft Model Provider": "claude" } }
-        ];
-      },
-      async updateRecordInTable(tableId, id, fields) { updates.push({ tableId, id, fields }); }
-    }
-  }, { now: new Date("2026-11-25T11:00:00.000Z") });
-  assert.equal(result.refreshed, 1);
-  assert.equal(updates.length, 1);
-  assert.equal(updates[0].id, "recDraft");
-  assert.match(updates[0].fields[config.airtable.emailThreadFields.body], /Acme Roofing/);
+  assert.equal(result.drafted, 0);
+  assert.equal(result.errors, 1);
+  assert.equal(created.length, 0);
+  assert.equal(result.results[0].upstreamStatus, 402);
 });
 
 test("existing backlog drafts are idempotent", async () => {
