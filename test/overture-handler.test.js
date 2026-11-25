@@ -51,4 +51,10 @@ test("Overture accepts a signed short-lived identity only from its GitHub workfl
     now: 1_795_550_000_000,
     fetchImpl: jwksFetch(expired.jwk)
   }), false);
+
+  const scheduled = tokenFor({ event_name: "schedule" });
+  assert.equal(await verifyGitHubOidcToken(scheduled.token, {
+    now: 1_795_550_000_000,
+    fetchImpl: jwksFetch(scheduled.jwk)
+  }), true);
 });

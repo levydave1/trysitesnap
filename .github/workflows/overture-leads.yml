@@ -1,16 +1,26 @@
 name: Overture lead discovery
 
 on:
+  schedule:
+    - cron: "17 3 * * *"
   workflow_dispatch:
     inputs:
       limit:
         description: Maximum Overture rows to inspect
         required: true
-        default: "300"
+        default: "1000"
       release:
         description: Overture release
         required: true
         default: "2026-11-18.0"
+      states:
+        description: Optional comma-separated US state codes; blank uses the daily region rotation
+        required: false
+        default: ""
+      category_groups:
+        description: Optional category groups; blank uses all configured local-service groups
+        required: false
+        default: ""
       dry_run:
         description: Inspect without saving to Neon
         required: true
@@ -43,13 +53,24 @@ jobs:
             | python -c 'import json,sys; print(json.load(sys.stdin)["value"])')"
           echo "::add-mask::$token"
           printf 'token=%s\n' "$token" >> "$GITHUB_OUTPUT"
+      - name: Ensure lead data rules
+        env:
+          OVERTURE_INGEST_SECRET: ${{ steps.oidc.outputs.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            -H "Authorization: Bearer $OVERTURE_INGEST_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{"action":"migrate_schema"}' \
+            https://trysitesnap.com/api/overture-leads
       - name: Discover and stage leads
         env:
           OVERTURE_INGEST_URL: https://trysitesnap.com/api/overture-leads
           OVERTURE_INGEST_SECRET: ${{ steps.oidc.outputs.token }}
-          OVERTURE_RELEASE: ${{ inputs.release }}
-          OVERTURE_LIMIT: ${{ inputs.limit }}
-          OVERTURE_DRY_RUN: ${{ inputs.dry_run }}
+          OVERTURE_RELEASE: ${{ inputs.release || '2026-11-18.0' }}
+          OVERTURE_LIMIT: ${{ inputs.limit || '1000' }}
+          OVERTURE_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          OVERTURE_STATES: ${{ inputs.states || '' }}
+          OVERTURE_CATEGORY_GROUPS: ${{ inputs.category_groups || '' }}
         run: |
           dry_run_flag=""
           if [ "$OVERTURE_DRY_RUN" = "true" ]; then
@@ -58,4 +79,29 @@ jobs:
           python ops/overture-discovery.py \
             --release "$OVERTURE_RELEASE" \
             --limit "$OVERTURE_LIMIT" \
+            --states "$OVERTURE_STATES" \
+            --category-groups "$OVERTURE_CATEGORY_GROUPS" \
             $dry_run_flag
+      - name: Find and document public business emails
+        env:
+          ENRICHMENT_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        shell: bash
+        run: |
+          batches=5
+          if [ "$ENRICHMENT_DRY_RUN" = "true" ]; then
+            batches=1
+          fi
+          for batch in $(seq 1 "$batches"); do
+            token="$(curl --fail --silent --show-error \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sitesnap-overture" \
+              | python -c 'import json,sys; print(json.load(sys.stdin)["value"])')"
+            echo "::add-mask::$token"
+            payload="$(printf '{\"limit\":15,\"concurrency\":3,\"dry_run\":%s}' "$ENRICHMENT_DRY_RUN")"
+            response="$(curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer $token" \
+              -H "Content-Type: application/json" \
+              -d "$payload" \
+              https://trysitesnap.com/api/overture-enrichment)"
+            ENRICHMENT_RESPONSE="$response" python -c 'import json,os; r=json.loads(os.environ["ENRICHMENT_RESPONSE"]); print({k:r.get(k) for k in ("selected","found","notFound","duplicates","errors","updated","dryRun")})'
+          done

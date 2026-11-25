@@ -80,6 +80,12 @@ async function createSchema(sql) {
       source_hash TEXT
     )`,
     "CREATE INDEX IF NOT EXISTS sitesnap_records_table_created_idx ON sitesnap_records(table_id,created_at,id)",
+    `CREATE UNIQUE INDEX IF NOT EXISTS sitesnap_overture_place_unique_idx
+     ON sitesnap_records(table_id,LOWER(fields->>'Place ID'))
+     WHERE LOWER(fields->>'Source System')='overture' AND COALESCE(fields->>'Place ID','')<>''`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS sitesnap_overture_email_unique_idx
+     ON sitesnap_records(table_id,LOWER(fields->>'Email'))
+     WHERE LOWER(fields->>'Source System')='overture' AND COALESCE(fields->>'Email','')<>''`,
     `CREATE TABLE IF NOT EXISTS sitesnap_assets (
       id TEXT PRIMARY KEY,
       record_id TEXT NOT NULL REFERENCES sitesnap_records(id) ON DELETE CASCADE,

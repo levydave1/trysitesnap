@@ -92,9 +92,14 @@ function rawLeadSummary(record) {
     source: text(fields["Source System"]),
     sourceRun: text(fields["Source Run Name"]),
     score: Number(fields["Lead Score"]) || null,
+    status: text(fields["Lead Status"]),
     decision: text(fields["Lead Decision"]),
+    decisionReason: text(fields["Lead Decision Reason"] || fields["Lead Rejection Reason"]),
     verification: text(fields["Email Validation Status"]),
-    emailStatus: text(fields["Email Status"])
+    emailStatus: text(fields["Email Status"]),
+    enrichmentStatus: text(fields["Email Enrichment Status"]),
+    emailSourceUrl: text(fields["Email Source URL"]),
+    emailSourceType: text(fields["Email Source Type"])
   };
 }
 
@@ -150,8 +155,8 @@ export async function buildDashboardOverview(data, config) {
     data.listTables(),
     data.listRecords(config.airtable.rawOutscraperTableId, { fields: [
       "Business Name", "Email", "Website", "Category", "City", "State", "State Code",
-      "Source System", "Source Run Name", "Lead Score", "Lead Decision",
-      "Email Validation Status", "Email Status", "Email Eligible"
+      "Source System", "Source Run Name", "Lead Score", "Lead Status", "Lead Decision", "Lead Decision Reason", "Lead Rejection Reason",
+      "Email Validation Status", "Email Status", "Email Eligible", "Email Enrichment Status", "Email Source URL", "Email Source Type"
     ] }),
     data.listRecords(config.airtable.emailThreadsTableId, { fields: [
       "Business ID", "Business Name", "To Email", "Subject", "Reply Status", "Queued At", "Sent At"
@@ -167,6 +172,9 @@ export async function buildDashboardOverview(data, config) {
   const threadStatus = countBy(threadRecords, "Reply Status");
   const generationStatus = countBy(generationRecords, "Generation Status");
   const pending = rawRecords.filter((record) => lower(record.fields?.["Lead Decision"]) === "pending_verification").length;
+  const candidates = rawRecords.filter((record) => lower(record.fields?.["Lead Status"]) === "candidate").length;
+  const emailsFound = rawRecords.filter((record) => lower(record.fields?.["Email Enrichment Status"]) === "found").length;
+  const emailsNotFound = rawRecords.filter((record) => lower(record.fields?.["Email Enrichment Status"]) === "not_found").length;
   const approved = rawRecords.filter((record) => lower(record.fields?.["Lead Decision"]) === "approved").length;
   const rejected = rawRecords.filter((record) => lower(record.fields?.["Lead Decision"]) === "rejected").length;
   const queued = threadRecords.filter((record) => ["queued", "sent", "delivered", "replied"].includes(lower(record.fields?.["Reply Status"]))).length;
@@ -179,6 +187,9 @@ export async function buildDashboardOverview(data, config) {
       importedFromAirtable: tables.reduce((sum, table) => sum + table.importedCount, 0),
       managedLocally: tables.reduce((sum, table) => sum + table.liveCount, 0),
       leads: rawRecords.length,
+      candidates,
+      emailsFound,
+      emailsNotFound,
       pendingVerification: pending,
       approved,
       rejected,
@@ -190,6 +201,8 @@ export async function buildDashboardOverview(data, config) {
     breakdowns: {
       sources: countBy(rawRecords, "Source System"),
       leadDecisions: rawStatus,
+      leadStatuses: countBy(rawRecords, "Lead Status"),
+      enrichment: countBy(rawRecords, "Email Enrichment Status"),
       verification,
       emailThreads: threadStatus,
       generation: generationStatus
@@ -208,7 +221,7 @@ export async function buildDashboardOverview(data, config) {
       { name: "Airtable", status: "disconnected", detail: "המידע ההיסטורי נמצא ב‑Neon" },
       { name: "Make", status: "partial", detail: "תרחישים שהועברו כבויים; 04 נשמר כגיבוי פעיל" },
       { name: "Outscraper", status: "paused", detail: "איסוף חדש מושהה" },
-      { name: "Overture", status: "manual", detail: "איסוף מדורג דרך GitHub Actions" },
+      { name: "Overture", status: "active", detail: "איסוף יומי, סינון, איתור מייל ציבורי ותיעוד המקור" },
       { name: "Instantly", status: "active", detail: "אימות בתשלום כבוי בייבוא" }
     ],
     workflowUrl: "https://github.com/levydave1/trysitesnap/actions/workflows/overture-leads.yml"

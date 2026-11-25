@@ -1,7 +1,8 @@
 import { resolve4, resolve6, resolveMx } from "node:dns/promises";
+import { createHash } from "node:crypto";
 import { isValidLeadEmail } from "./email-export.js";
 
-const TARGET_CATEGORY_PATTERN = /(?:roof|plumb|hvac|heating|air_condition|electric|landscap|lawn|tree_service|pest|garage_door|remodel|renovat|general_contractor|paint|floor|tile|fenc|deck|gutter|window|door|locksmith|cleaning|carpet|pressure_wash|pool|spa|masonry|concrete|handyman|appliance_repair|moving|storage|auto_repair|body_shop|towing|detail|salon|barber|nail|massage|chiropract|dental|physical_therap|veterinar|pet_groom|photograph|event_plann|cater|bakery|restaurant|account|bookkeep|insurance|real_estate|property_manag|lawyer|law_firm)/i;
+const TARGET_CATEGORY_PATTERN = /(?:roof|plumb|hvac|heating|air_condition|electric|landscap|lawn|tree_service|arborist|pest|garage_door|remodel|renovat|general_contractor|paint|floor|tile|fenc|deck|gutter|window|door|locksmith|cleaning|carpet|pressure_wash|pool|spa|masonry|concrete|handyman|appliance_repair|insulation|solar|security_system|septic|foundation|chimney|irrigation|snow_removal|water_damage|fire_damage|mold_remediation|restoration|junk_removal|moving|storage|auto_repair|body_shop|towing|detail|mobile_mechanic|salon|barber|nail|massage|chiropract|dental|physical_therap|veterinar|pet_groom|photograph|event_plann|cater|bakery|restaurant|account|bookkeep|insurance|real_estate|property_manag|lawyer|law_firm)/i;
 
 const DISPOSABLE_DOMAINS = new Set([
   "10minutemail.com",
@@ -29,6 +30,8 @@ const BUILDER_HOST_PARTS = [
   "webflow.io",
   "square.site"
 ];
+
+const CHAIN_OR_FRANCHISE_PATTERN = /(?:ace_handyman|anytime_fitness|budget_blinds|burger_king|century_21|chem[_-]dry|chick[_-]fil[_-]a|coldwell_banker|domino'?s|dunkin|five_guys|great_clips|home_depot|ihop|jimmy_john|keller_williams|kfc|little_caesars|lowe'?s|mcdonald|merry_maids|molly_maid|mr\.?_handyman|mr\.?_rooter|one_hour_heating|orkin|papa_john|pizza_hut|re[_\/]max|roto[_-]rooter|servpro|subway|taco_bell|terminix|the_grounds_guys|trugreen|wendy'?s)/i;
 
 function text(value) {
   return String(value ?? "").trim();
@@ -92,6 +95,28 @@ function publicDescription(place) {
   return text(place.description || place.public_description || place.brand?.name || place.brand);
 }
 
+function brandName(place) {
+  const brand = asObject(place.brand);
+  return text(brand.name || asObject(brand.names).primary || place.brand_name);
+}
+
+function explicitChainOrFranchise(place) {
+  return place.is_chain === true
+    || place.is_franchise === true
+    || place.chain === true
+    || place.franchise === true
+    || text(place.chain_id)
+    || text(place.franchise_id);
+}
+
+function stableFallbackId({ name, address, city, state, phone, website }) {
+  const identity = [name, address, city, state, phone, website]
+    .map((value) => text(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim())
+    .join("|");
+  if (!name || ![address, city, phone, website].some((value) => text(value))) return "";
+  return `dedupe-${createHash("sha256").update(identity).digest("hex").slice(0, 24)}`;
+}
+
 export function normalizeOverturePlace(place) {
   place = asObject(place);
   const names = asObject(place.names);
@@ -103,7 +128,7 @@ export function normalizeOverturePlace(place) {
   const websites = stringValues(place.websites || place.website).map(normalizedWebsite).filter(Boolean);
   const socials = stringValues(place.socials || place.social);
   const country = text(place.country || address.country || address.country_code).toUpperCase();
-  return {
+  const normalized = {
     id: text(place.id || place.place_id),
     name,
     category,
@@ -118,9 +143,13 @@ export function normalizeOverturePlace(place) {
     website: websites[0] || "",
     phone: firstString(place.phones || place.phone),
     socials,
+    brandName: brandName(place),
+    chainOrFranchise: Boolean(explicitChainOrFranchise(place)),
     description: publicDescription(place),
     raw: place
   };
+  if (!normalized.id) normalized.id = stableFallbackId(normalized);
+  return normalized;
 }
 
 async function hasAddressRecord(domain, dns = {}) {
@@ -167,8 +196,13 @@ export function scoreOvertureLead(place, emailCheck = { valid: false }) {
   return Math.min(100, score);
 }
 
-export function overturePlaceEligibility(place, emailCheck, score, options = {}) {
-  const minimumScore = Math.max(1, Number(options.minimumScore) || 70);
+function chainOrFranchiseReason(place) {
+  if (place.chainOrFranchise) return "CHAIN_OR_FRANCHISE";
+  const identity = `${place.name} ${place.brandName}`.toLowerCase().replace(/[\s-]+/g, "_");
+  return CHAIN_OR_FRANCHISE_PATTERN.test(identity) ? "CHAIN_OR_FRANCHISE" : "";
+}
+
+function overtureBusinessEligibility(place) {
   if (!place.id || !place.name) return { eligible: false, reason: "IDENTITY_MISSING" };
   if (place.country && place.country !== "US") return { eligible: false, reason: "OUTSIDE_US" };
   if (place.operatingStatus && !["OPEN", "OPERATIONAL"].includes(place.operatingStatus)) {
@@ -176,6 +210,15 @@ export function overturePlaceEligibility(place, emailCheck, score, options = {})
   }
   if (place.confidence < 0.7) return { eligible: false, reason: "LOW_CONFIDENCE" };
   if (!TARGET_CATEGORY_PATTERN.test(place.category)) return { eligible: false, reason: "CATEGORY_MISMATCH" };
+  const chainReason = chainOrFranchiseReason(place);
+  if (chainReason) return { eligible: false, reason: chainReason };
+  return { eligible: true, reason: "BUSINESS_QUALIFIED" };
+}
+
+export function overturePlaceEligibility(place, emailCheck, score, options = {}) {
+  const minimumScore = Math.max(1, Number(options.minimumScore) || 70);
+  const businessDecision = overtureBusinessEligibility(place);
+  if (!businessDecision.eligible) return businessDecision;
   if (!emailCheck.valid) return { eligible: false, reason: emailCheck.reason };
   if (!place.website && !place.phone && !place.socials.length) return { eligible: false, reason: "INSUFFICIENT_BUSINESS_DATA" };
   if (score < minimumScore) return { eligible: false, reason: "LOW_SCORE" };
@@ -207,20 +250,100 @@ function fieldsForOvertureLead(place, email, emailCheck, score, { runName, now }
     Email: email,
     Phone: place.phone,
     "About JSON": JSON.stringify({ description: place.description, socials: place.socials }),
+    "Social Profiles JSON": JSON.stringify(place.socials),
     "Email Validation Status": "PENDING_EXTERNAL_VERIFICATION",
     "Email Validation Provider": "",
     "Email Validation Checked At": "",
     "Email Validation Details": "Syntax and mail-domain DNS passed; mailbox not externally verified",
     "Email Catch All": "",
     "Email Disposable": emailCheck.disposable ? "yes" : "no",
+    "Email Risky": "",
     "Email DNS Check": emailCheck.reason,
     "Email DNS Checked At": now.toISOString(),
     "Email Source URL": "Overture Maps Places",
     "Lead Score": score,
+    "Lead Status": "enriched",
+    "Lead Status Updated At": now.toISOString(),
     "Lead Decision": "pending_verification",
+    "Lead Decision Reason": "PENDING_EXTERNAL_VERIFICATION",
     "Lead Rejection Reason": "",
     "Website Assessment": websiteKind(place.website),
     "Raw Row JSON": JSON.stringify(place.raw)
+  };
+}
+
+function fieldsForCandidate(place, emailCheck, score, reason, { runName, now }) {
+  return {
+    "Intake Status": "candidate",
+    "Email Status": "enrichment_required",
+    "Email Eligible": "no",
+    "Video Eligible": "no",
+    "Source System": "overture",
+    "Source Run Name": runName,
+    "Last Seen At": now.toISOString(),
+    "Dedup Key": `overture:${place.id}`,
+    "Place ID": place.id,
+    "Business Name": place.name,
+    Category: place.category,
+    Description: place.description,
+    Address: place.address,
+    City: place.city,
+    State: place.state,
+    "State Code": place.state,
+    "Postal Code": place.postalCode,
+    Country: "United States",
+    "Country Code": "US",
+    Website: place.website,
+    Email: "",
+    Phone: place.phone,
+    "About JSON": JSON.stringify({ description: place.description, socials: place.socials }),
+    "Social Profiles JSON": JSON.stringify(place.socials),
+    "Email Validation Status": "NOT_CHECKED",
+    "Email Validation Provider": "",
+    "Email Validation Checked At": "",
+    "Email Validation Details": reason,
+    "Email Catch All": "",
+    "Email Disposable": emailCheck.disposable ? "yes" : "no",
+    "Email Risky": "",
+    "Email DNS Check": emailCheck.reason,
+    "Email DNS Checked At": now.toISOString(),
+    "Email Source URL": "Overture Maps Places",
+    "Lead Score": score,
+    "Lead Status": "candidate",
+    "Lead Status Updated At": now.toISOString(),
+    "Lead Decision": "pending_enrichment",
+    "Lead Decision Reason": reason,
+    "Lead Rejection Reason": "",
+    "Website Assessment": websiteKind(place.website),
+    "Raw Row JSON": JSON.stringify(place.raw)
+  };
+}
+
+function fieldsForRejectedPlace(place, score, reason, { runName, now }) {
+  return {
+    "Intake Status": "rejected",
+    "Source System": "overture",
+    "Source Run Name": runName,
+    "Last Seen At": now.toISOString(),
+    "Dedup Key": `overture:${place.id}`,
+    "Place ID": place.id,
+    "Business Name": place.name,
+    Category: place.category,
+    Address: place.address,
+    City: place.city,
+    State: place.state,
+    "State Code": place.state,
+    "Postal Code": place.postalCode,
+    Country: "United States",
+    "Country Code": "US",
+    Website: place.website,
+    Phone: place.phone,
+    "Lead Score": score,
+    "Lead Status": "rejected",
+    "Lead Status Updated At": now.toISOString(),
+    "Lead Decision": "rejected",
+    "Lead Decision Reason": reason,
+    "Lead Rejection Reason": reason
   };
 }
 
@@ -246,6 +369,8 @@ export async function ingestOverturePlaces(places, dependencies, options = {}) {
   );
   const { keys, emails } = dedupSets(existing);
   const accepted = [];
+  const candidates = [];
+  const rejectedRecords = [];
   const rejected = [];
 
   for (const input of Array.isArray(places) ? places : []) {
@@ -255,10 +380,22 @@ export async function ingestOverturePlaces(places, dependencies, options = {}) {
       rejected.push({ id: place.id, name: place.name, reason: "DUPLICATE_PLACE" });
       continue;
     }
+    const businessDecision = overtureBusinessEligibility(place);
+    if (!businessDecision.eligible) {
+      const score = scoreOvertureLead(place);
+      rejected.push({ id: place.id, name: place.name, reason: businessDecision.reason, score });
+      rejectedRecords.push(fieldsForRejectedPlace(place, score, businessDecision.reason, { runName, now }));
+      keys.add(dedupKey);
+      continue;
+    }
     let selectedEmail = "";
     let emailCheck = { valid: false, reason: "EMAIL_MISSING" };
+    let duplicateEmailFound = false;
     for (const email of place.emails) {
-      if (emails.has(email)) continue;
+      if (emails.has(email)) {
+        duplicateEmailFound = true;
+        continue;
+      }
       const check = await validateEmailLocally(email, options.dns);
       if (check.valid) {
         selectedEmail = email;
@@ -267,10 +404,19 @@ export async function ingestOverturePlaces(places, dependencies, options = {}) {
       }
       emailCheck = check;
     }
+    if (!selectedEmail && duplicateEmailFound) emailCheck = { valid: false, reason: "DUPLICATE_EMAIL" };
     const score = scoreOvertureLead(place, emailCheck);
+    if (!selectedEmail) {
+      const reason = emailCheck.reason || "EMAIL_ENRICHMENT_REQUIRED";
+      candidates.push(fieldsForCandidate(place, emailCheck, score, reason, { runName, now }));
+      keys.add(dedupKey);
+      continue;
+    }
     const decision = overturePlaceEligibility(place, emailCheck, score, options);
     if (!decision.eligible) {
       rejected.push({ id: place.id, name: place.name, reason: decision.reason, score });
+      rejectedRecords.push(fieldsForRejectedPlace(place, score, decision.reason, { runName, now }));
+      keys.add(dedupKey);
       continue;
     }
     accepted.push(fieldsForOvertureLead(place, selectedEmail, emailCheck, score, { runName, now }));
@@ -279,11 +425,13 @@ export async function ingestOverturePlaces(places, dependencies, options = {}) {
   }
 
   const created = [];
+  const staged = [...accepted, ...candidates, ...rejectedRecords];
   if (!options.dryRun) {
-    for (let index = 0; index < accepted.length; index += 10) {
+    for (let index = 0; index < staged.length; index += 10) {
       created.push(...await dependencies.data.createRecords(
         dependencies.config.airtable.rawOutscraperTableId,
-        accepted.slice(index, index + 10)
+        staged.slice(index, index + 10),
+        { skipConflicts: true }
       ));
     }
   }
@@ -294,11 +442,13 @@ export async function ingestOverturePlaces(places, dependencies, options = {}) {
     dryRun: Boolean(options.dryRun),
     inspected: Array.isArray(places) ? places.length : 0,
     accepted: accepted.length,
+    candidates: candidates.length,
+    rejectedStored: rejectedRecords.length,
     created: options.dryRun ? 0 : created.length,
     pendingExternalVerification: accepted.length,
     rejectionCounts,
     rejected: rejected.slice(0, 50),
-    records: options.includeRecords ? accepted : undefined
+    records: options.includeRecords ? staged : undefined
   };
 }
 
@@ -326,17 +476,26 @@ export async function applyExternalVerificationResults(results, dependencies, op
     }
     const status = normalizedResultStatus(result);
     const catchAll = ["CATCH_ALL", "CATCHALL", "ACCEPT_ALL"].includes(status) || result.catch_all === true;
-    const isApproved = approved.has(status) && !catchAll;
+    const disposable = ["DISPOSABLE", "TEMPORARY", "TEMP_EMAIL"].includes(status) || result.disposable === true;
+    const risky = ["RISKY", "ROLE", "ROLE_ACCOUNT", "SPAMTRAP"].includes(status) || result.risky === true;
+    const isApproved = approved.has(status) && !catchAll && !disposable && !risky;
+    const decisionReason = isApproved ? "EXTERNAL_VERIFICATION_GOOD" : (status || "UNKNOWN");
     const fields = {
       "Email Validation Status": status || "UNKNOWN",
       "Email Validation Provider": text(result.provider) || "external_batch",
       "Email Validation Checked At": text(result.checked_at || result.checkedAt) || now.toISOString(),
       "Email Validation Details": text(result.details || result.reason),
+      "Email Validation Raw JSON": JSON.stringify(result),
       "Email Catch All": catchAll ? "yes" : "no",
+      "Email Disposable": disposable ? "yes" : "no",
+      "Email Risky": risky ? "yes" : "no",
       "Email Eligible": isApproved ? "yes" : "no",
       "Email Status": isApproved ? "verified" : "rejected",
+      "Lead Status": isApproved ? "approved" : "rejected",
+      "Lead Status Updated At": now.toISOString(),
       "Lead Decision": isApproved ? "approved" : "rejected",
-      "Lead Rejection Reason": isApproved ? "" : (status || "UNKNOWN")
+      "Lead Decision Reason": decisionReason,
+      "Lead Rejection Reason": isApproved ? "" : decisionReason
     };
     if (isApproved) summary.approved += 1;
     else summary.rejected += 1;

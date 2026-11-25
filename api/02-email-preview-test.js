@@ -1,5 +1,6 @@
 import { normalizeEmailFlow } from "../server/email-export.js";
 import { checkDataStore } from "../server/data-store-health.js";
+import { enrichmentHandler } from "../server/enrichment-handler.js";
 import { sendEmailPreviewTests } from "../server/email-preview-test.js";
 import { leadDashboardHandler } from "../server/lead-dashboard.js";
 import { overtureHandler } from "../server/overture-handler.js";
@@ -12,6 +13,7 @@ function authorized(request) {
 
 export default async function emailPreviewTestHandler(request, response) {
   if (request.query?.pipeline === "overture") return overtureHandler(request, response);
+  if (request.query?.pipeline === "enrichment") return enrichmentHandler(request, response);
   if (request.query?.pipeline === "dashboard") return leadDashboardHandler(request, response);
   response.setHeader("Cache-Control", "no-store");
   response.setHeader("X-Content-Type-Options", "nosniff");

@@ -31,7 +31,7 @@ export async function verifyGitHubOidcToken(token, options = {}) {
     if (!audienceMatches(claims.aud)) return false;
     if (claims.repository !== "levydave1/trysitesnap") return false;
     if (claims.ref !== "refs/heads/main") return false;
-    if (claims.event_name !== "workflow_dispatch") return false;
+    if (!["workflow_dispatch", "schedule"].includes(claims.event_name)) return false;
     if (!text(claims.workflow_ref).endsWith("/.github/workflows/overture-leads.yml@refs/heads/main")) return false;
     if (!Number.isFinite(Number(claims.exp)) || nowSeconds >= Number(claims.exp)) return false;
     if (Number.isFinite(Number(claims.nbf)) && nowSeconds < Number(claims.nbf) - 30) return false;
@@ -56,7 +56,7 @@ export async function verifyGitHubOidcToken(token, options = {}) {
   }
 }
 
-async function authorized(request) {
+export async function authorizedOvertureRequest(request) {
   const secret = process.env.OVERTURE_INGEST_SECRET || process.env.CRON_SECRET;
   const authorization = text(request.headers?.authorization);
   if (!authorization.startsWith("Bearer ")) return false;
@@ -78,7 +78,7 @@ export async function overtureHandler(request, response) {
     response.setHeader("Allow", "GET, POST");
     return response.status(405).json({ success: false, code: "METHOD_NOT_ALLOWED" });
   }
-  if (!await authorized(request)) return response.status(401).json({ success: false, code: "UNAUTHORIZED" });
+  if (!await authorizedOvertureRequest(request)) return response.status(401).json({ success: false, code: "UNAUTHORIZED" });
 
   try {
     const dependencies = createRuntimeDependencies({ airtable: true });
@@ -109,6 +109,15 @@ export async function overtureHandler(request, response) {
       }, { dryRun: request.body?.dry_run === true });
       console.log(JSON.stringify({ event: "overture_verification_results_applied", ...result }));
       return response.status(200).json(result);
+    }
+
+    if (action === "migrate_schema") {
+      if (typeof data.ensureLeadSchema !== "function") {
+        return response.status(503).json({ success: false, code: "POSTGRES_SCHEMA_REQUIRED" });
+      }
+      const result = await data.ensureLeadSchema(dependencies.config.airtable.rawOutscraperTableId);
+      console.log(JSON.stringify({ event: "overture_lead_schema_ready", ...result }));
+      return response.status(200).json({ success: true, ...result });
     }
 
     const places = Array.isArray(request.body?.places) ? request.body.places : [];

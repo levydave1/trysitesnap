@@ -141,6 +141,15 @@ test("Postgres data store creates Airtable-compatible record IDs", async () => {
   assert.equal(created.fields["Business Name"], "New business");
 });
 
+test("Postgres data store can ignore identity conflicts for idempotent ingestion", async () => {
+  const database = fakeDatabase();
+  const store = client(database);
+  await store.createRecords(config.airtable.rawOutscraperTableId, [{ "Place ID": "overture-1" }], {
+    skipConflicts: true
+  });
+  assert.match(database.calls[0].text, /ON CONFLICT DO NOTHING/);
+});
+
 test("Postgres data store health check reaches the records table", async () => {
   const database = fakeDatabase();
   const store = client(database);
@@ -193,5 +202,23 @@ test("Postgres data store deletes only explicit record IDs from one table", asyn
   assert.deepEqual(deleted, ["recOne", "recTwo"]);
   assert.match(calls[0].text, /DELETE FROM sitesnap_records/);
   assert.deepEqual(calls[0].values, ["tblRaw", ["recOne", "recTwo"]]);
+});
+
+test("Postgres data store installs the Overture uniqueness and status rules idempotently", async () => {
+  const calls = [];
+  const store = createPostgresDataClient({
+    defaultTableId: config.airtable.tableId,
+    fieldNamesByTable: airtableFieldNamesByTable,
+    queryImpl: async (text, values) => {
+      calls.push({ text, values });
+      if (/HAVING COUNT\(\*\)>1/.test(text)) return [];
+      return [];
+    }
+  });
+  const result = await store.ensureLeadSchema(config.airtable.rawOutscraperTableId);
+  assert.equal(result.statusConstraint, true);
+  assert.equal(result.uniqueDedupKeys, true);
+  assert.equal(calls.filter((call) => /CREATE UNIQUE INDEX IF NOT EXISTS/.test(call.text)).length, 3);
+  assert.match(calls.at(-1).text, /VALIDATE CONSTRAINT/);
 });
 

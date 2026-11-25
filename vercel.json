@@ -7,6 +7,10 @@
       "destination": "/api/02-email-preview-test?pipeline=overture"
     },
     {
+      "source": "/api/overture-enrichment",
+      "destination": "/api/02-email-preview-test?pipeline=enrichment"
+    },
+    {
       "source": "/api/lead-dashboard",
       "destination": "/api/02-email-preview-test?pipeline=dashboard"
     }

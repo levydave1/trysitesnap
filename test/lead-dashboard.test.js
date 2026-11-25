@@ -44,6 +44,7 @@ test("dashboard overview combines Airtable history with live lead, email, and si
   assert.equal(overview.summary.importedFromAirtable, 10267);
   assert.equal(overview.summary.managedLocally, 52);
   assert.equal(overview.summary.pendingVerification, 1);
+  assert.equal(overview.summary.candidates, 0);
   assert.equal(overview.summary.approved, 1);
   assert.equal(overview.summary.queuedInInstantly, 1);
   assert.equal(overview.summary.sketches, 1);

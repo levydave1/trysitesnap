@@ -68,22 +68,33 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - `/api/02-email-preview-test` is a protected, non-exporting test route. It requires exactly three Airtable Raw record IDs, can send only to the hard-coded approved inbox `levy.dave.1@gmail.com`, and neither calls Instantly nor writes to Airtable.
 - The v2 first email intentionally omits finished-site pricing. It truthfully offers to prepare a tailored homepage concept, uses at most one grounded detail and one practical benefit, and asks permission before work begins. It states that preparing and viewing the concept has no cost or obligation, without implying that the finished website or launch is free. The `$199` offer belongs in a follow-up after interest.
 
-## Overture lead discovery — staged rollout
+## Overture lead discovery
 
-- Overture Places replaces paid discovery for the new lead source. A manual GitHub Actions job scans the current public Parquet release by a rotating US state group and a broad local-business category profile.
-- The discovery job currently has no daily schedule. The first run is intentionally manual and defaults to dry-run mode so the results can be reviewed before any recurring collection is enabled.
-- The Vercel ingestion route performs syntax, disposable-domain and mail-DNS checks, scores business fit and available website-building data, deduplicates by Overture place and email, and saves qualified rows in Neon.
-- These free checks do not claim that the mailbox exists. Every new Overture row is stored as `PENDING_EXTERNAL_VERIFICATION`, `Email Eligible=no` and `Lead Decision=pending_verification`.
+- Overture Places replaces paid discovery for the new lead source. A daily GitHub Actions job scans the current public Parquet release by a rotating US state group and a broad local-business category profile; it can also be started manually.
+- The seven rotating regions cover all 50 states and DC: Pacific, South Central, Southeast, Northeast, Midwest, South, and Mountain/Plains. Manual runs can override them with `states`.
+- Category targeting is split into six practical groups: `home_trades`, `property_exterior`, `cleaning_restoration`, `auto_transport`, `health_beauty`, and `professional_events`. Manual runs can select a subset with `category_groups`.
+- Discovery stages every row returned by the configured scan in 25-row transport batches. The 50-row API ceiling is only a request-size guard; it is not a lead target and does not stop processing after 50.
+- The ingestion route filters closed locations and known chains/franchises, performs syntax, disposable-domain and mail-DNS checks, scores business fit and deduplicates by Overture place, stable fallback identity and email.
+- Qualified businesses without an email are retained as `Lead Status=candidate` for later enrichment. Qualified rows with a locally valid email are stored as `Lead Status=enriched`, `PENDING_EXTERNAL_VERIFICATION`, `Email Eligible=no` and `Lead Decision=pending_verification`.
+- Rejected businesses are retained once with the basic business fields, score and rejection reason. Unique Neon indexes on place, dedupe key and email make ingestion idempotent even across concurrent runs.
+- External verification stores provider, checked time, normalized result, catch-all/disposable/risky flags and the original result JSON. The canonical lead status is one of `candidate`, `enriched`, `verified`, `approved`, `transferred`, `sent` or `rejected`.
 - Scenario 02 enforces that gate. Only a fresh external result of `GOOD`, `OK`, `VALID` or `DELIVERABLE`, with a named provider and no catch-all flag, can make an Overture row exportable.
 - Instantly verification is explicitly disabled on import. This prevents verification-credit usage there.
+- Stage 4 enriches Overture candidates without Instantly or MillionVerifier. It searches an existing Overture address, the official website, Contact/About pages, JSON-LD structured data, official social profiles and finally other public URLs already linked to the business record.
+- A discovered address is accepted only after syntax, disposable-domain and MX/A-DNS checks and a database-wide duplicate check. The exact public source URL, source type, attempted pages, outcomes and timestamp are stored with the lead; guessed addresses are never generated.
+- A found address remains `Email Eligible=no` and `pending_verification`. A current safe external verification can be marked reusable for stage 5, but stage 4 cannot approve or send the lead.
+- No-result searches are documented and paused for 30 days; temporary errors retry after one day. The scheduled workflow processes up to five 15-lead enrichment batches after discovery, requesting a new short-lived identity for every batch.
+- Public-page fetching accepts only HTTP(S) on standard ports, blocks local/private/reserved destinations and limits redirects, time, page count and response size.
 - A protected GET on `/api/overture-leads` returns the pending verification batch. A protected POST with `action=verification_results` imports the later batch results; neither operation sends email by itself.
-- GitHub Actions uses a short-lived signed identity token. The route accepts it only from `levydave1/trysitesnap`, the `main` branch and the manual Overture workflow, so no new shared GitHub/Vercel secret is required. The existing `CRON_SECRET` remains available for protected manual batch export/import.
+- A protected POST on `/api/overture-enrichment` runs stage 4 only. It does not initialize any Instantly, AI or external-verification client.
+- GitHub Actions uses a short-lived signed identity token. The route accepts it only from `levydave1/trysitesnap`, the `main` branch and the scheduled/manual Overture workflow, so no new shared GitHub/Vercel secret is required. The existing `CRON_SECRET` remains available for protected manual batch export/import.
+- The workflow applies the idempotent lead schema guard before discovery. It backfills canonical statuses, refuses to hide existing duplicates, and installs the unique indexes and status constraint. `npm run db:lead-schema` remains available for maintenance outside the workflow.
 
 ## Operations dashboard
 
 - `/lead-dashboard` is the private operational view for the full system, not only the Overture pipeline.
 - It reads the five Neon tables that replaced Airtable, distinguishes untouched Airtable snapshot records from records created or updated locally after cutover, and supports protected search across the complete history.
-- The overview combines lead sources and decisions, verification state, Instantly queue history, generation jobs, sketches, orders/domains, system dependencies and recent activity.
+- The overview combines lead sources and decisions, stage-4 email-finding results, verification state, Instantly queue history, generation jobs, sketches, orders/domains, system dependencies and recent activity.
 - Pending verification email addresses can be downloaded as CSV. A later external-result CSV can be reviewed and imported from the same dashboard; the server still enforces the strict approval gate.
 - Access uses an HTTP-only signed session cookie backed by the Vercel Secret `DASHBOARD_ACCESS_KEY`; the key is never embedded in the page or repository.
 - The protected maintenance action `dedupe_unsent_leads` removes only later copies of exact, uncontacted Outscraper duplicates. It requires an explicit confirmation phrase and preserves the earliest record in every identical group.
