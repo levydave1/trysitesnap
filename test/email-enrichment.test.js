@@ -5,6 +5,7 @@ import {
   extractStructuredEmails,
   extractVisibleEmails,
   fetchPublicPage,
+  resetFoundEnrichment,
   reusableExternalVerification,
   selectEnrichmentCandidates
 } from "../server/email-enrichment.js";
@@ -44,6 +45,7 @@ test("email extraction finds mailto, visible, obfuscated, and JSON-LD addresses"
   const html = `
     <a href="mailto:hello@acme.test?subject=Hi">Email us</a>
     <p>Sales: sales [at] acme [dot] test</p>
+    <p>Find information at example dot com and discover the destination.</p>
     <script>const hidden = "ignored@script.test"</script>
     <script type="application/ld+json">{"@type":"Organization","contactPoint":{"email":"office@acme.test"}}</script>`;
   assert.deepEqual(extractVisibleEmails(html).sort(), ["hello@acme.test", "sales@acme.test"]);
@@ -108,7 +110,7 @@ test("stage 4 skips a duplicate address and can select another public address", 
     { id: "recExisting", fields: { "Source System": "outscraper", Email: "used@acme.test" } }
   ];
   const fetchImpl = async (url) => url === "https://acme.test/"
-    ? htmlResponse("<p>used@acme.test or new@acme.test</p>")
+    ? htmlResponse("<h1>Acme Roofing</h1><p>used@acme.test or new@acme.test</p>")
     : htmlResponse("missing", 404);
   const result = await enrichOvertureEmails({
     config,
@@ -120,6 +122,30 @@ test("stage 4 skips a duplicate address and can select another public address", 
   assert.equal(result.found, 1);
   assert.equal(updates[0].Email, "new@acme.test");
   assert.match(updates[0]["Email Enrichment Evidence JSON"], /"outcome":"duplicate"/);
+});
+
+test("stage 4 rejects a real address that belongs to somebody else on a generic corporate page", async () => {
+  const updates = [];
+  const record = candidate({
+    fields: {
+      "Business Name": "Matt Steves of Serhant Naples",
+      Website: "https://serhant.test/"
+    }
+  });
+  const fetchImpl = async (url) => url === "https://serhant.test/"
+    ? htmlResponse("<h1>Serhant</h1><p>Naples listings by <a href='mailto:coyne@serhant.test'>Coyne</a></p>")
+    : htmlResponse("missing", 404);
+  const result = await enrichOvertureEmails({
+    config,
+    data: {
+      async listRecords() { return [record]; },
+      async updateRecordInTable(tableId, id, fields) { updates.push(fields); }
+    }
+  }, { fetchImpl, resolveHost, dns });
+  assert.equal(result.found, 0);
+  assert.equal(result.notFound, 1);
+  assert.equal(updates[0].Email, undefined);
+  assert.match(updates[0]["Email Enrichment Evidence JSON"], /not_business_linked/);
 });
 
 test("stage 4 records a completed no-email search and does not write in dry-run mode", async () => {
@@ -151,4 +177,30 @@ test("current external verification is reusable only for the same safe email", (
   assert.equal(reusableExternalVerification(fields, "hello@acme.test", { now: new Date("2026-11-25T00:00:00.000Z") }).provider, "millionverifier");
   assert.equal(reusableExternalVerification(fields, "other@acme.test", { now: new Date("2026-11-25T00:00:00.000Z") }), null);
   assert.equal(reusableExternalVerification({ ...fields, "Email Catch All": "yes" }, "hello@acme.test", { now: new Date("2026-11-25T00:00:00.000Z") }), null);
+});
+
+test("found stage-4 records can be safely reopened while preserving the previous audit evidence", async () => {
+  const updates = [];
+  const records = [
+    candidate({ id: "recFound", fields: {
+      Email: "wrong@acme.test",
+      "Email Source URL": "https://acme.test/",
+      "Email Source Type": "official_site",
+      "Email Enrichment Status": "found",
+      "Email Enrichment Evidence JSON": "{\"version\":1}"
+    } }),
+    candidate({ id: "recPending" })
+  ];
+  const result = await resetFoundEnrichment({
+    config,
+    data: {
+      async listRecords() { return records; },
+      async updateRecordInTable(tableId, id, fields) { updates.push({ id, fields }); }
+    }
+  }, { now: new Date("2026-11-25T13:00:00.000Z") });
+  assert.deepEqual({ selected: result.selected, updated: result.updated }, { selected: 1, updated: 1 });
+  assert.equal(updates[0].id, "recFound");
+  assert.equal(updates[0].fields.Email, "");
+  assert.equal(updates[0].fields["Lead Decision"], "pending_enrichment");
+  assert.match(updates[0].fields["Email Enrichment Previous Evidence JSON"], /wrong@acme\.test/);
 });

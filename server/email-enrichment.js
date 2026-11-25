@@ -9,6 +9,11 @@ const SOCIAL_HOSTS = /(?:^|\.)(?:facebook|instagram|linkedin|tiktok|x|twitter|ye
 const FREE_MAIL_HOSTS = new Set(["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "aol.com", "icloud.com"]);
 const JUNK_EMAIL_HOSTS = new Set(["example.com", "example.org", "domain.com", "email.com", "sentry.io"]);
 const JUNK_LOCAL_PARTS = /^(?:example|yourname|name|email|test|noreply|no-reply|donotreply|do-not-reply)$/i;
+const ROLE_LOCAL_PART = /^(?:admin|booking|careers?|contact|customerservice|events?|frontdesk|general|hello|info|inquiries?|marketing|office|reception|reservations?|sales|service|support|team)(?:[._+-]|$)/i;
+const BUSINESS_STOP_WORDS = new Set([
+  "and", "company", "co", "corp", "corporation", "fl", "florida", "group", "inc", "llc", "of", "restaurant",
+  "real", "estate", "service", "services", "salon", "spa", "the", "agency", "center", "centre"
+]);
 const NON_PAGE_EXTENSIONS = /\.(?:avif|bmp|css|csv|docx?|gif|ico|jpe?g|js|json|mp3|mp4|pdf|png|pptx?|svg|webp|xlsx?|xml|zip)(?:$|[?#])/i;
 const EMAIL_PATTERN = /[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+/gi;
 const MAX_HTML_BYTES = 1_000_000;
@@ -79,12 +84,32 @@ export function extractVisibleEmails(html) {
   const mailto = [...decoded.matchAll(/href\s*=\s*["']mailto:([^"'#?\s>]+)[^"']*["']/gi)].map((match) => match[1]);
   const plain = visibleHtml(decoded).match(EMAIL_PATTERN) || [];
   const obfuscated = [];
-  const obfuscatedPattern = /([a-z0-9.!#$%&'*+/=?^_`{|}~-]+)\s*(?:\[|\()?\s*(?:at|@)\s*(?:\]|\))?\s*([a-z0-9-]+(?:\s*(?:\[|\()?\s*(?:dot|\.)\s*(?:\]|\))?\s*[a-z0-9-]+)+)/gi;
+  const obfuscatedPattern = /\b([a-z0-9.!#$%&'*+/=?^_`{|}~-]+)\s*(?:\[\s*at\s*\]|\(\s*at\s*\)|\s+at\s+)\s*([a-z0-9-]+(?:\s*(?:\[\s*dot\s*\]|\(\s*dot\s*\)|\s+dot\s+|\.)\s*[a-z0-9-]+)+)/gi;
   for (const match of visibleHtml(decoded).matchAll(obfuscatedPattern)) {
     const domain = match[2].replace(/\s*(?:\[|\()?\s*dot\s*(?:\]|\))?\s*/gi, ".").replace(/\s+/g, "");
     obfuscated.push(`${match[1]}@${domain}`);
   }
   return unique([...mailto, ...plain, ...obfuscated]);
+}
+
+function identityWords(value) {
+  return lower(value).replace(/[^a-z0-9]+/g, " ").split(/\s+/)
+    .filter((word) => word.length >= 3 && !BUSINESS_STOP_WORDS.has(word));
+}
+
+function emailLinkedToBusiness(email, record, sourceUrl, sourceType, sourceHtml, website) {
+  if (sourceType === "overture") return true;
+  const fields = record.fields || {};
+  const businessWords = identityWords(fields["Business Name"]);
+  const localPart = email.split("@")[0].replace(/[^a-z0-9]+/g, "");
+  const emailHost = email.split("@")[1];
+  const domainLinked = sameSite(`https://${emailHost}`, sourceUrl) || sameSite(`https://${emailHost}`, website);
+  if (domainLinked && ROLE_LOCAL_PART.test(email.split("@")[0])) return true;
+  const localLinked = businessWords.some((word) => word.length >= 4 && localPart.includes(word));
+  if (localLinked) return true;
+  const pageWords = new Set(identityWords(visibleHtml(sourceHtml)));
+  const matchedWords = businessWords.filter((word) => pageWords.has(word));
+  return businessWords.length > 0 && matchedWords.length === businessWords.length;
 }
 
 function collectJsonEmails(value, output) {
@@ -303,8 +328,12 @@ async function inspectRecord(record, context, options = {}) {
   const evidence = { version: 1, recordId: record.id, business: text(fields["Business Name"]), tried: [], candidates: [] };
   let duplicateFound = false;
 
-  const tryEmails = async (emails, sourceUrl, sourceType) => {
+  const tryEmails = async (emails, sourceUrl, sourceType, sourceHtml = "") => {
     for (const email of orderedEmails(emails, website)) {
+      if (!emailLinkedToBusiness(email, record, sourceUrl, sourceType, sourceHtml, website)) {
+        evidence.candidates.push({ email, sourceUrl, sourceType, outcome: "not_business_linked" });
+        continue;
+      }
       const priorOwner = context.emailOwners.get(email);
       if (priorOwner && priorOwner !== record.id) {
         duplicateFound = true;
@@ -352,7 +381,7 @@ async function inspectRecord(record, context, options = {}) {
 
   const homepage = await fetchPage(website, "official_site");
   if (homepage) {
-    const found = await tryEmails(extractVisibleEmails(homepage.html), homepage.url, "official_site");
+    const found = await tryEmails(extractVisibleEmails(homepage.html), homepage.url, "official_site", homepage.html);
     if (found) return found;
   }
 
@@ -367,12 +396,12 @@ async function inspectRecord(record, context, options = {}) {
   for (const url of [...new Set(contactLinks)].slice(0, 3)) {
     const page = await fetchPage(url, "contact_or_about");
     if (!page) continue;
-    const found = await tryEmails(extractVisibleEmails(page.html), page.url, "contact_or_about");
+    const found = await tryEmails(extractVisibleEmails(page.html), page.url, "contact_or_about", page.html);
     if (found) return found;
   }
 
   for (const page of pages) {
-    const found = await tryEmails(extractStructuredEmails(page.html), page.url, "structured_data");
+    const found = await tryEmails(extractStructuredEmails(page.html), page.url, "structured_data", page.html);
     if (found) return found;
   }
 
@@ -381,7 +410,7 @@ async function inspectRecord(record, context, options = {}) {
   for (const url of [...new Set(socialUrls)].filter((url) => SOCIAL_HOSTS.test(hostname(url))).slice(0, 2)) {
     const page = await fetchPage(url, "official_social");
     if (!page) continue;
-    const found = await tryEmails([...extractVisibleEmails(page.html), ...extractStructuredEmails(page.html)], page.url, "official_social");
+    const found = await tryEmails([...extractVisibleEmails(page.html), ...extractStructuredEmails(page.html)], page.url, "official_social", page.html);
     if (found) return found;
   }
 
@@ -392,7 +421,7 @@ async function inspectRecord(record, context, options = {}) {
   for (const url of [...new Set(publicUrls)].slice(0, 1)) {
     const page = await fetchPage(url, "public_source");
     if (!page) continue;
-    const found = await tryEmails([...extractVisibleEmails(page.html), ...extractStructuredEmails(page.html)], page.url, "public_source");
+    const found = await tryEmails([...extractVisibleEmails(page.html), ...extractStructuredEmails(page.html)], page.url, "public_source", page.html);
     if (found) return found;
   }
 
@@ -524,4 +553,59 @@ export async function enrichOvertureEmails(dependencies, options = {}) {
   });
   summary.results.sort((left, right) => left.recordId.localeCompare(right.recordId));
   return summary;
+}
+
+export async function resetFoundEnrichment(dependencies, options = {}) {
+  const now = options.now instanceof Date ? options.now : new Date(options.now || Date.now());
+  const tableId = dependencies.config.airtable.rawOutscraperTableId;
+  const records = options.records || await dependencies.data.listRecords(tableId, { fields: [
+    "Source System", "Email", "Email Source URL", "Email Source Type", "Email Enrichment Status",
+    "Email Enrichment Evidence JSON"
+  ] });
+  const found = records.filter((record) => lower(record.fields?.["Source System"]) === "overture")
+    .filter((record) => lower(record.fields?.["Email Enrichment Status"]) === "found");
+  let updated = 0;
+  for (const record of found) {
+    const fields = record.fields || {};
+    const reset = {
+      "Intake Status": "candidate",
+      Email: "",
+      "Email Source URL": "",
+      "Email Source Type": "",
+      "Email Status": "enrichment_required",
+      "Email Eligible": "no",
+      "Email DNS Check": "",
+      "Email DNS Checked At": "",
+      "Email Validation Status": "NOT_CHECKED",
+      "Email Validation Provider": "",
+      "Email Validation Checked At": "",
+      "Email Validation Details": "Reopened for stage 4 source-association check",
+      "Email Validation Raw JSON": "",
+      "Email Catch All": "",
+      "Email Disposable": "",
+      "Email Risky": "",
+      "Email Verification Reusable": "no",
+      "Email Enrichment Status": "",
+      "Email Enrichment Checked At": "",
+      "Email Enrichment Attempts": 0,
+      "Email Enrichment Previous Evidence JSON": JSON.stringify({
+        resetAt: now.toISOString(),
+        email: text(fields.Email),
+        sourceUrl: text(fields["Email Source URL"]),
+        sourceType: text(fields["Email Source Type"]),
+        evidence: parseJson(fields["Email Enrichment Evidence JSON"], {})
+      }),
+      "Email Enrichment Evidence JSON": "",
+      "Lead Status": "candidate",
+      "Lead Status Updated At": now.toISOString(),
+      "Lead Decision": "pending_enrichment",
+      "Lead Decision Reason": "RECHECK_SOURCE_ASSOCIATION",
+      "Lead Rejection Reason": ""
+    };
+    if (!options.dryRun) {
+      await dependencies.data.updateRecordInTable(tableId, record.id, reset);
+      updated += 1;
+    }
+  }
+  return { success: true, dryRun: Boolean(options.dryRun), selected: found.length, updated };
 }

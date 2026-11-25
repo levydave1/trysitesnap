@@ -26,6 +26,11 @@ on:
         required: true
         default: true
         type: boolean
+      recheck_found:
+        description: Reopen previously found stage-4 emails and check their source again
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -85,8 +90,21 @@ jobs:
       - name: Find and document public business emails
         env:
           ENRICHMENT_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          RECHECK_FOUND: ${{ inputs.recheck_found || 'false' }}
         shell: bash
         run: |
+          if [ "$RECHECK_FOUND" = "true" ]; then
+            token="$(curl --fail --silent --show-error \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sitesnap-overture" \
+              | python -c 'import json,sys; print(json.load(sys.stdin)["value"])')"
+            echo "::add-mask::$token"
+            curl --fail-with-body --silent --show-error \
+              -H "Authorization: Bearer $token" \
+              -H "Content-Type: application/json" \
+              -d "{\"action\":\"reset_found\",\"dry_run\":$ENRICHMENT_DRY_RUN}" \
+              https://trysitesnap.com/api/overture-enrichment
+          fi
           batches=5
           if [ "$ENRICHMENT_DRY_RUN" = "true" ]; then
             batches=1

@@ -1,4 +1,4 @@
-import { enrichOvertureEmails } from "./email-enrichment.js";
+import { enrichOvertureEmails, resetFoundEnrichment } from "./email-enrichment.js";
 import { authorizedOvertureRequest } from "./overture-handler.js";
 import { createRuntimeDependencies } from "./runtime.js";
 
@@ -25,6 +25,14 @@ export async function enrichmentHandler(request, response) {
 
   try {
     const dependencies = createRuntimeDependencies({ airtable: true });
+    if (text(request.body?.action).toLowerCase() === "reset_found") {
+      const result = await resetFoundEnrichment({
+        config: dependencies.config,
+        data: dependencies.airtable
+      }, { dryRun: request.body?.dry_run === true });
+      console.log(JSON.stringify({ event: "overture_email_enrichment_reset", ...result }));
+      return response.status(200).json(result);
+    }
     const result = await enrichOvertureEmails({
       config: dependencies.config,
       data: dependencies.airtable
