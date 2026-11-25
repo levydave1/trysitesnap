@@ -117,10 +117,11 @@ Before increasing new-lead collection, process the accumulated unsent records al
 Progress on 2026-11-25:
 
 - The legacy Outscraper backlog contained 547 unique, uncontacted records with email addresses; direct website inquiries remained excluded as the `00` exception.
-- Verification resolved 544 records: 339 approved and 205 rejected. Three temporary provider errors remain in the 24-hour retry cooldown and are the only unfinished verification items.
-- All 339 approved records have a stored first-email draft. A live audit found zero duplicate recipients, zero invalid subject/body lengths, zero missing free/no-obligation disclosures and zero non-draft statuses.
+- Verification resolved 544 legacy Outscraper records: 339 approved and 205 rejected. Three temporary provider errors remain in the 24-hour retry cooldown.
+- The existing Overture set contains 147 records: 77 approved with verified email, 36 rejected and 34 intentionally retained for email enrichment because they do not yet have an address to verify.
+- All 416 approved records across Outscraper and Overture have a stored first-email draft. A live audit found zero duplicate recipients, zero missing addresses, zero invalid subject/body lengths, zero missing free/no-obligation disclosures and zero non-draft statuses.
 - Anthropic and Gemini both rejected generation because their prepaid API balances were empty, so the stored drafts use the audited local-template fallback and are explicitly tagged `local_template`. They can be regenerated with AI later without changing the verification decisions.
-- No backlog lead was sent, exported to Instantly or added to a campaign. Remaining work: retry the three temporary verification errors, then explicitly review/approve a separate export or send action.
+- No backlog lead was sent, exported to Instantly or added to a campaign. Remaining work: retry the three temporary verification errors, enrich the 34 Overture records that lack email, then explicitly review/approve a separate export or send action.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
