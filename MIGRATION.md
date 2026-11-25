@@ -87,6 +87,7 @@ Secrets are stored only in Vercel or the corresponding provider, never in Git or
 - Pending verification email addresses can be downloaded as CSV. A later external-result CSV can be reviewed and imported from the same dashboard; the server still enforces the strict approval gate.
 - Access uses an HTTP-only signed session cookie backed by the Vercel Secret `DASHBOARD_ACCESS_KEY`; the key is never embedded in the page or repository.
 - The protected maintenance action `dedupe_unsent_leads` removes only later copies of exact, uncontacted Outscraper duplicates. It requires an explicit confirmation phrase and preserves the earliest record in every identical group.
+- On 2026-11-25 the action removed 495 later copies from 495 exact pairs after confirming that none was referenced by an email thread, generation job, business or order. Raw lead count changed from 5,958 to 5,463; a second dry run found zero remaining safe duplicate groups.
 
 The Stripe webhook signing secret still needs a security rotation. Stripe requires the account owner to complete a passkey or phone verification before it will reveal the replacement secret; the currently active secret and webhook remain operational until that verification is completed.
 
