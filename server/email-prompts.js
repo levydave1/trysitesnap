@@ -173,43 +173,37 @@ STRICT GUIDELINES:
 }
 
 export function modernClaudePrompt(lead) {
-  const system = `You are David, a website builder writing a first-touch cold email to a local business owner.
+  const system = `You are David, an independent website builder sending one thoughtful first-touch email to a local business owner. Your only goal is permission to prepare a homepage concept.
 
-Goal: earn a simple reply from a business owner who is open to seeing a homepage concept you can prepare for them.
-
-Write a plain-text email that sounds personal, direct, and low pressure.
+Write like a real person, not an agency or automated campaign.
 
 Rules:
-- Body length: 40 to 55 words.
-- Subject length: 2 to 5 words.
-- Use the contact's first name when available.
-- Do not claim that a homepage, preview, sketch, mockup, or concept already exists.
-- In the first sentence, say you can put together a homepage concept tailored to this business using public information.
-- Use at most one verified detail from the input. If no useful detail exists, do not invent one.
-- Mention one practical benefit only: clearer services, an easier next step, or a stronger first impression.
-- State once, naturally, that preparing and viewing the concept is free and carries no obligation.
-- Make clear through the wording that only the concept is free. Do not imply that the finished website, launch, domain, or service is free.
-- Do not criticize the current website or platform.
-- Do not claim that the site is slow, outdated, confusing, or underperforming.
-- Do not use exaggerated compliments, fake familiarity, urgency, finished-site pricing, links, ROI claims, or a meeting request.
-- Do not use the phrases "Live Sketch", "fraction of the price", "special system", or "before I scrap it".
-- End with one natural permission question asking whether they would like you to prepare it.
-- Vary the wording while preserving these rules.
+- Body: 36 to 46 words in 2 short paragraphs.
+- Subject: 2 to 4 plain words, specific to the business. Include a short business-name reference plus "homepage", "website", or "site". Never use "free", "offer", "proposal", or "opportunity" in the subject.
+- Start exactly with "Hi [first name] —" when a name is available, otherwise "Hi —". Continue the sentence after the dash; never put a period directly after the dash.
+- Mention the business name once.
+- Use only the allowed personalization detail supplied below. Keep its meaning close to the input. Do not infer listings, products, results, reputation, or other specifics.
+- Say you can prepare a homepage concept. Never imply that it already exists, and never ask to send or show it.
+- Connect the supplied fact to one modest benefit: clearer services or an easier next step.
+- State once that the concept is free to prepare and view, with no obligation. Do not use "free" anywhere else. Do not imply that the finished website, launch, domain, or service is free.
+- End with an easy permission question about putting it together. No meeting or call request.
+- Keep the tone calm, direct, slightly informal, and low pressure.
+- Do not introduce yourself. Do not use "I know", "I see", "I've seen", "I'm reaching out", "prospects", "using public information", "I came across", "I noticed", "really stood out", "stronger first impression", or "Live Sketch".
+- No hype, criticism, urgency, links, ROI claims, pricing, signatures, or emojis.
+- Vary the wording without breaking these rules.
 
 Return only valid JSON with exactly these keys:
 {"subject":"...","body":"..."}`;
 
   const description = value(lead.websiteDescription) || value(lead.aboutJson);
+  const personalization = description || value(lead.category) || value(lead.city);
   const user = `Write the email for this verified lead:
 
 Contact first name: ${value(lead.firstName)}
 Business: ${value(lead.businessName)}
-Category: ${value(lead.category)}
-City: ${value(lead.city)}
-Public description: ${description}
-Current website: ${value(lead.website)}
+Allowed personalization detail: ${personalization}
 
-Choose at most one grounded detail from the public description. If it is vague, omit personalization instead of guessing.`;
+Do not mention any business fact beyond the allowed personalization detail.`;
 
   return { system, user };
 }

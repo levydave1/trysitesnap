@@ -44,7 +44,7 @@ test("02 Instantly client uses API v2 with bearer authentication", async () => {
   assert.equal(JSON.parse(calls[0].options.body).verify_leads_on_import, false);
 });
 
-test("02 Groq client requests strict subject and body JSON", async () => {
+test("02 Groq client requests JSON and validates subject and body", async () => {
   let call;
   const client = createGroqClient({
     apiKey: "groq-secret",
@@ -58,8 +58,27 @@ test("02 Groq client requests strict subject and body JSON", async () => {
   assert.deepEqual(await client.writeEmail({ system: "system", user: "user" }), { subject: "Idea", body: "Short message" });
   assert.equal(call.url, "https://api.groq.com/openai/v1/chat/completions");
   assert.equal(call.options.headers.Authorization, "Bearer groq-secret");
-  assert.equal(call.body.response_format.json_schema.strict, true);
-  assert.deepEqual(call.body.response_format.json_schema.schema.required, ["subject", "body"]);
+  assert.deepEqual(call.body.response_format, { type: "json_object" });
+  assert.equal(call.body.reasoning_effort, "low");
+  assert.equal(call.body.include_reasoning, false);
+});
+
+test("02 Groq retries a rejected structured email once", async () => {
+  let calls = 0;
+  const client = createGroqClient({
+    apiKey: "groq-secret",
+    model: "openai/gpt-oss-20b",
+    timeoutMs: 1000,
+    async fetchImpl() {
+      calls += 1;
+      if (calls === 1) {
+        return new Response(JSON.stringify({ error: { message: "Failed to validate JSON. See failed_generation." } }), { status: 400 });
+      }
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"subject":"Quick thought","body":"Short message"}' } }] }), { status: 200 });
+    }
+  });
+  assert.equal((await client.writeEmail({ system: "system", user: "user" })).subject, "Quick thought");
+  assert.equal(calls, 2);
 });
 
 test("04 Groq text client supports JSON briefs and full HTML output", async () => {
@@ -100,7 +119,7 @@ test("02 v2 uses one Claude call while legacy uses Groq analysis then Claude", a
 
   await generateEmailForLead(dependencies, lead, "v2");
   assert.deepEqual(calls.map(([service]) => service), ["claude"]);
-  assert.match(calls[0][1].system, /Do not use.*pricing/i);
+  assert.match(calls[0][1].system, /No hype.*pricing/i);
   assert.match(calls[0][1].user, /Garage door repair, installation and free quotes/);
 
   calls.length = 0;
@@ -142,12 +161,14 @@ test("02 v2 prompt stays grounded and excludes first-email pricing", () => {
     website: "https://example.com"
   });
   assert.match(prompt.user, /Family and employment law services/);
-  assert.match(prompt.system, /using public information/);
-  assert.match(prompt.system, /Do not claim that a homepage, preview, sketch, mockup, or concept already exists/i);
-  assert.match(prompt.system, /preparing and viewing the concept is free and carries no obligation/i);
+  assert.match(prompt.system, /Never imply that it already exists/);
+  assert.match(prompt.system, /Never imply that it already exists/i);
+  assert.match(prompt.system, /concept is free to prepare and view, with no obligation/i);
   assert.match(prompt.system, /Do not imply that the finished website, launch, domain, or service is free/i);
-  assert.match(prompt.system, /Do not use.*finished-site pricing/i);
-  assert.match(prompt.system, /40 to 55 words/);
+  assert.match(prompt.system, /No hype.*pricing/i);
+  assert.match(prompt.system, /36 to 46 words/);
+  assert.match(prompt.system, /Never use "free", "offer", "proposal", or "opportunity"/);
+  assert.match(prompt.system, /Mention the business name once/);
 });
 
 test("02 preview tests always redirect three generated emails to the approved inbox", async () => {

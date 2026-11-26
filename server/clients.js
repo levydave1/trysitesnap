@@ -519,40 +519,45 @@ export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch
 export function createGroqClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
   async function complete({ system, user, temperature, maxTokens, responseFormat }) {
-    return retryingJson("groq", "https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        temperature,
-        max_completion_tokens: maxTokens,
-        messages: [{ role: "system", content: system }, { role: "user", content: user }],
-        response_format: responseFormat
-      })
-    }, { timeoutMs, fetchImpl });
+    let lastError;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await retryingJson("groq", "https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({
+            model,
+            temperature,
+            max_completion_tokens: maxTokens,
+            reasoning_effort: "low",
+            include_reasoning: false,
+            messages: [{ role: "system", content: system }, { role: "user", content: user }],
+            response_format: responseFormat
+          })
+        }, { timeoutMs, fetchImpl });
+      } catch (error) {
+        lastError = error;
+        const invalidStructuredOutput = error.upstreamStatus === 400
+          && /validate json|failed_generation/i.test(String(error.upstreamDetails || error.message));
+        if (!invalidStructuredOutput) throw error;
+      }
+    }
+    throw lastError;
   }
   return {
     async writeEmail({ system, user }) {
       const payload = await complete({
         system,
         user,
-        temperature: 0.8,
-        maxTokens: 1000,
-        responseFormat: {
-          type: "json_schema",
-          json_schema: {
-            name: "outreach_email",
-            strict: true,
-            schema: {
-              type: "object",
-              properties: { subject: { type: "string" }, body: { type: "string" } },
-              required: ["subject", "body"],
-              additionalProperties: false
-            }
-          }
-        }
+        temperature: 0.5,
+        maxTokens: 1400,
+        responseFormat: { type: "json_object" }
       });
-      return modelJson(payload.choices?.[0]?.message?.content || "", "groq");
+      const result = modelJson(payload.choices?.[0]?.message?.content || "", "groq");
+      if (typeof result.subject !== "string" || typeof result.body !== "string") {
+        throw upstreamError("groq", 200, "model response is missing subject or body");
+      }
+      return { subject: result.subject, body: result.body };
     },
     async analyze({ system, user }) {
       const payload = await complete({

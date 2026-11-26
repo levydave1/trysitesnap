@@ -94,7 +94,7 @@ export const config = Object.freeze({
     senderLabel: "sitesnap-test (levy.dave.1@gmail.com)",
     testRecipient: "levy.dave.1@gmail.com",
     defaultFlow: "v2",
-    groqModel: "openai/gpt-oss-20b",
+    groqModel: "openai/gpt-oss-120b",
     claudeModel: "claude-sonnet-4-6"
   },
   firstSketch: {
