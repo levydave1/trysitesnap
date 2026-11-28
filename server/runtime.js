@@ -68,7 +68,8 @@ export function createRuntimeDependencies(needs = {}) {
     dependencies.groq = createGroqClient({
       apiKey: process.env.GROQ_API_KEY,
       model: config.emailExport.groqModel,
-      timeoutMs: 45000
+      timeoutMs: 45000,
+      minIntervalMs: config.emailExport.groqMinIntervalMs
     });
     dependencies.instantly = createInstantlyClient({
       apiKey: process.env.INSTANTLY_API_KEY,
@@ -84,7 +85,8 @@ export function createRuntimeDependencies(needs = {}) {
     dependencies.groq = createGroqClient({
       apiKey: process.env.GROQ_API_KEY,
       model: config.emailExport.groqModel,
-      timeoutMs: 45000
+      timeoutMs: 45000,
+      minIntervalMs: config.emailExport.groqMinIntervalMs
     });
   }
   if (needs.firstSketch) {

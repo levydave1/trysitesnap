@@ -74,6 +74,8 @@ export async function emailExportHandler(request, response) {
       skipped: result.skipped,
       skippedUnverified: result.skippedUnverified,
       failed: result.failed,
+      deferred: result.deferred,
+      stoppedBy: result.stoppedBy,
       failures: result.results.filter((item) => item.status === "failed").map((item) => ({
         recordId: item.recordId,
         stage: item.stage,

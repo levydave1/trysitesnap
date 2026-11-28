@@ -139,6 +139,7 @@ async function ensureInstantlyLead(instantly, payload, email, campaign) {
 function summaryMessage(results) {
   const exported = results.filter((item) => item.status === "exported");
   const failed = results.filter((item) => item.status === "failed");
+  const deferred = results.filter((item) => item.status === "deferred");
   const names = exported.slice(0, 15).map((item) => `- ${item.businessName}`).join("\n");
   const omitted = exported.length > 15 ? `\n- ועוד ${exported.length - 15}` : "";
   const failureCounts = new Map();
@@ -147,7 +148,15 @@ function summaryMessage(results) {
     failureCounts.set(key, (failureCounts.get(key) || 0) + 1);
   }
   const failureDetails = [...failureCounts.entries()].slice(0, 5).map(([key, count]) => `- ${key}: ${count}`).join("\n");
-  return `נטענו לידים ל-Instantly\nנטענו: ${exported.length}\nנכשלו: ${failed.length}${names ? `\n${names}${omitted}` : ""}${failureDetails ? `\nסיבות:\n${failureDetails}` : ""}`;
+  const stopped = deferred.length ? `\nנעצרו ויועברו לריצה הבאה: ${deferred.length}` : "";
+  return `נטענו לידים ל-Instantly\nנטענו: ${exported.length}\nנכשלו: ${failed.length}${stopped}${names ? `\n${names}${omitted}` : ""}${failureDetails ? `\nסיבות:\n${failureDetails}` : ""}`;
+}
+
+function opensExportCircuit(stage, error) {
+  if (stage === "instantly" && [402, 429].includes(error.upstreamStatus)) return true;
+  return stage === "generate_email"
+    && error.code === "GROQ_UPSTREAM_ERROR"
+    && error.upstreamStatus === 429;
 }
 
 export async function processEmailExportBatch(dependencies, options = {}) {
@@ -200,8 +209,20 @@ export async function processEmailExportBatch(dependencies, options = {}) {
     if (candidates.length >= maxRecords) break;
   }
 
+  let circuit = null;
   const results = await mapConcurrent(candidates, options.concurrency || config.emailExport.concurrency, async (record) => {
     const lead = leadFromEmailRecord(record);
+    if (circuit) {
+      return {
+        status: "deferred",
+        recordId: record.id,
+        businessName: lead.businessName,
+        stage: circuit.stage,
+        code: "UPSTREAM_CIRCUIT_OPEN",
+        upstreamStatus: circuit.upstreamStatus,
+        message: `Deferred after ${circuit.code}`
+      };
+    }
     let stage = "generate_email";
     try {
       const email = await generateEmailForLead({ groq, claude }, lead, options.flow);
@@ -252,6 +273,13 @@ export async function processEmailExportBatch(dependencies, options = {}) {
         subject: email.subject
       };
     } catch (error) {
+      if (opensExportCircuit(stage, error)) {
+        circuit = {
+          stage,
+          code: error.code || "UPSTREAM_LIMIT",
+          upstreamStatus: error.upstreamStatus || null
+        };
+      }
       return {
         status: "failed",
         recordId: record.id,
@@ -275,6 +303,8 @@ export async function processEmailExportBatch(dependencies, options = {}) {
     skipped: skippedDuplicates + skippedUnverified + results.filter((item) => item.status === "skipped").length,
     skippedUnverified,
     failed: results.filter((item) => item.status === "failed").length,
+    deferred: results.filter((item) => item.status === "deferred").length,
+    stoppedBy: circuit,
     results
   };
 }

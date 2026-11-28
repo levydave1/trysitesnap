@@ -516,12 +516,28 @@ export function createClaudeClient({ apiKey, model, timeoutMs, fetchImpl = fetch
   };
 }
 
-export function createGroqClient({ apiKey, model, timeoutMs, fetchImpl = fetch }) {
+export function createGroqClient({ apiKey, model, timeoutMs, minIntervalMs = 0, fetchImpl = fetch }) {
   if (!apiKey) throw new Error("GROQ_API_KEY is not configured");
+  let nextRequestAt = 0;
+  let rateQueue = Promise.resolve();
+  async function waitForRateSlot() {
+    const previous = rateQueue;
+    let release;
+    rateQueue = new Promise((resolve) => { release = resolve; });
+    await previous;
+    try {
+      const waitMs = Math.max(0, nextRequestAt - Date.now());
+      if (waitMs) await new Promise((resolve) => setTimeout(resolve, waitMs));
+      nextRequestAt = Date.now() + Math.max(0, Number(minIntervalMs) || 0);
+    } finally {
+      release();
+    }
+  }
   async function complete({ system, user, temperature, maxTokens, responseFormat }) {
     let lastError;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
+        await waitForRateSlot();
         return await retryingJson("groq", "https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -534,12 +550,13 @@ export function createGroqClient({ apiKey, model, timeoutMs, fetchImpl = fetch }
             messages: [{ role: "system", content: system }, { role: "user", content: user }],
             response_format: responseFormat
           })
-        }, { timeoutMs, fetchImpl });
+        }, { timeoutMs, fetchImpl, attempts: 1 });
       } catch (error) {
         lastError = error;
         const invalidStructuredOutput = error.upstreamStatus === 400
           && /validate json|failed_generation/i.test(String(error.upstreamDetails || error.message));
-        if (!invalidStructuredOutput) throw error;
+        const retryable = invalidStructuredOutput || error.upstreamStatus === 429 || error.upstreamStatus >= 500;
+        if (!retryable) throw error;
       }
     }
     throw lastError;

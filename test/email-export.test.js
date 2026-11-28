@@ -390,6 +390,73 @@ test("02 reports the exact failed stage and upstream status without losing the c
   assert.equal(tf.status, config.airtable.emailThreadFields.status);
 });
 
+test("02 stops the batch after Instantly reports a full account", async () => {
+  let generated = 0;
+  let instantlyCalls = 0;
+  const messages = [];
+  const records = ["One", "Two", "Three"].map((name, index) => ({
+    id: `recCircuitInstant${index}`,
+    createdTime: `2026-01-0${index + 1}T00:00:00Z`,
+    fields: { Email: `${name.toLowerCase()}@example.com`, "Business Name": name }
+  }));
+  const result = await processEmailExportBatch({
+    config: { ...config, emailExport: { ...config.emailExport, concurrency: 1, maxRecords: 20 } },
+    airtable: {
+      async listRecords(tableId) { return tableId === config.airtable.emailThreadsTableId ? [] : records; },
+      async createRecord() { throw new Error("should not write a thread"); }
+    },
+    claude: { async writeEmail() { generated += 1; return { subject: "Quick idea", body: "Short email" }; } },
+    instantly: {
+      async createLead() {
+        instantlyCalls += 1;
+        throw Object.assign(new Error("Lead limit reached"), { code: "INSTANTLY_UPSTREAM_ERROR", upstreamStatus: 402 });
+      }
+    },
+    telegram: { async send(message) { messages.push(message); } }
+  });
+
+  assert.equal(generated, 1);
+  assert.equal(instantlyCalls, 1);
+  assert.equal(result.failed, 1);
+  assert.equal(result.deferred, 2);
+  assert.deepEqual(result.stoppedBy, { stage: "instantly", code: "INSTANTLY_UPSTREAM_ERROR", upstreamStatus: 402 });
+  assert.match(messages[0], /נעצרו ויועברו לריצה הבאה: 2/);
+});
+
+test("02 stops the batch after Groq exhausts its rate-limit retries", async () => {
+  let claudeCalls = 0;
+  let groqCalls = 0;
+  let instantlyCalls = 0;
+  const records = ["One", "Two", "Three"].map((name, index) => ({
+    id: `recCircuitGroq${index}`,
+    createdTime: `2026-02-0${index + 1}T00:00:00Z`,
+    fields: { Email: `${name.toLowerCase()}@example.net`, "Business Name": name }
+  }));
+  const result = await processEmailExportBatch({
+    config: { ...config, emailExport: { ...config.emailExport, concurrency: 1, maxRecords: 20 } },
+    airtable: {
+      async listRecords(tableId) { return tableId === config.airtable.emailThreadsTableId ? [] : records; },
+      async createRecord() { throw new Error("should not write a thread"); }
+    },
+    claude: { async writeEmail() { claudeCalls += 1; throw new Error("claude unavailable"); } },
+    groq: {
+      async writeEmail() {
+        groqCalls += 1;
+        throw Object.assign(new Error("rate limited"), { code: "GROQ_UPSTREAM_ERROR", upstreamStatus: 429 });
+      }
+    },
+    instantly: { async createLead() { instantlyCalls += 1; return { id: "should-not-run" }; } },
+    telegram: { async send() {} }
+  });
+
+  assert.equal(claudeCalls, 1);
+  assert.equal(groqCalls, 1);
+  assert.equal(instantlyCalls, 0);
+  assert.equal(result.failed, 1);
+  assert.equal(result.deferred, 2);
+  assert.deepEqual(result.stoppedBy, { stage: "generate_email", code: "GROQ_UPSTREAM_ERROR", upstreamStatus: 429 });
+});
+
 test("02 local-noon gate follows Israel daylight saving time", () => {
   assert.equal(isLocalNoon(new Date("2026-07-16T09:30:00Z")), true);
   assert.equal(isLocalNoon(new Date("2026-07-16T10:30:00Z")), false);

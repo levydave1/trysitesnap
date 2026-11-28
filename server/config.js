@@ -88,8 +88,9 @@ export const config = Object.freeze({
   },
   emailExport: {
     campaignId: "6cd2f082-7246-40c3-9b71-23b1f2fc5678",
-    maxRecords: 200,
-    concurrency: 4,
+    maxRecords: 20,
+    concurrency: 1,
+    groqMinIntervalMs: 8000,
     timezone: "Asia/Jerusalem",
     senderLabel: "sitesnap-test (levy.dave.1@gmail.com)",
     testRecipient: "levy.dave.1@gmail.com",
